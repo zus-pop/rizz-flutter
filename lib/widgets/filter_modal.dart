@@ -30,7 +30,7 @@ class _FilterModalState extends State<FilterModal> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: MediaQuery.of(context).size.height * 0.6,
+      height: MediaQuery.of(context).size.height * 0.7,
       decoration: const BoxDecoration(
         color: Color(0xFF080026), // Secondary color background
         borderRadius: BorderRadius.only(
@@ -249,6 +249,7 @@ class _FilterModalState extends State<FilterModal> {
                       ),
                     ],
                   ),
+                  const Spacer(),
                 ],
               ),
             ),

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
-import 'package:rizz_mobile/models/user_profile.dart';
+import 'package:provider/provider.dart';
 import 'package:rizz_mobile/widgets/swipe_card.dart';
 import 'package:rizz_mobile/widgets/filter_modal.dart';
-import 'package:rizz_mobile/data/sample_profiles.dart';
+import 'package:rizz_mobile/providers/user_profile_provider.dart';
 
 class Discover extends StatefulWidget {
   const Discover({super.key});
@@ -14,19 +14,14 @@ class Discover extends StatefulWidget {
 
 class _DiscoverState extends State<Discover> {
   final CardSwiperController controller = CardSwiperController();
-  List<UserProfile> profiles = [];
-  List<UserProfile> allProfiles = [];
-  int currentIndex = 0;
-
-  // Filter state
-  RangeValues ageRange = const RangeValues(18, 65);
-  double maxDistance = 100;
 
   @override
   void initState() {
     super.initState();
-    allProfiles = List.from(sampleProfiles);
-    _applyFilters();
+    // Initialize profiles when widget is created
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<UserProfileProvider>().initialize();
+    });
   }
 
   @override
@@ -47,29 +42,87 @@ class _DiscoverState extends State<Discover> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Row(
-          children: [
-            Icon(Icons.favorite, color: Color(0xFFfa5eff), size: 28),
-            const SizedBox(width: 8),
-            Text(
-              'Discover',
-              style: TextStyle(
-                color: Color(0xFFfa5eff),
-                fontWeight: FontWeight.bold,
-                fontSize: 24,
+        leading: IconButton(
+          onPressed: () {
+            // Add your left icon action here
+            // For example: open drawer, go back, etc.
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Left icon pressed!'),
+                backgroundColor: Color(0xFFfa5eff),
+                duration: Duration(milliseconds: 1000),
               ),
-            ),
-          ],
+            );
+          },
+          icon: Icon(Icons.gamepad, color: Color(0xFFfa5eff), size: 30),
         ),
+        title: Text(
+          'Discover',
+          style: TextStyle(
+            color: Color(0xFFfa5eff),
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
+          ),
+        ),
+        centerTitle: true, // This ensures the title stays centered
         actions: [
           IconButton(
             onPressed: _showFilterModal,
-            icon: Icon(Icons.tune, color: Color(0xFFfa5eff)),
+            icon: Icon(Icons.tune, color: Color(0xFFfa5eff), size: 30),
           ),
         ],
       ),
-      body: profiles.isEmpty
-          ? const Center(
+      body: Consumer<UserProfileProvider>(
+        builder: (context, profileProvider, child) {
+          // Handle different loading states
+          if (profileProvider.isLoading) {
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: Color(0xFFfa5eff)),
+                  SizedBox(height: 16),
+                  Text(
+                    'Loading profiles...',
+                    style: TextStyle(fontSize: 16, color: Colors.white),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          if (profileProvider.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  SizedBox(height: 16),
+                  Text(
+                    'Error loading profiles',
+                    style: TextStyle(fontSize: 18, color: Colors.white),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    profileProvider.errorMessage ?? 'Unknown error',
+                    style: TextStyle(fontSize: 14, color: Colors.white70),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => profileProvider.retry(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFFfa5eff),
+                    ),
+                    child: Text('Retry'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          if (profileProvider.isEmpty) {
+            return const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -86,82 +139,149 @@ class _DiscoverState extends State<Discover> {
                   ),
                 ],
               ),
-            )
-          : Stack(
-              children: [
-                // Card swiper - takes full height
-                Padding(
-                  padding: const EdgeInsets.only(
-                    left: 16.0,
-                    right: 16.0,
-                    top: 16.0,
-                    bottom: 120.0, // Space for action buttons
-                  ),
-                  child: CardSwiper(
-                    controller: controller,
-                    cardsCount: profiles.length,
-                    onSwipe: _onSwipe,
-                    onUndo: _onUndo,
-                    numberOfCardsDisplayed: 2,
-                    backCardOffset: const Offset(0, -20),
-                    padding: const EdgeInsets.all(8.0),
-                    allowedSwipeDirection:
-                        const AllowedSwipeDirection.symmetric(
-                          horizontal: true,
-                          vertical: false,
-                        ),
-                    cardBuilder:
-                        (
-                          context,
-                          index,
-                          horizontalThresholdPercentage,
-                          verticalThresholdPercentage,
-                        ) {
-                          return SwipeCard(profile: profiles[index]);
-                        },
-                  ),
+            );
+          }
+
+          // Show profiles with swiper
+          return Stack(
+            children: [
+              // Card swiper - takes full height
+              Padding(
+                padding: const EdgeInsets.only(
+                  left: 16.0,
+                  right: 16.0,
+                  top: 16.0,
+                  bottom: 120.0, // Space for action buttons
                 ),
+                child: CardSwiper(
+                  controller: controller,
+                  cardsCount: profileProvider.profiles.length,
+                  isLoop: false,
+                  onSwipe: (previousIndex, currentIndex, direction) {
+                    _onSwipe(
+                      previousIndex,
+                      currentIndex,
+                      direction,
+                      profileProvider,
+                    );
+                    return true;
+                  },
+                  onUndo: _onUndo,
+                  onEnd: () {
+                    debugPrint("end here");
+                  },
+                  threshold:
+                      30, // Lower threshold for easier swiping near phone edges
+                  numberOfCardsDisplayed: 2,
+                  backCardOffset: const Offset(0, -20),
+                  padding: const EdgeInsets.all(8.0),
+                  allowedSwipeDirection: const AllowedSwipeDirection.symmetric(
+                    horizontal: true,
+                    vertical: false,
+                  ),
+                  cardBuilder:
+                      (
+                        context,
+                        index,
+                        horizontalThresholdPercentage,
+                        verticalThresholdPercentage,
+                      ) {
+                        // Safety check for index bounds
+                        if (index >= 0 &&
+                            index < profileProvider.profiles.length) {
+                          return SwipeCard(
+                            profile: profileProvider.profiles[index],
+                          );
+                        } else {
+                          // Return empty container if index is out of bounds
+                          return Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              color: Colors.grey[300],
+                            ),
+                            child: const Center(
+                              child: Text('No profile available'),
+                            ),
+                          );
+                        }
+                      },
+                ),
+              ),
 
-                // Action buttons - positioned absolutely
+              // Load more indicator
+              if (profileProvider.isLoadingMore)
                 Positioned(
-                  bottom: 70, // Above the bottom navigation
-                  left: 0,
-                  right: 0,
+                  top: 16,
+                  right: 16,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Pass button
-                        _buildActionButton(
-                          icon: Icons.close,
-                          color: Colors.grey[400]!,
-                          onPressed: () =>
-                              controller.swipe(CardSwiperDirection.left),
-                          size: 56,
+                        SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
                         ),
-
-                        _buildActionButton(
-                          icon: Icons.undo,
-                          color: Colors.green[400]!,
-                          onPressed: () => controller.undo(),
-                          size: 56,
-                        ),
-
-                        // Like button
-                        _buildActionButton(
-                          icon: Icons.favorite,
-                          color: Color(0xFFfa5eff),
-                          onPressed: () =>
-                              controller.swipe(CardSwiperDirection.right),
-                          size: 56,
+                        SizedBox(width: 8),
+                        Text(
+                          'Loading more...',
+                          style: TextStyle(color: Colors.white, fontSize: 12),
                         ),
                       ],
                     ),
                   ),
                 ),
-              ],
-            ),
+
+              // Action buttons - positioned absolutely
+              Positioned(
+                bottom: 80, // Above the bottom navigation
+                left: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      // Pass button
+                      _buildActionButton(
+                        icon: Icons.close,
+                        color: Colors.red[400]!,
+                        onPressed: () =>
+                            controller.swipe(CardSwiperDirection.left),
+                        size: 56,
+                      ),
+
+                      _buildActionButton(
+                        icon: Icons.undo,
+                        color: Colors.green[400]!,
+                        onPressed: () => controller.undo(),
+                        size: 56,
+                      ),
+
+                      // Like button
+                      _buildActionButton(
+                        icon: Icons.favorite,
+                        color: Color(0xFFfa5eff),
+                        onPressed: () =>
+                            controller.swipe(CardSwiperDirection.right),
+                        size: 56,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -188,7 +308,7 @@ class _DiscoverState extends State<Discover> {
             ),
           ],
         ),
-        child: Icon(icon, color: color, size: size * 0.4),
+        child: Icon(icon, color: color, size: size * 0.5),
       ),
     );
   }
@@ -197,27 +317,41 @@ class _DiscoverState extends State<Discover> {
     int previousIndex,
     int? currentIndex,
     CardSwiperDirection direction,
+    UserProfileProvider profileProvider,
   ) {
     currentIndex = currentIndex ?? 0;
 
     String action = '';
+    String profileId = '';
     switch (direction) {
       case CardSwiperDirection.left:
         action = 'passed';
+        if (previousIndex >= 0 &&
+            previousIndex < profileProvider.profiles.length) {
+          profileId = profileProvider.profiles[previousIndex].id;
+          profileProvider.passProfile(profileId);
+        }
         break;
       case CardSwiperDirection.right:
         action = 'liked';
+        if (previousIndex >= 0 &&
+            previousIndex < profileProvider.profiles.length) {
+          profileId = profileProvider.profiles[previousIndex].id;
+          profileProvider.likeProfile(profileId);
+        }
         break;
       default:
         action = 'swiped';
     }
 
-    // Show feedback
-    if (mounted) {
+    // Show feedback with bounds checking
+    if (mounted &&
+        previousIndex >= 0 &&
+        previousIndex < profileProvider.profiles.length) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'You $action ${profiles[previousIndex].name}!',
+            'You $action ${profileProvider.profiles[previousIndex].name}!',
             style: const TextStyle(color: Colors.white),
           ),
           backgroundColor: direction == CardSwiperDirection.right
@@ -230,18 +364,21 @@ class _DiscoverState extends State<Discover> {
       );
     }
 
-    debugPrint(
-      'Card ${profiles[previousIndex].name} was $action. Current index: $currentIndex',
-    );
+    if (previousIndex >= 0 && previousIndex < profileProvider.profiles.length) {
+      debugPrint(
+        'Card ${profileProvider.profiles[previousIndex].name} was $action. Current index: $currentIndex',
+      );
+    } else {
+      debugPrint(
+        'Card at index $previousIndex was $action. Current index: $currentIndex',
+      );
+    }
 
-    // Remove the swiped profile from the list after a delay to allow animation
-    Future.delayed(const Duration(milliseconds: 300), () {
-      if (mounted) {
-        setState(() {
-          // profiles.removeAt(previousIndex);
-        });
-      }
-    });
+    // Check if we need to load more profiles
+    if (profileProvider.profiles.length - currentIndex <= 2 &&
+        profileProvider.hasNextPage) {
+      profileProvider.loadMoreProfiles();
+    }
 
     return true;
   }
@@ -255,35 +392,21 @@ class _DiscoverState extends State<Discover> {
     return true;
   }
 
-  void _applyFilters() {
-    setState(() {
-      profiles = allProfiles.where((profile) {
-        // Age filter
-        bool ageMatch =
-            profile.age >= ageRange.start && profile.age <= ageRange.end;
-
-        // Distance filter
-        bool distanceMatch = profile.distanceKm <= maxDistance;
-
-        return ageMatch && distanceMatch;
-      }).toList();
-    });
-  }
-
   void _showFilterModal() {
+    final profileProvider = context.read<UserProfileProvider>();
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => FilterModal(
-        initialAgeRange: ageRange,
-        initialDistance: maxDistance,
+        initialAgeRange: profileProvider.ageRange,
+        initialDistance: profileProvider.maxDistance,
         onApplyFilter: (newAgeRange, newMaxDistance) {
-          setState(() {
-            ageRange = newAgeRange;
-            maxDistance = newMaxDistance;
-          });
-          _applyFilters();
+          profileProvider.applyFilters(
+            ageRange: newAgeRange,
+            maxDistance: newMaxDistance,
+          );
         },
       ),
     );

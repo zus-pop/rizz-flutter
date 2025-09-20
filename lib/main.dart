@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:rizz_mobile/pages/bottom_tab_page.dart';
+import 'package:rizz_mobile/providers/user_profile_provider.dart';
 
 void main() => runApp(MyApp());
 
@@ -8,10 +10,13 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: "Rizz",
-      theme: ThemeData(primaryColor: Color.fromRGBO(250, 94, 255, 1)),
-      home: BottomTabPage(),
+    return MultiProvider(
+      providers: [ChangeNotifierProvider(create: (_) => UserProfileProvider())],
+      child: MaterialApp(
+        title: "Rizz",
+        theme: ThemeData(primaryColor: Color.fromRGBO(250, 94, 255, 1)),
+        home: BottomTabPage(),
+      ),
     );
   }
 }

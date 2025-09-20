@@ -57,7 +57,11 @@ class _BottomTabPageState extends State<BottomTabPage> {
                     gap: 8,
                     activeColor: Colors.white,
                     iconSize: 24,
-                    padding: EdgeInsets.symmetric(horizontal: 18, vertical: 15),
+                    tabMargin: EdgeInsetsGeometry.symmetric(
+                      vertical: 5,
+                      horizontal: 5,
+                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 15, vertical: 15),
                     duration: Duration(milliseconds: 400),
                     tabBackgroundColor: Color(
                       0xFFfa5eff,
