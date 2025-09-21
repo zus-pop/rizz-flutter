@@ -1,16 +1,15 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:rizz_mobile/models/user_profile.dart';
-import 'package:rizz_mobile/services/user_profile_service.dart';
 import 'package:rizz_mobile/data/sample_profiles.dart';
+import 'package:rizz_mobile/models/profile.dart';
+import 'package:rizz_mobile/services/profile_service.dart';
 
 enum LoadingState { idle, loading, loadingMore, success, error }
 
-class UserProfileProvider extends ChangeNotifier {
-  final UserProfileService _profileService = UserProfileService();
+class ProfileProvider extends ChangeNotifier {
+  final ProfileService _profileService = ProfileService();
 
   // State
-  List<UserProfile> _profiles = [];
+  List<Profile> _profiles = [];
   LoadingState _loadingState = LoadingState.idle;
   String? _errorMessage;
 
@@ -26,8 +25,11 @@ class UserProfileProvider extends ChangeNotifier {
   // Use sample data flag (for development/testing)
   bool _useSampleData = true; // Set to false when you have a real API
 
+  // Liked profiles
+  List<Profile> _likedProfiles = [];
+
   // Getters
-  List<UserProfile> get profiles => _profiles;
+  List<Profile> get profiles => _profiles;
   LoadingState get loadingState => _loadingState;
   String? get errorMessage => _errorMessage;
   bool get hasNextPage => _hasNextPage;
@@ -37,12 +39,25 @@ class UserProfileProvider extends ChangeNotifier {
   bool get isLoading => _loadingState == LoadingState.loading;
   bool get hasError => _loadingState == LoadingState.error;
   bool get isEmpty => _profiles.isEmpty;
+  List<Profile> get likedProfiles => _likedProfiles;
 
   /// Initialize and load first page of profiles
   Future<void> initialize() async {
     if (_profiles.isNotEmpty) return; // Already initialized
 
+    // Initialize with some sample liked profiles for testing
+    if (_useSampleData && _likedProfiles.isEmpty) {
+      _initializeSampleLikedProfiles();
+    }
+
     await loadProfiles(refresh: true);
+  }
+
+  /// Initialize sample liked profiles for testing
+  void _initializeSampleLikedProfiles() {
+    // Add first 6 sample profiles as liked for demo purposes
+    _likedProfiles = sampleProfiles.take(6).toList();
+    notifyListeners();
   }
 
   /// Load profiles with pagination
@@ -78,25 +93,51 @@ class UserProfileProvider extends ChangeNotifier {
 
   /// Load sample data (for development)
   Future<void> _loadSampleData(bool refresh) async {
-    // Simulate API delay
-    await Future.delayed(const Duration(milliseconds: 800));
+    // Simulate realistic API delay
+    await _simulateNetworkDelay();
 
-    List<UserProfile> filteredProfiles = sampleProfiles.where((profile) {
+    // Filter all sample profiles based on current filters
+    List<Profile> filteredProfiles = sampleProfiles.where((profile) {
       bool ageMatch =
           profile.age >= _ageRange.start && profile.age <= _ageRange.end;
       bool distanceMatch = profile.distanceKm <= _maxDistance;
       return ageMatch && distanceMatch;
     }).toList();
 
-    if (refresh) {
-      _profiles = filteredProfiles;
-    } else {
-      // Simulate pagination - for demo, just return the same data
-      _profiles.addAll(filteredProfiles);
+    // Pagination settings
+    const int profilesPerPage = 8; // Smaller page size for better testing
+    int startIndex = (_currentPage - 1) * profilesPerPage;
+    int endIndex = startIndex + profilesPerPage;
+
+    // Get the profiles for current page
+    List<Profile> pageProfiles = [];
+    if (startIndex < filteredProfiles.length) {
+      endIndex = endIndex > filteredProfiles.length
+          ? filteredProfiles.length
+          : endIndex;
+      pageProfiles = filteredProfiles.sublist(startIndex, endIndex);
     }
 
-    _hasNextPage = false; // No more pages in sample data
+    if (refresh) {
+      _profiles = pageProfiles;
+      _currentPage = 1;
+    } else {
+      _profiles.addAll(pageProfiles);
+    }
+
+    // Update pagination state
+    _hasNextPage = endIndex < filteredProfiles.length;
+
+    if (!refresh) {
+      _currentPage++;
+    }
+
     _setLoadingState(LoadingState.success);
+
+    debugPrint('Loaded page $_currentPage: ${pageProfiles.length} profiles');
+    debugPrint('Total profiles loaded: ${_profiles.length}');
+    debugPrint('Has next page: $_hasNextPage');
+    debugPrint('Filtered profiles available: ${filteredProfiles.length}');
   }
 
   /// Load from real API
@@ -123,8 +164,16 @@ class UserProfileProvider extends ChangeNotifier {
   /// Load more profiles (pagination)
   Future<void> loadMoreProfiles() async {
     if (_hasNextPage && !_isLoadingMore) {
+      debugPrint('Loading more profiles... Current page: $_currentPage');
       await loadProfiles(refresh: false);
     }
+  }
+
+  /// Simulate network delay for more realistic testing
+  Future<void> _simulateNetworkDelay() async {
+    // Random delay between 500ms and 1.5s to simulate real network
+    final delay = 500 + (DateTime.now().millisecondsSinceEpoch % 1000);
+    await Future.delayed(Duration(milliseconds: delay));
   }
 
   /// Refresh profiles (pull to refresh)
@@ -154,24 +203,30 @@ class UserProfileProvider extends ChangeNotifier {
     }
   }
 
-  /// Remove a profile (after swipe)
-  void removeProfile(String profileId) {
-    // _profiles.removeWhere((profile) => profile.id == profileId);
-    // notifyListeners();
-  }
-
   /// Like a profile
   Future<bool> likeProfile(String profileId) async {
     try {
       if (_useSampleData) {
-        // Simulate API call
+        // Simulate API call and add to liked profiles
         await Future.delayed(const Duration(milliseconds: 300));
-        removeProfile(profileId);
+
+        // Find and add profile to liked list if not already liked
+        final profile = getProfileById(profileId);
+        if (profile != null && !_likedProfiles.any((p) => p.id == profileId)) {
+          _likedProfiles.add(profile);
+          notifyListeners();
+        }
         return true;
       } else {
         final success = await _profileService.likeProfile(profileId);
         if (success) {
-          removeProfile(profileId);
+          // Add to liked profiles if API call successful
+          final profile = getProfileById(profileId);
+          if (profile != null &&
+              !_likedProfiles.any((p) => p.id == profileId)) {
+            _likedProfiles.add(profile);
+            notifyListeners();
+          }
         }
         return success;
       }
@@ -187,13 +242,9 @@ class UserProfileProvider extends ChangeNotifier {
       if (_useSampleData) {
         // Simulate API call
         await Future.delayed(const Duration(milliseconds: 300));
-        removeProfile(profileId);
         return true;
       } else {
         final success = await _profileService.passProfile(profileId);
-        if (success) {
-          removeProfile(profileId);
-        }
         return success;
       }
     } catch (e) {
@@ -203,7 +254,7 @@ class UserProfileProvider extends ChangeNotifier {
   }
 
   /// Get profile by ID
-  UserProfile? getProfileById(String id) {
+  Profile? getProfileById(String id) {
     try {
       return _profiles.firstWhere((profile) => profile.id == id);
     } catch (e) {
@@ -240,8 +291,30 @@ class UserProfileProvider extends ChangeNotifier {
     await loadProfiles(refresh: true);
   }
 
-  @override
-  void dispose() {
-    super.dispose();
+  /// Remove profile from liked list
+  void removeLikedProfile(String profileId) {
+    _likedProfiles.removeWhere((profile) => profile.id == profileId);
+    notifyListeners();
+  }
+
+  /// Pass a liked profile (remove from liked list)
+  Future<bool> passLikedProfile(String profileId) async {
+    try {
+      if (_useSampleData) {
+        // Simulate API call
+        await Future.delayed(const Duration(milliseconds: 300));
+        removeLikedProfile(profileId);
+        return true;
+      } else {
+        final success = await _profileService.passProfile(profileId);
+        if (success) {
+          removeLikedProfile(profileId);
+        }
+        return success;
+      }
+    } catch (e) {
+      debugPrint('Error passing liked profile: $e');
+      return false;
+    }
   }
 }

@@ -55,7 +55,7 @@ class _BottomTabPageState extends State<BottomTabPage> {
                     rippleColor: Color(0xFFfa5eff).withValues(alpha: 0.3),
                     hoverColor: Color(0xFFfa5eff).withValues(alpha: 0.2),
                     gap: 8,
-                    activeColor: Colors.white,
+                    activeColor: Color(0xFF080026),
                     iconSize: 24,
                     tabMargin: EdgeInsetsGeometry.symmetric(
                       vertical: 5,

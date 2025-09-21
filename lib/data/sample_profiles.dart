@@ -1,8 +1,8 @@
-import 'package:rizz_mobile/models/user_profile.dart';
+import 'package:rizz_mobile/models/profile.dart';
 
 // Sample data for testing swipe cards
-final List<UserProfile> sampleProfiles = [
-  UserProfile.sample(
+final List<Profile> sampleProfiles = [
+  Profile.sample(
     id: '1',
     name: 'Emma',
     age: 25,
@@ -18,7 +18,7 @@ final List<UserProfile> sampleProfiles = [
     audioUrl:
         'https://software-mansion.github.io/react-native-audio-api/audio/music/example-music-01.mp3', // Sample audio URL
   ),
-  UserProfile.sample(
+  Profile.sample(
     id: '2',
     name: 'Sophia',
     age: 28,
@@ -31,7 +31,7 @@ final List<UserProfile> sampleProfiles = [
     interests: ['Yoga', 'Meditation', 'Healthy Living', 'Books', 'Nature'],
     distanceKm: 12.8,
   ),
-  UserProfile.sample(
+  Profile.sample(
     id: '3',
     name: 'Isabella',
     age: 24,
@@ -46,7 +46,7 @@ final List<UserProfile> sampleProfiles = [
     audioUrl:
         'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav', // Sample audio URL
   ),
-  UserProfile.sample(
+  Profile.sample(
     id: '4',
     name: 'Olivia',
     age: 26,
@@ -59,7 +59,7 @@ final List<UserProfile> sampleProfiles = [
     interests: ['Technology', 'Cooking', 'Food', 'Innovation', 'Gaming'],
     distanceKm: 38.4,
   ),
-  UserProfile.sample(
+  Profile.sample(
     id: '5',
     name: 'Ava',
     age: 23,
@@ -78,7 +78,7 @@ final List<UserProfile> sampleProfiles = [
     ],
     distanceKm: 52.3,
   ),
-  UserProfile.sample(
+  Profile.sample(
     id: '6',
     name: 'Mia',
     age: 27,
@@ -91,7 +91,7 @@ final List<UserProfile> sampleProfiles = [
     interests: ['Reading', 'Writing', 'Literature', 'Poetry', 'Libraries'],
     distanceKm: 19.6,
   ),
-  UserProfile.sample(
+  Profile.sample(
     id: '7',
     name: 'Charlotte',
     age: 29,
@@ -104,7 +104,7 @@ final List<UserProfile> sampleProfiles = [
     interests: ['Marine Biology', 'Diving', 'Conservation', 'Science', 'Ocean'],
     distanceKm: 67.1,
   ),
-  UserProfile.sample(
+  Profile.sample(
     id: '8',
     name: 'Amelia',
     age: 25,
@@ -117,7 +117,7 @@ final List<UserProfile> sampleProfiles = [
     interests: ['Music', 'Guitar', 'Singing', 'Teaching', 'Concerts'],
     distanceKm: 33.9,
   ),
-  UserProfile.sample(
+  Profile.sample(
     id: '9',
     name: 'Harper',
     age: 30,
@@ -132,7 +132,7 @@ final List<UserProfile> sampleProfiles = [
     audioUrl:
         'https://software-mansion.github.io/react-native-audio-api/audio/music/example-music-01.mp3',
   ),
-  UserProfile.sample(
+  Profile.sample(
     id: '10',
     name: 'Lily',
     age: 22,
@@ -151,7 +151,7 @@ final List<UserProfile> sampleProfiles = [
     ],
     distanceKm: 15.3,
   ),
-  UserProfile.sample(
+  Profile.sample(
     id: '11',
     name: 'Grace',
     age: 26,
@@ -171,7 +171,7 @@ final List<UserProfile> sampleProfiles = [
     distanceKm: 42.1,
     audioUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
   ),
-  UserProfile.sample(
+  Profile.sample(
     id: '12',
     name: 'Zoe',
     age: 24,
@@ -191,7 +191,7 @@ final List<UserProfile> sampleProfiles = [
     ],
     distanceKm: 29.8,
   ),
-  UserProfile.sample(
+  Profile.sample(
     id: '13',
     name: 'Chloe',
     age: 27,
@@ -210,7 +210,7 @@ final List<UserProfile> sampleProfiles = [
     ],
     distanceKm: 61.4,
   ),
-  UserProfile.sample(
+  Profile.sample(
     id: '14',
     name: 'Madison',
     age: 23,
@@ -231,7 +231,7 @@ final List<UserProfile> sampleProfiles = [
     audioUrl:
         'https://software-mansion.github.io/react-native-audio-api/audio/music/example-music-01.mp3',
   ),
-  UserProfile.sample(
+  Profile.sample(
     id: '15',
     name: 'Aria',
     age: 25,
@@ -244,7 +244,7 @@ final List<UserProfile> sampleProfiles = [
     interests: ['Dancing', 'Choreography', 'Teaching', 'Performance', 'Music'],
     distanceKm: 73.2,
   ),
-  UserProfile.sample(
+  Profile.sample(
     id: '16',
     name: 'Nora',
     age: 28,
@@ -257,7 +257,7 @@ final List<UserProfile> sampleProfiles = [
     interests: ['Programming', 'Gaming', 'Tech', 'Board Games', 'Anime'],
     distanceKm: 11.6,
   ),
-  UserProfile.sample(
+  Profile.sample(
     id: '17',
     name: 'Luna',
     age: 26,
@@ -271,7 +271,7 @@ final List<UserProfile> sampleProfiles = [
     distanceKm: 45.7,
     audioUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
   ),
-  UserProfile.sample(
+  Profile.sample(
     id: '18',
     name: 'Penelope',
     age: 24,
@@ -290,7 +290,7 @@ final List<UserProfile> sampleProfiles = [
     ],
     distanceKm: 36.3,
   ),
-  UserProfile.sample(
+  Profile.sample(
     id: '19',
     name: 'Scarlett',
     age: 29,
@@ -309,7 +309,7 @@ final List<UserProfile> sampleProfiles = [
     ],
     distanceKm: 89.1,
   ),
-  UserProfile.sample(
+  Profile.sample(
     id: '20',
     name: 'Ruby',
     age: 23,
@@ -330,7 +330,7 @@ final List<UserProfile> sampleProfiles = [
     audioUrl:
         'https://software-mansion.github.io/react-native-audio-api/audio/music/example-music-01.mp3',
   ),
-  UserProfile.sample(
+  Profile.sample(
     id: '21',
     name: 'Violet',
     age: 27,
@@ -349,7 +349,7 @@ final List<UserProfile> sampleProfiles = [
     ],
     distanceKm: 54.8,
   ),
-  UserProfile.sample(
+  Profile.sample(
     id: '22',
     name: 'Hazel',
     age: 25,
@@ -368,7 +368,7 @@ final List<UserProfile> sampleProfiles = [
     ],
     distanceKm: 67.9,
   ),
-  UserProfile.sample(
+  Profile.sample(
     id: '23',
     name: 'Stella',
     age: 26,
@@ -388,7 +388,7 @@ final List<UserProfile> sampleProfiles = [
     distanceKm: 41.2,
     audioUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
   ),
-  UserProfile.sample(
+  Profile.sample(
     id: '24',
     name: 'Iris',
     age: 28,
@@ -407,7 +407,7 @@ final List<UserProfile> sampleProfiles = [
     ],
     distanceKm: 78.3,
   ),
-  UserProfile.sample(
+  Profile.sample(
     id: '25',
     name: 'Jasmine',
     age: 24,
@@ -426,7 +426,7 @@ final List<UserProfile> sampleProfiles = [
     ],
     distanceKm: 23.7,
   ),
-  UserProfile.sample(
+  Profile.sample(
     id: '26',
     name: 'Aurora',
     age: 22,
@@ -447,7 +447,7 @@ final List<UserProfile> sampleProfiles = [
     audioUrl:
         'https://software-mansion.github.io/react-native-audio-api/audio/music/example-music-01.mp3',
   ),
-  UserProfile.sample(
+  Profile.sample(
     id: '27',
     name: 'Sage',
     age: 29,
@@ -466,7 +466,7 @@ final List<UserProfile> sampleProfiles = [
     ],
     distanceKm: 52.1,
   ),
-  UserProfile.sample(
+  Profile.sample(
     id: '28',
     name: 'Maya',
     age: 26,
@@ -485,7 +485,7 @@ final List<UserProfile> sampleProfiles = [
     ],
     distanceKm: 95.6,
   ),
-  UserProfile.sample(
+  Profile.sample(
     id: '29',
     name: 'Willow',
     age: 25,
@@ -505,7 +505,7 @@ final List<UserProfile> sampleProfiles = [
     distanceKm: 84.7,
     audioUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
   ),
-  UserProfile.sample(
+  Profile.sample(
     id: '30',
     name: 'Ivy',
     age: 27,
@@ -524,7 +524,7 @@ final List<UserProfile> sampleProfiles = [
     ],
     distanceKm: 38.9,
   ),
-  UserProfile.sample(
+  Profile.sample(
     id: '31',
     name: 'Phoenix',
     age: 24,
@@ -543,7 +543,7 @@ final List<UserProfile> sampleProfiles = [
     ],
     distanceKm: 46.3,
   ),
-  UserProfile.sample(
+  Profile.sample(
     id: '32',
     name: 'River',
     age: 28,
@@ -564,7 +564,7 @@ final List<UserProfile> sampleProfiles = [
     audioUrl:
         'https://software-mansion.github.io/react-native-audio-api/audio/music/example-music-01.mp3',
   ),
-  UserProfile.sample(
+  Profile.sample(
     id: '33',
     name: 'Skye',
     age: 23,
@@ -583,7 +583,7 @@ final List<UserProfile> sampleProfiles = [
     ],
     distanceKm: 63.4,
   ),
-  UserProfile.sample(
+  Profile.sample(
     id: '34',
     name: 'Eden',
     age: 26,
@@ -602,7 +602,7 @@ final List<UserProfile> sampleProfiles = [
     ],
     distanceKm: 56.7,
   ),
-  UserProfile.sample(
+  Profile.sample(
     id: '35',
     name: 'Nova',
     age: 25,
