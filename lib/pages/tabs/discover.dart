@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 import 'package:provider/provider.dart';
+import 'package:rizz_mobile/providers/auth_provider.dart';
 import 'package:rizz_mobile/providers/profile_provider.dart';
 import 'package:rizz_mobile/widgets/filter_modal.dart';
 import 'package:rizz_mobile/widgets/swipe_card.dart';
@@ -18,6 +19,10 @@ class _DiscoverState extends State<Discover> {
   @override
   void initState() {
     super.initState();
+    // final state = context.read<AuthProvider>().authState;
+    // if (state == AuthState.authenticated) {
+    context.read<AuthProvider>().updateToken();
+    // }
     // Initialize profiles when widget is created
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ProfileProvider>().initialize();

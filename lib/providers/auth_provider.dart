@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:rizz_mobile/services/push_notification_service.dart';
 
 enum AuthState { initial, loading, authenticated, unauthenticated, error }
 
@@ -8,6 +9,7 @@ enum AuthMethod { google, phone }
 class AuthProvider extends ChangeNotifier {
   // Secure storage instance
   static const _storage = FlutterSecureStorage();
+  final _pushNotificationService = PushNotificationService();
 
   // State
   AuthState _authState = AuthState.initial;
@@ -18,6 +20,7 @@ class AuthProvider extends ChangeNotifier {
   String? _phoneNumber;
   String? _email;
   String? _errorMessage;
+  String? _pushToken;
 
   // Verification state
   bool _isVerifyingPhone = false;
@@ -36,6 +39,14 @@ class AuthProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   AuthMethod? get authMethod => _authMethod;
   String? get verificationId => _verificationId;
+  String? get pushToken => _pushToken;
+
+  Future<void> updateToken() async {
+    final token = await _pushNotificationService.requestPushToken();
+    if (token != null) {
+      _pushToken = token;
+    }
+  }
 
   /// Initialize authentication on app start
   Future<void> initializeAuth() async {
