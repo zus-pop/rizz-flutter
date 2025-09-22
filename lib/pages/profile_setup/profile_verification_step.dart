@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:rizz_mobile/models/profile_setup_data.dart';
+import 'package:rizz_mobile/theme/app_theme.dart';
 
 class ProfileVerificationStep extends StatefulWidget {
   final ProfileSetupData profileData;
@@ -29,8 +30,6 @@ class _ProfileVerificationStepState extends State<ProfileVerificationStep> {
   String _instructionText = 'Position your face in the circle';
   bool _photoTaken = false;
   File? _capturedImage;
-
-  final primaryColor = const Color(0xFFfa5eff);
 
   @override
   void initState() {
@@ -257,8 +256,8 @@ class _ProfileVerificationStepState extends State<ProfileVerificationStep> {
                     widget.onNext();
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
-                    foregroundColor: Colors.white,
+                    backgroundColor: context.primary,
+                    foregroundColor: context.colors.onPrimary,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -298,7 +297,7 @@ class _ProfileVerificationStepState extends State<ProfileVerificationStep> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: context.onSurface,
       body: Stack(
         children: [
           // Camera Preview
@@ -328,9 +327,14 @@ class _ProfileVerificationStepState extends State<ProfileVerificationStep> {
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: .5),
+                color: context.onSurface.withValues(alpha: .5),
               ),
-              child: CustomPaint(painter: CircleOverlayPainter(_faceDetected)),
+              child: CustomPaint(
+                painter: CircleOverlayPainter(
+                  _faceDetected,
+                  context.colors.onPrimary,
+                ),
+              ),
             ),
           ),
 
@@ -346,7 +350,7 @@ class _ProfileVerificationStepState extends State<ProfileVerificationStep> {
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: context.colors.onPrimary,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -355,7 +359,7 @@ class _ProfileVerificationStepState extends State<ProfileVerificationStep> {
                   'We use AI technology to verify your profile images with the selfie image to order to make sure that you have uploaded real images of you.',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.white.withValues(alpha: .9),
+                    color: context.colors.onPrimary.withValues(alpha: .9),
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -365,7 +369,9 @@ class _ProfileVerificationStepState extends State<ProfileVerificationStep> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: _faceDetected ? Colors.green : Colors.white,
+                    color: _faceDetected
+                        ? Colors.green
+                        : context.colors.onPrimary,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -388,11 +394,18 @@ class _ProfileVerificationStepState extends State<ProfileVerificationStep> {
                       width: 80,
                       height: 80,
                       decoration: BoxDecoration(
-                        color: _faceDetected ? primaryColor : Colors.grey,
+                        color: _faceDetected ? context.primary : Colors.grey,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 4),
+                        border: Border.all(
+                          color: context.colors.onPrimary,
+                          width: 4,
+                        ),
                       ),
-                      child: Icon(Icons.camera, color: Colors.white, size: 32),
+                      child: Icon(
+                        Icons.camera,
+                        color: context.colors.onPrimary,
+                        size: 32,
+                      ),
                     ),
                   ),
                 ] else ...[
@@ -403,8 +416,8 @@ class _ProfileVerificationStepState extends State<ProfileVerificationStep> {
                       ElevatedButton(
                         onPressed: _retakePhoto,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: Colors.black,
+                          backgroundColor: context.colors.onPrimary,
+                          foregroundColor: context.onSurface,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 24,
                             vertical: 12,
@@ -418,8 +431,8 @@ class _ProfileVerificationStepState extends State<ProfileVerificationStep> {
                       ElevatedButton(
                         onPressed: () => _showSuccessDialog(),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: primaryColor,
-                          foregroundColor: Colors.white,
+                          backgroundColor: context.primary,
+                          foregroundColor: context.colors.onPrimary,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 24,
                             vertical: 12,
@@ -439,9 +452,7 @@ class _ProfileVerificationStepState extends State<ProfileVerificationStep> {
 
           // Loading indicator
           if (!_isInitialized)
-            const Center(
-              child: CircularProgressIndicator(color: Color(0xFFfa5eff)),
-            ),
+            Center(child: CircularProgressIndicator(color: context.primary)),
         ],
       ),
     );
@@ -450,8 +461,9 @@ class _ProfileVerificationStepState extends State<ProfileVerificationStep> {
 
 class CircleOverlayPainter extends CustomPainter {
   final bool faceDetected;
+  final Color borderColor;
 
-  CircleOverlayPainter(this.faceDetected);
+  CircleOverlayPainter(this.faceDetected, this.borderColor);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -467,7 +479,7 @@ class CircleOverlayPainter extends CustomPainter {
 
     // Draw the circle border
     final borderPaint = Paint()
-      ..color = faceDetected ? Colors.green : Colors.white
+      ..color = faceDetected ? Colors.green : borderColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3;
 

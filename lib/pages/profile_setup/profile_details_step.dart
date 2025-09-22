@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rizz_mobile/models/profile_setup_data.dart';
 import 'package:rizz_mobile/constants/profile_options.dart';
+import 'package:rizz_mobile/theme/app_theme.dart';
 
 class ProfileDetailsStep extends StatefulWidget {
   final ProfileSetupData profileData;
@@ -23,8 +24,6 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
   DateTime? _selectedBirthday;
   String? _selectedGender;
   String? _selectedUniversity;
-
-  final primaryColor = const Color(0xFFfa5eff);
 
   @override
   void initState() {
@@ -74,10 +73,10 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: ColorScheme.light(
-              primary: primaryColor,
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: Colors.black,
+              primary: context.primary,
+              onPrimary: context.colors.onPrimary,
+              surface: context.colors.surface,
+              onSurface: context.onSurface,
             ),
           ),
           child: child!,
@@ -95,7 +94,7 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.surface,
       body: Stack(
         children: [
           Padding(
@@ -112,12 +111,11 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                   const SizedBox(height: 8),
 
                   // First Name
-                  const Text(
+                  Text(
                     'First name',
-                    style: TextStyle(
-                      fontSize: 16,
+                    style: AppTheme.body1.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: context.onSurface,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -127,11 +125,11 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                       hintText: 'Your First Name',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
+                        borderSide: BorderSide(color: context.outline),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: primaryColor),
+                        borderSide: BorderSide(color: context.primary),
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -149,12 +147,11 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                   const SizedBox(height: 12),
 
                   // Last Name
-                  const Text(
+                  Text(
                     'Last name',
-                    style: TextStyle(
-                      fontSize: 16,
+                    style: AppTheme.body1.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: context.onSurface,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -164,11 +161,11 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                       hintText: 'Your Last Name',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
+                        borderSide: BorderSide(color: context.outline),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: primaryColor),
+                        borderSide: BorderSide(color: context.primary),
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -186,12 +183,11 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                   const SizedBox(height: 15),
 
                   // Birthday
-                  const Text(
+                  Text(
                     'Birthday',
-                    style: TextStyle(
-                      fontSize: 16,
+                    style: AppTheme.body1.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: context.onSurface,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -204,14 +200,14 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                         vertical: 16,
                       ),
                       decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300),
+                        border: Border.all(color: context.outline),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
                         children: [
                           Icon(
                             Icons.calendar_today,
-                            color: primaryColor,
+                            color: context.primary,
                             size: 20,
                           ),
                           const SizedBox(width: 12),
@@ -222,7 +218,7 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                             style: TextStyle(
                               fontSize: 16,
                               color: _selectedBirthday != null
-                                  ? Colors.black87
+                                  ? context.onSurface
                                   : Colors.grey.shade600,
                             ),
                           ),
@@ -233,12 +229,11 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                   const SizedBox(height: 15),
 
                   // Gender
-                  const Text(
+                  Text(
                     'Gender',
-                    style: TextStyle(
-                      fontSize: 16,
+                    style: AppTheme.body1.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: context.onSurface,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -251,11 +246,11 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             decoration: BoxDecoration(
                               color: _selectedGender == 'Male'
-                                  ? primaryColor.withValues(alpha: .1)
+                                  ? context.primary.withValues(alpha: .1)
                                   : Colors.transparent,
                               border: Border.all(
                                 color: _selectedGender == 'Male'
-                                    ? primaryColor
+                                    ? context.primary
                                     : Colors.grey.shade300,
                                 width: _selectedGender == 'Male' ? 2 : 1,
                               ),
@@ -267,7 +262,7 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                                 Icon(
                                   Icons.male,
                                   color: _selectedGender == 'Male'
-                                      ? primaryColor
+                                      ? context.primary
                                       : Colors.grey.shade600,
                                 ),
                                 const SizedBox(width: 8),
@@ -277,7 +272,7 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
                                     color: _selectedGender == 'Male'
-                                        ? primaryColor
+                                        ? context.primary
                                         : Colors.grey.shade600,
                                   ),
                                 ),
@@ -295,11 +290,11 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             decoration: BoxDecoration(
                               color: _selectedGender == 'Female'
-                                  ? primaryColor.withValues(alpha: .1)
+                                  ? context.primary.withValues(alpha: .1)
                                   : Colors.transparent,
                               border: Border.all(
                                 color: _selectedGender == 'Female'
-                                    ? primaryColor
+                                    ? context.primary
                                     : Colors.grey.shade300,
                                 width: _selectedGender == 'Female' ? 2 : 1,
                               ),
@@ -311,7 +306,7 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                                 Icon(
                                   Icons.female,
                                   color: _selectedGender == 'Female'
-                                      ? primaryColor
+                                      ? context.primary
                                       : Colors.grey.shade600,
                                 ),
                                 const SizedBox(width: 8),
@@ -321,7 +316,7 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
                                     color: _selectedGender == 'Female'
-                                        ? primaryColor
+                                        ? context.primary
                                         : Colors.grey.shade600,
                                   ),
                                 ),
@@ -335,12 +330,11 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                   const SizedBox(height: 30),
 
                   // University
-                  const Text(
+                  Text(
                     'University',
-                    style: TextStyle(
-                      fontSize: 16,
+                    style: AppTheme.body1.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: context.onSurface,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -355,7 +349,7 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: primaryColor),
+                        borderSide: BorderSide(color: context.primary),
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -392,8 +386,8 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                     child: ElevatedButton(
                       onPressed: _isFormValid ? _saveAndNext : null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryColor,
-                        foregroundColor: Colors.white,
+                        backgroundColor: context.primary,
+                        foregroundColor: context.colors.onPrimary,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),

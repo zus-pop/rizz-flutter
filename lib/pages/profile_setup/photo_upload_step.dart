@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:rizz_mobile/models/profile_setup_data.dart';
+import 'package:rizz_mobile/theme/app_theme.dart';
 
 class PhotoUploadStep extends StatefulWidget {
   final ProfileSetupData profileData;
@@ -19,7 +20,6 @@ class PhotoUploadStep extends StatefulWidget {
 
 class _PhotoUploadStepState extends State<PhotoUploadStep> {
   final ImagePicker _picker = ImagePicker();
-  final primaryColor = const Color(0xFFfa5eff);
   static const int maxPhotos = 6;
 
   @override
@@ -144,7 +144,7 @@ class _PhotoUploadStepState extends State<PhotoUploadStep> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.onPrimary,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -152,20 +152,16 @@ class _PhotoUploadStepState extends State<PhotoUploadStep> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header Section
-              const Text(
+              Text(
                 'Add photos',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
+                style: AppTheme.headline1.copyWith(color: context.onSurface),
               ),
               const SizedBox(height: 8),
               Text(
                 'Upload your best photos to show who you are',
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.grey.shade600,
+                  color: context.onSurface.withValues(alpha: 0.7),
                   height: 1.4,
                 ),
               ),
@@ -180,7 +176,7 @@ class _PhotoUploadStepState extends State<PhotoUploadStep> {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: primaryColor.withValues(alpha: 0.1),
+                    color: context.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -188,7 +184,7 @@ class _PhotoUploadStepState extends State<PhotoUploadStep> {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: primaryColor,
+                      color: context.primary,
                     ),
                   ),
                 ),
@@ -214,7 +210,7 @@ class _PhotoUploadStepState extends State<PhotoUploadStep> {
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: primaryColor.withValues(alpha: 0.3),
+                                color: context.primary.withValues(alpha: 0.3),
                                 width: 2,
                               ),
                             ),
@@ -239,14 +235,13 @@ class _PhotoUploadStepState extends State<PhotoUploadStep> {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: primaryColor,
+                                  color: context.primary,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: const Text(
+                                child: Text(
                                   'Main',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
+                                  style: AppTheme.caption.copyWith(
+                                    color: context.colors.onPrimary,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -264,9 +259,9 @@ class _PhotoUploadStepState extends State<PhotoUploadStep> {
                                   color: Colors.red,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.close,
-                                  color: Colors.white,
+                                  color: context.colors.onPrimary,
                                   size: 14,
                                 ),
                               ),
@@ -283,7 +278,7 @@ class _PhotoUploadStepState extends State<PhotoUploadStep> {
                             color: Colors.grey.shade50,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: Colors.grey.shade300,
+                              color: context.outline,
                               style: BorderStyle.solid,
                             ),
                           ),
@@ -293,14 +288,16 @@ class _PhotoUploadStepState extends State<PhotoUploadStep> {
                               Icon(
                                 Icons.add,
                                 size: 24,
-                                color: Colors.grey.shade600,
+                                color: context.onSurface.withValues(alpha: 0.7),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 'Add',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: Colors.grey.shade600,
+                                  color: context.onSurface.withValues(
+                                    alpha: 0.7,
+                                  ),
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -363,8 +360,8 @@ class _PhotoUploadStepState extends State<PhotoUploadStep> {
                 child: ElevatedButton(
                   onPressed: _saveAndNext,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
-                    foregroundColor: Colors.white,
+                    backgroundColor: context.primary,
+                    foregroundColor: context.colors.onPrimary,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),

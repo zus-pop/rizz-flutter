@@ -162,7 +162,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
       ),
       body: PageView(
         controller: _pageController,
-        physics: const NeverScrollableScrollPhysics(), // Prevent swiping
+        physics: const AlwaysScrollableScrollPhysics(), // Prevent swiping
         children: [
           ProfileDetailsStep(profileData: _profileData, onNext: _nextStep),
           GenderInterestStep(profileData: _profileData, onNext: _nextStep),

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rizz_mobile/models/profile.dart';
 import 'package:rizz_mobile/providers/profile_provider.dart';
+import 'package:rizz_mobile/theme/app_theme.dart';
 
 class Liked extends StatelessWidget {
   const Liked({super.key});
@@ -12,7 +13,7 @@ class Liked extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.surface,
       body: SafeArea(
         child: Column(
           children: [
@@ -24,9 +25,8 @@ class Liked extends StatelessWidget {
                 children: [
                   Text(
                     'Matches',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                    style: AppTheme.headline2.copyWith(
+                      color: context.onSurface,
                     ),
                   ),
                   Container(
@@ -35,17 +35,16 @@ class Liked extends StatelessWidget {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.pink[100],
+                      color: context.primary.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Consumer<ProfileProvider>(
                       builder: (context, provider, child) {
                         return Text(
                           '${provider.likedProfiles.length}',
-                          style: TextStyle(
-                            color: Colors.pink[600],
+                          style: AppTheme.body1.copyWith(
+                            color: context.primary,
                             fontWeight: FontWeight.bold,
-                            fontSize: 16,
                           ),
                         );
                       },
@@ -62,8 +61,8 @@ class Liked extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   'This is a list of people who have liked you\nand your matches.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[600],
+                  style: AppTheme.body2.copyWith(
+                    color: context.onSurface.withValues(alpha: 0.7),
                     height: 1.4,
                   ),
                 ),
@@ -104,11 +103,11 @@ class Liked extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 100),
       children: [
         if (todayProfiles.isNotEmpty) ...[
-          _buildDateSection('Today', todayProfiles, provider),
+          _buildDateSection(context, 'Today', todayProfiles, provider),
           const SizedBox(height: 24),
         ],
         if (yesterdayProfiles.isNotEmpty) ...[
-          _buildDateSection('Yesterday', yesterdayProfiles, provider),
+          _buildDateSection(context, 'Yesterday', yesterdayProfiles, provider),
           const SizedBox(height: 24),
         ],
       ],
@@ -116,6 +115,7 @@ class Liked extends StatelessWidget {
   }
 
   Widget _buildDateSection(
+    BuildContext context,
     String dateLabel,
     List<Profile> profiles,
     ProfileProvider provider,
@@ -127,10 +127,9 @@ class Liked extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Text(
             dateLabel,
-            style: const TextStyle(
-              fontSize: 16,
+            style: AppTheme.body1.copyWith(
               fontWeight: FontWeight.w600,
-              color: Colors.grey,
+              color: context.onSurface.withValues(alpha: 0.6),
             ),
           ),
         ),
@@ -165,21 +164,20 @@ class Liked extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.favorite_border, size: 64, color: Colors.grey[400]),
+            Icon(Icons.favorite_border, size: 64, color: context.outline),
             const SizedBox(height: 16),
             Text(
               'No matches yet',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w600,
+              style: AppTheme.headline4.copyWith(
+                color: context.onSurface.withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'People who like you will appear here',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: Colors.grey[500]),
+              style: AppTheme.body2.copyWith(
+                color: context.onSurface.withValues(alpha: 0.5),
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -198,7 +196,7 @@ class Liked extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: .1),
+            color: context.onSurface.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -208,7 +206,7 @@ class Liked extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         child: Stack(
           children: [
-            Positioned.fill(child: _buildProfileImage(profile)),
+            Positioned.fill(child: _buildProfileImage(context, profile)),
 
             Positioned.fill(
               child: Container(
@@ -261,15 +259,15 @@ class Liked extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileImage(Profile profile) {
+  Widget _buildProfileImage(BuildContext context, Profile profile) {
     final imageUrl = profile.imageUrls.isNotEmpty
         ? profile.imageUrls.first
         : '';
 
     if (imageUrl.isEmpty) {
       return Container(
-        color: Colors.grey[300],
-        child: const Icon(Icons.person, size: 50, color: Colors.grey),
+        color: context.colors.surfaceContainerHigh,
+        child: Icon(Icons.person, size: 50, color: context.outline),
       );
     }
 
@@ -277,12 +275,17 @@ class Liked extends StatelessWidget {
       imageUrl: imageUrl,
       fit: BoxFit.cover,
       placeholder: (context, url) => Container(
-        color: Colors.grey[200],
-        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        color: context.colors.surfaceContainerHigh,
+        child: Center(
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: context.primary,
+          ),
+        ),
       ),
       errorWidget: (context, url, error) => Container(
-        color: Colors.grey[300],
-        child: const Icon(Icons.error, size: 50, color: Colors.grey),
+        color: context.colors.surfaceContainerHigh,
+        child: Icon(Icons.error, size: 50, color: context.outline),
       ),
     );
   }
@@ -304,7 +307,9 @@ class Liked extends StatelessWidget {
           tileMode: TileMode.decal,
         ),
         child: Container(
-          decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.4)),
+          decoration: BoxDecoration(
+            color: context.surface.withValues(alpha: 0.4),
+          ),
           child: Row(
             children: [
               // Pass button (left half)
@@ -319,7 +324,7 @@ class Liked extends StatelessWidget {
                           SnackBar(
                             content: Text('Passed ${profile.name}'),
                             duration: const Duration(seconds: 2),
-                            backgroundColor: Colors.red[400],
+                            backgroundColor: context.error,
                           ),
                         );
                       }
@@ -353,7 +358,7 @@ class Liked extends StatelessWidget {
                           SnackBar(
                             content: Text('Liked ${profile.name} again!'),
                             duration: const Duration(seconds: 2),
-                            backgroundColor: Colors.green[400],
+                            backgroundColor: AppTheme.success(context),
                           ),
                         );
                       }

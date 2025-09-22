@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rizz_mobile/models/profile_setup_data.dart';
 import 'package:rizz_mobile/constants/profile_options.dart';
+import 'package:rizz_mobile/theme/app_theme.dart';
 
 class GenderInterestStep extends StatefulWidget {
   final ProfileSetupData profileData;
@@ -18,7 +19,6 @@ class GenderInterestStep extends StatefulWidget {
 
 class _GenderInterestStepState extends State<GenderInterestStep> {
   String? _selectedGender;
-  final primaryColor = const Color(0xFFfa5eff);
 
   @override
   void initState() {
@@ -38,7 +38,7 @@ class _GenderInterestStepState extends State<GenderInterestStep> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.onPrimary,
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -52,7 +52,10 @@ class _GenderInterestStepState extends State<GenderInterestStep> {
             const SizedBox(height: 8),
             Text(
               'You can like change this option later',
-              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+              style: TextStyle(
+                fontSize: 16,
+                color: context.onSurface.withValues(alpha: 0.7),
+              ),
             ),
             const SizedBox(height: 40),
 
@@ -71,16 +74,18 @@ class _GenderInterestStepState extends State<GenderInterestStep> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: isSelected ? primaryColor : Colors.white,
+                      color: isSelected
+                          ? context.primary
+                          : context.colors.onPrimary,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isSelected ? primaryColor : Colors.grey.shade300,
+                        color: isSelected ? context.primary : context.outline,
                         width: isSelected ? 2 : 1,
                       ),
                       boxShadow: [
                         if (isSelected)
                           BoxShadow(
-                            color: primaryColor.withValues(alpha: .3),
+                            color: context.primary.withValues(alpha: .3),
                             blurRadius: 8,
                             spreadRadius: 0,
                           ),
@@ -91,7 +96,9 @@ class _GenderInterestStepState extends State<GenderInterestStep> {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: isSelected ? Colors.white : Colors.black87,
+                        color: isSelected
+                            ? context.colors.onPrimary
+                            : context.onSurface,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -108,7 +115,10 @@ class _GenderInterestStepState extends State<GenderInterestStep> {
               children: [
                 Text(
                   '1/10',
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: context.onSurface.withValues(alpha: 0.7),
+                  ),
                 ),
               ],
             ),
@@ -120,13 +130,13 @@ class _GenderInterestStepState extends State<GenderInterestStep> {
               child: ElevatedButton(
                 onPressed: _isFormValid ? _saveAndNext : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
-                  foregroundColor: Colors.white,
+                  backgroundColor: context.primary,
+                  foregroundColor: context.colors.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  disabledBackgroundColor: Colors.grey.shade300,
+                  disabledBackgroundColor: context.outline,
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,

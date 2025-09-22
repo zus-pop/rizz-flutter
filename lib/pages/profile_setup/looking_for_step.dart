@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rizz_mobile/models/profile_setup_data.dart';
 import 'package:rizz_mobile/constants/profile_options.dart';
+import 'package:rizz_mobile/theme/app_theme.dart';
 
 class LookingForStep extends StatefulWidget {
   final ProfileSetupData profileData;
@@ -18,7 +19,6 @@ class LookingForStep extends StatefulWidget {
 
 class _LookingForStepState extends State<LookingForStep> {
   String? _selectedLookingFor;
-  final primaryColor = const Color(0xFFfa5eff);
 
   @override
   void initState() {
@@ -38,16 +38,16 @@ class _LookingForStepState extends State<LookingForStep> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: context.colors.surface,
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 20),
-            const Text(
+            Text(
               'Looking for',
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+              style: AppTheme.headline2.copyWith(color: context.onSurface),
             ),
             const SizedBox(height: 40),
 
@@ -66,16 +66,18 @@ class _LookingForStepState extends State<LookingForStep> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: isSelected ? primaryColor : Colors.white,
+                      color: isSelected
+                          ? context.primary
+                          : context.colors.surface,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isSelected ? primaryColor : Colors.grey.shade300,
+                        color: isSelected ? context.primary : context.outline,
                         width: isSelected ? 2 : 1,
                       ),
                       boxShadow: [
                         if (isSelected)
                           BoxShadow(
-                            color: primaryColor.withValues(alpha: .3),
+                            color: context.primary.withValues(alpha: .3),
                             blurRadius: 8,
                             spreadRadius: 0,
                           ),
@@ -83,10 +85,12 @@ class _LookingForStepState extends State<LookingForStep> {
                     ),
                     child: Text(
                       option.name,
-                      style: TextStyle(
+                      style: AppTheme.body1.copyWith(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: isSelected ? Colors.white : Colors.black87,
+                        color: isSelected
+                            ? context.colors.onPrimary
+                            : context.onSurface,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -103,7 +107,9 @@ class _LookingForStepState extends State<LookingForStep> {
               children: [
                 Text(
                   '2/10',
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                  style: AppTheme.caption.copyWith(
+                    color: context.onSurface.withValues(alpha: 0.7),
+                  ),
                 ),
               ],
             ),
@@ -115,26 +121,25 @@ class _LookingForStepState extends State<LookingForStep> {
               child: ElevatedButton(
                 onPressed: _isFormValid ? _saveAndNext : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
-                  foregroundColor: Colors.white,
+                  backgroundColor: context.primary,
+                  foregroundColor: context.colors.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  disabledBackgroundColor: Colors.grey.shade300,
+                  disabledBackgroundColor: context.outline,
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
+                    Text(
                       'Next',
-                      style: TextStyle(
-                        fontSize: 16,
+                      style: AppTheme.body1.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Icon(Icons.arrow_forward, size: 20),
+                    const Icon(Icons.arrow_forward, size: 20),
                   ],
                 ),
               ),

@@ -1,7 +1,8 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:rizz_mobile/models/profile.dart';
+import 'package:rizz_mobile/theme/app_theme.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class SwipeCard extends StatefulWidget {
   final Profile profile;
@@ -272,7 +273,7 @@ class _SwipeCardState extends State<SwipeCard> {
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: Color(0xFFfa5eff).withValues(alpha: 0.3),
+                                color: context.primary.withValues(alpha: 0.3),
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
                                   color: Colors.white.withValues(alpha: 0.5),
@@ -383,9 +384,9 @@ class _SwipeCardState extends State<SwipeCard> {
         snapSizes: [.75],
         builder: (context, scrollController) {
           return Container(
-            decoration: const BoxDecoration(
-              color: Color(0xFF080026), // Secondary color background
-              borderRadius: BorderRadius.only(
+            decoration: BoxDecoration(
+              color: context.colors.surfaceContainerHighest,
+              borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(20),
                 topRight: Radius.circular(20),
               ),
@@ -466,10 +467,8 @@ class _SwipeCardState extends State<SwipeCard> {
                               // Profile details
                               Text(
                                 '${widget.profile.name}, ${widget.profile.age}',
-                                style: const TextStyle(
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                                style: AppTheme.headline1.copyWith(
+                                  color: context.onSurface,
                                 ),
                               ),
 
@@ -480,14 +479,13 @@ class _SwipeCardState extends State<SwipeCard> {
                                   Icon(
                                     Icons.location_on,
                                     size: 20,
-                                    color: Color(0xFFfa5eff),
+                                    color: context.primary,
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
                                     widget.profile.location,
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      color: Colors.white,
+                                    style: AppTheme.body1.copyWith(
+                                      color: context.onSurface,
                                     ),
                                   ),
                                 ],
@@ -497,10 +495,8 @@ class _SwipeCardState extends State<SwipeCard> {
 
                               Text(
                                 'About',
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFFfa5eff),
+                                style: AppTheme.headline4.copyWith(
+                                  color: context.primary,
                                 ),
                               ),
 
@@ -508,9 +504,8 @@ class _SwipeCardState extends State<SwipeCard> {
 
                               Text(
                                 widget.profile.bio,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.white,
+                                style: AppTheme.body1.copyWith(
+                                  color: context.onSurface,
                                 ),
                               ),
 
@@ -518,10 +513,8 @@ class _SwipeCardState extends State<SwipeCard> {
 
                               Text(
                                 'Interests',
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFFfa5eff),
+                                style: AppTheme.headline4.copyWith(
+                                  color: context.primary,
                                 ),
                               ),
 
@@ -539,21 +532,20 @@ class _SwipeCardState extends State<SwipeCard> {
                                       vertical: 8,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: Color(
-                                        0xFFfa5eff,
-                                      ).withValues(alpha: 0.1),
+                                      color: context.primary.withValues(
+                                        alpha: 0.1,
+                                      ),
                                       borderRadius: BorderRadius.circular(25),
                                       border: Border.all(
-                                        color: Color(
-                                          0xFFfa5eff,
-                                        ).withValues(alpha: 0.3),
+                                        color: context.primary.withValues(
+                                          alpha: 0.3,
+                                        ),
                                       ),
                                     ),
                                     child: Text(
                                       interest,
-                                      style: TextStyle(
-                                        color: Color(0xFFfa5eff),
-                                        fontSize: 14,
+                                      style: AppTheme.body2.copyWith(
+                                        color: context.primary,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
@@ -738,7 +730,7 @@ class _AudioPlayerDialogState extends State<AudioPlayerDialog> {
         width: 320,
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: const Color(0xFF080026),
+          color: context.colors.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
@@ -759,10 +751,10 @@ class _AudioPlayerDialogState extends State<AudioPlayerDialog> {
                 Expanded(
                   child: Text(
                     '${widget.userName}\'s Voice',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: context.onSurface,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -775,9 +767,9 @@ class _AudioPlayerDialogState extends State<AudioPlayerDialog> {
                       color: Colors.white.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.close,
-                      color: Colors.white,
+                      color: context.onSurface,
                       size: 18,
                     ),
                   ),
@@ -792,15 +784,11 @@ class _AudioPlayerDialogState extends State<AudioPlayerDialog> {
               height: 80,
               width: double.infinity,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
+                color: context.onSurface.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Center(
-                child: Icon(
-                  Icons.graphic_eq,
-                  color: Color(0xFFfa5eff),
-                  size: 48,
-                ),
+              child: Center(
+                child: Icon(Icons.graphic_eq, color: context.primary, size: 48),
               ),
             ),
 
@@ -809,10 +797,10 @@ class _AudioPlayerDialogState extends State<AudioPlayerDialog> {
             // Progress slider
             SliderTheme(
               data: SliderTheme.of(context).copyWith(
-                activeTrackColor: const Color(0xFFfa5eff),
-                inactiveTrackColor: Colors.white.withValues(alpha: 0.3),
-                thumbColor: const Color(0xFFfa5eff),
-                overlayColor: const Color(0xFFfa5eff).withValues(alpha: 0.2),
+                activeTrackColor: context.primary,
+                inactiveTrackColor: context.onSurface.withValues(alpha: 0.3),
+                thumbColor: context.primary,
+                overlayColor: context.primary.withValues(alpha: 0.2),
                 trackHeight: 4,
               ),
               child: Slider(
@@ -839,11 +827,15 @@ class _AudioPlayerDialogState extends State<AudioPlayerDialog> {
                 children: [
                   Text(
                     _formatDuration(_position),
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    style: AppTheme.caption.copyWith(
+                      color: context.onSurface.withValues(alpha: 0.7),
+                    ),
                   ),
                   Text(
                     _formatDuration(_duration),
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    style: AppTheme.caption.copyWith(
+                      color: context.onSurface.withValues(alpha: 0.7),
+                    ),
                   ),
                 ],
               ),
@@ -857,36 +849,36 @@ class _AudioPlayerDialogState extends State<AudioPlayerDialog> {
               child: Container(
                 width: 64,
                 height: 64,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFfa5eff),
+                decoration: BoxDecoration(
+                  color: context.primary,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Color(0xFFfa5eff),
+                      color: context.primary.withValues(alpha: 0.4),
                       spreadRadius: 0,
                       blurRadius: 20,
-                      offset: Offset(0, 4),
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
                 child: _isLoading || _isRestarting
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 24,
                         height: 24,
                         child: CircularProgressIndicator(
-                          color: Colors.white,
+                          color: context.onPrimary,
                           strokeWidth: 2,
                         ),
                       )
                     : _hasError
-                    ? const Icon(Icons.error, color: Colors.white, size: 32)
+                    ? Icon(Icons.error, color: context.onPrimary, size: 32)
                     : Icon(
                         _isPlaying
                             ? Icons.pause
                             : _isCompleted
                             ? Icons.replay
                             : Icons.play_arrow,
-                        color: Colors.white,
+                        color: context.onPrimary,
                         size: 32,
                       ),
               ),

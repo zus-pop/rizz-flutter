@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rizz_mobile/models/profile_setup_data.dart';
 import 'package:rizz_mobile/constants/profile_options.dart';
+import 'package:rizz_mobile/theme/app_theme.dart';
 
 class DealBreakersStep extends StatefulWidget {
   final ProfileSetupData profileData;
@@ -18,7 +19,6 @@ class DealBreakersStep extends StatefulWidget {
 
 class _DealBreakersStepState extends State<DealBreakersStep> {
   Set<String> _selectedDealBreakers = <String>{};
-  final primaryColor = const Color(0xFFfa5eff);
 
   @override
   void initState() {
@@ -44,7 +44,7 @@ class _DealBreakersStepState extends State<DealBreakersStep> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.surface,
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -80,18 +80,20 @@ class _DealBreakersStepState extends State<DealBreakersStep> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: isSelected ? primaryColor : Colors.white,
+                          color: isSelected
+                              ? context.primary
+                              : context.colors.onPrimary,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: isSelected
-                                ? primaryColor
+                                ? context.primary
                                 : Colors.grey.shade300,
                             width: 1,
                           ),
                           boxShadow: [
                             if (isSelected)
                               BoxShadow(
-                                color: primaryColor.withValues(alpha: .3),
+                                color: context.primary.withValues(alpha: .3),
                                 blurRadius: 8,
                                 spreadRadius: 0,
                               ),
@@ -102,7 +104,9 @@ class _DealBreakersStepState extends State<DealBreakersStep> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
-                            color: isSelected ? Colors.white : Colors.black87,
+                            color: isSelected
+                                ? context.colors.onPrimary
+                                : context.onSurface,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -131,8 +135,8 @@ class _DealBreakersStepState extends State<DealBreakersStep> {
               child: ElevatedButton(
                 onPressed: _saveAndNext,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
-                  foregroundColor: Colors.white,
+                  backgroundColor: context.primary,
+                  foregroundColor: context.colors.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),

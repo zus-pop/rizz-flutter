@@ -5,6 +5,7 @@ import 'package:rizz_mobile/providers/auth_provider.dart';
 import 'package:rizz_mobile/providers/profile_provider.dart';
 import 'package:rizz_mobile/widgets/filter_modal.dart';
 import 'package:rizz_mobile/widgets/swipe_card.dart';
+import 'package:rizz_mobile/theme/app_theme.dart';
 
 class Discover extends StatefulWidget {
   const Discover({super.key});
@@ -38,12 +39,7 @@ class _DiscoverState extends State<Discover> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color.fromARGB(
-        255,
-        234,
-        229,
-        255,
-      ), // Secondary color background
+      backgroundColor: context.colors.surface,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -53,27 +49,23 @@ class _DiscoverState extends State<Discover> {
             // For example: open drawer, go back, etc.
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Left icon pressed!'),
-                backgroundColor: Color(0xFFfa5eff),
-                duration: Duration(milliseconds: 1000),
+                content: const Text('Left icon pressed!'),
+                backgroundColor: context.primary,
+                duration: const Duration(milliseconds: 1000),
               ),
             );
           },
-          icon: Icon(Icons.gamepad, color: Color(0xFFfa5eff), size: 30),
+          icon: Icon(Icons.gamepad, color: context.primary, size: 30),
         ),
         title: Text(
           'Discover',
-          style: TextStyle(
-            color: Color(0xFFfa5eff),
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-          ),
+          style: AppTheme.headline3.copyWith(color: context.primary),
         ),
         centerTitle: true, // This ensures the title stays centered
         actions: [
           IconButton(
             onPressed: _showFilterModal,
-            icon: Icon(Icons.tune, color: Color(0xFFfa5eff), size: 30),
+            icon: Icon(Icons.tune, color: context.primary, size: 30),
           ),
         ],
       ),
@@ -82,15 +74,15 @@ class _DiscoverState extends State<Discover> {
           debugPrint(profileProvider.profiles.length.toString());
           // Handle different loading states
           if (profileProvider.isLoading) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(color: Color(0xFFfa5eff)),
-                  SizedBox(height: 16),
+                  CircularProgressIndicator(color: context.primary),
+                  const SizedBox(height: 16),
                   Text(
                     'Loading profiles...',
-                    style: TextStyle(fontSize: 16, color: Colors.white),
+                    style: AppTheme.body1.copyWith(color: context.onSurface),
                   ),
                 ],
               ),
@@ -102,25 +94,26 @@ class _DiscoverState extends State<Discover> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.error_outline, size: 64, color: Colors.red),
-                  SizedBox(height: 16),
+                  Icon(Icons.error_outline, size: 64, color: context.error),
+                  const SizedBox(height: 16),
                   Text(
                     'Error loading profiles',
-                    style: TextStyle(fontSize: 18, color: Colors.white),
+                    style: AppTheme.headline4.copyWith(
+                      color: context.onSurface,
+                    ),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
                     profileProvider.errorMessage ?? 'Unknown error',
-                    style: TextStyle(fontSize: 14, color: Colors.white70),
+                    style: AppTheme.body2.copyWith(
+                      color: context.onSurface.withValues(alpha: 0.7),
+                    ),
                     textAlign: TextAlign.center,
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => profileProvider.retry(),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFFfa5eff),
-                    ),
-                    child: Text('Retry'),
+                    child: const Text('Retry'),
                   ),
                 ],
               ),
@@ -128,20 +121,24 @@ class _DiscoverState extends State<Discover> {
           }
 
           if (profileProvider.isEmpty) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.favorite_border, size: 64, color: Colors.grey),
-                  SizedBox(height: 16),
+                  Icon(Icons.favorite_border, size: 64, color: context.outline),
+                  const SizedBox(height: 16),
                   Text(
                     'No more profiles to show',
-                    style: TextStyle(fontSize: 18, color: Colors.white),
+                    style: AppTheme.headline4.copyWith(
+                      color: context.onSurface,
+                    ),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
                     'Check back later for new matches!',
-                    style: TextStyle(fontSize: 14, color: Colors.white70),
+                    style: AppTheme.body2.copyWith(
+                      color: context.onSurface.withValues(alpha: 0.7),
+                    ),
                   ),
                 ],
               ),
@@ -220,10 +217,13 @@ class _DiscoverState extends State<Discover> {
                   top: 16,
                   right: 16,
                   child: Container(
-                    padding: EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.black54,
+                      color: context.surface.withValues(alpha: 0.9),
                       borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: context.outline.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -232,14 +232,16 @@ class _DiscoverState extends State<Discover> {
                           width: 16,
                           height: 16,
                           child: CircularProgressIndicator(
-                            color: Colors.white,
+                            color: context.primary,
                             strokeWidth: 2,
                           ),
                         ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text(
                           'Loading more...',
-                          style: TextStyle(color: Colors.white, fontSize: 12),
+                          style: AppTheme.caption.copyWith(
+                            color: context.onSurface,
+                          ),
                         ),
                       ],
                     ),
@@ -275,7 +277,7 @@ class _DiscoverState extends State<Discover> {
                       // Like button
                       _buildActionButton(
                         icon: Icons.favorite,
-                        color: Color(0xFFfa5eff),
+                        color: context.primary,
                         onPressed: () =>
                             controller.swipe(CardSwiperDirection.right),
                         size: 56,
@@ -303,11 +305,12 @@ class _DiscoverState extends State<Discover> {
         width: size,
         height: size,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.surface,
           shape: BoxShape.circle,
+          border: Border.all(color: context.outline.withValues(alpha: 0.3)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
+              color: context.onSurface.withValues(alpha: 0.1),
               spreadRadius: 2,
               blurRadius: 8,
               offset: const Offset(0, 2),
@@ -361,8 +364,8 @@ class _DiscoverState extends State<Discover> {
             style: const TextStyle(color: Colors.white),
           ),
           backgroundColor: direction == CardSwiperDirection.right
-              ? Color(0xFFfa5eff)
-              : Colors.grey,
+              ? context.primary
+              : context.outline,
           duration: const Duration(milliseconds: 1000),
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.only(bottom: 100, left: 20, right: 20),
@@ -404,7 +407,6 @@ class _DiscoverState extends State<Discover> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
       builder: (context) => FilterModal(
         initialAgeRange: profileProvider.ageRange,
         initialDistance: profileProvider.maxDistance,

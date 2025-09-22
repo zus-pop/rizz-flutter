@@ -4,9 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rizz_mobile/firebase_options.dart';
 import 'package:rizz_mobile/pages/bottom_tab_page.dart';
-import 'package:rizz_mobile/pages/test.dart';
+import 'package:rizz_mobile/pages/profile_setup_page.dart';
 import 'package:rizz_mobile/providers/auth_provider.dart';
 import 'package:rizz_mobile/providers/profile_provider.dart';
+import 'package:rizz_mobile/theme/theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,8 +41,9 @@ class MyApp extends StatelessWidget {
       ],
       child: MaterialApp(
         title: "Rizz",
-        theme: ThemeData(primaryColor: Color(0xFFfa5eff)),
-        home: Test(),
+        theme: lightMode,
+        darkTheme: darkMode,
+        home: ProfileSetupPage(),
         routes: {'/home': (context) => BottomTabPage()},
       ),
     );

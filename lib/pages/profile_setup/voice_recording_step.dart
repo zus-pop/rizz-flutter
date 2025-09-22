@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:rizz_mobile/models/profile_setup_data.dart';
+import 'package:rizz_mobile/theme/app_theme.dart';
 
 class VoiceRecordingStep extends StatefulWidget {
   final ProfileSetupData profileData;
@@ -23,7 +24,6 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
   bool _isPlaying = false;
   Duration _recordingDuration = Duration.zero;
 
-  final primaryColor = const Color(0xFFfa5eff);
   final List<String> prompts = [
     "Tell us about your ideal study partner",
     "What makes you laugh the most?",
@@ -150,7 +150,7 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.onPrimary,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
@@ -158,20 +158,16 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header Section - More prominent
-              const Text(
+              Text(
                 'Add a voice intro',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
+                style: AppTheme.headline1.copyWith(color: context.onSurface),
               ),
               const SizedBox(height: 8),
               Text(
                 'Record a short voice message to help others get to know your personality better',
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.grey.shade600,
+                  color: context.onSurface.withValues(alpha: 0.7),
                   height: 1.4,
                 ),
               ),
@@ -182,10 +178,10 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: primaryColor.withValues(alpha: 0.1),
+                  color: context.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: primaryColor.withValues(alpha: 0.2),
+                    color: context.primary.withValues(alpha: 0.2),
                     width: 1,
                   ),
                 ),
@@ -196,7 +192,7 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
                       children: [
                         Icon(
                           Icons.lightbulb_outline,
-                          color: primaryColor,
+                          color: context.primary,
                           size: 18,
                         ),
                         const SizedBox(width: 8),
@@ -212,10 +208,9 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
                     const SizedBox(height: 8),
                     Text(
                       prompts[_currentPromptIndex],
-                      style: const TextStyle(
-                        fontSize: 15,
+                      style: AppTheme.body1.copyWith(
                         fontWeight: FontWeight.w500,
-                        color: Colors.black87,
+                        color: context.onSurface,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -228,7 +223,7 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
                       child: Text(
                         'Try another prompt',
                         style: TextStyle(
-                          color: primaryColor,
+                          color: context.primary,
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
@@ -260,14 +255,14 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
                                   decoration: BoxDecoration(
                                     color: _isRecording
                                         ? Colors.red
-                                        : primaryColor,
+                                        : context.primary,
                                     shape: BoxShape.circle,
                                     boxShadow: [
                                       BoxShadow(
                                         color:
                                             (_isRecording
                                                     ? Colors.red
-                                                    : primaryColor)
+                                                    : context.primary)
                                                 .withValues(alpha: 0.3),
                                         blurRadius: 15,
                                         spreadRadius: 3,
@@ -276,7 +271,7 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
                                   ),
                                   child: Icon(
                                     _isRecording ? Icons.stop : Icons.mic,
-                                    color: Colors.white,
+                                    color: context.colors.onPrimary,
                                     size: 50,
                                   ),
                                 ),
@@ -293,7 +288,7 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
                                   fontWeight: FontWeight.w600,
                                   color: _isRecording
                                       ? Colors.red
-                                      : Colors.black87,
+                                      : context.onSurface,
                                 ),
                                 textAlign: TextAlign.center,
                               ),
@@ -371,7 +366,9 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
                                       'Duration: ${_formatDuration(_recordingDuration)}',
                                       style: TextStyle(
                                         fontSize: 16,
-                                        color: Colors.grey.shade600,
+                                        color: context.onSurface.withValues(
+                                          alpha: 0.7,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -400,8 +397,9 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
                                         _isPlaying ? 'Playing...' : 'Play',
                                       ),
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: primaryColor,
-                                        foregroundColor: Colors.white,
+                                        backgroundColor: context.primary,
+                                        foregroundColor:
+                                            context.colors.onPrimary,
                                         padding: const EdgeInsets.symmetric(
                                           vertical: 14,
                                         ),
@@ -455,10 +453,10 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
                       onPressed: _hasRecording ? widget.onNext : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _hasRecording
-                            ? primaryColor
-                            : Colors.grey.shade300,
+                            ? context.primary
+                            : context.outline,
                         foregroundColor: _hasRecording
-                            ? Colors.white
+                            ? context.colors.onPrimary
                             : Colors.grey.shade500,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(

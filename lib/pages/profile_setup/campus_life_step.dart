@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rizz_mobile/models/profile_setup_data.dart';
 import 'package:rizz_mobile/constants/profile_options.dart';
+import 'package:rizz_mobile/theme/app_theme.dart';
 
 class CampusLifeStep extends StatefulWidget {
   final ProfileSetupData profileData;
@@ -18,7 +19,6 @@ class CampusLifeStep extends StatefulWidget {
 
 class _CampusLifeStepState extends State<CampusLifeStep> {
   String? _selectedCampusLife;
-  final primaryColor = const Color(0xFFfa5eff);
 
   @override
   void initState() {
@@ -38,20 +38,22 @@ class _CampusLifeStepState extends State<CampusLifeStep> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.surface,
       body: Padding(
         padding: const EdgeInsets.all(10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Your campus life',
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+              style: AppTheme.headline2.copyWith(color: context.onSurface),
             ),
             const SizedBox(height: 8),
             Text(
               'Give the members',
-              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+              style: AppTheme.body1.copyWith(
+                color: context.onSurface.withValues(alpha: 0.7),
+              ),
             ),
             const SizedBox(height: 10),
 
@@ -73,16 +75,18 @@ class _CampusLifeStepState extends State<CampusLifeStep> {
                       vertical: 18,
                     ),
                     decoration: BoxDecoration(
-                      color: isSelected ? primaryColor : Colors.white,
+                      color: isSelected
+                          ? context.primary
+                          : context.colors.surface,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isSelected ? primaryColor : Colors.grey.shade300,
+                        color: isSelected ? context.primary : context.outline,
                         width: 1,
                       ),
                       boxShadow: [
                         if (isSelected)
                           BoxShadow(
-                            color: primaryColor.withValues(alpha: .3),
+                            color: context.primary.withValues(alpha: .3),
                             blurRadius: 8,
                             spreadRadius: 0,
                           ),
@@ -90,10 +94,12 @@ class _CampusLifeStepState extends State<CampusLifeStep> {
                     ),
                     child: Text(
                       life.name,
-                      style: TextStyle(
+                      style: AppTheme.body1.copyWith(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: isSelected ? Colors.white : Colors.black87,
+                        color: isSelected
+                            ? context.colors.onPrimary
+                            : context.onSurface,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -110,7 +116,9 @@ class _CampusLifeStepState extends State<CampusLifeStep> {
               children: [
                 Text(
                   '6/10',
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                  style: AppTheme.caption.copyWith(
+                    color: context.onSurface.withValues(alpha: 0.7),
+                  ),
                 ),
               ],
             ),
@@ -122,26 +130,25 @@ class _CampusLifeStepState extends State<CampusLifeStep> {
               child: ElevatedButton(
                 onPressed: _isFormValid ? _saveAndNext : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
-                  foregroundColor: Colors.white,
+                  backgroundColor: context.primary,
+                  foregroundColor: context.colors.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  disabledBackgroundColor: Colors.grey.shade300,
+                  disabledBackgroundColor: context.outline,
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
+                    Text(
                       'Next',
-                      style: TextStyle(
-                        fontSize: 16,
+                      style: AppTheme.body1.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Icon(Icons.arrow_forward, size: 20),
+                    const Icon(Icons.arrow_forward, size: 20),
                   ],
                 ),
               ),

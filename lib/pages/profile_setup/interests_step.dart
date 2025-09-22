@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rizz_mobile/models/profile_setup_data.dart';
 import 'package:rizz_mobile/constants/profile_options.dart';
+import 'package:rizz_mobile/theme/app_theme.dart';
 
 class InterestsStep extends StatefulWidget {
   final ProfileSetupData profileData;
@@ -18,7 +19,6 @@ class InterestsStep extends StatefulWidget {
 
 class _InterestsStepState extends State<InterestsStep> {
   Set<String> _selectedInterests = <String>{};
-  final primaryColor = const Color(0xFFfa5eff);
 
   @override
   void initState() {
@@ -53,7 +53,7 @@ class _InterestsStepState extends State<InterestsStep> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.onPrimary,
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -74,7 +74,7 @@ class _InterestsStepState extends State<InterestsStep> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: primaryColor.withValues(alpha: .1),
+                color: context.primary.withValues(alpha: .1),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
@@ -82,7 +82,7 @@ class _InterestsStepState extends State<InterestsStep> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: primaryColor,
+                  color: context.primary,
                 ),
               ),
             ),
@@ -106,18 +106,20 @@ class _InterestsStepState extends State<InterestsStep> {
                     onTap: () => _toggleInterest(interest.name),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: isSelected ? primaryColor : Colors.white,
+                        color: isSelected
+                            ? context.primary
+                            : context.colors.onPrimary,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: isSelected
-                              ? primaryColor
+                              ? context.primary
                               : Colors.grey.shade300,
                           width: isSelected ? 2 : 1,
                         ),
                         boxShadow: [
                           if (isSelected)
                             BoxShadow(
-                              color: primaryColor.withValues(alpha: .3),
+                              color: context.primary.withValues(alpha: .3),
                               blurRadius: 8,
                               spreadRadius: 0,
                             ),
@@ -129,7 +131,9 @@ class _InterestsStepState extends State<InterestsStep> {
                           children: [
                             Icon(
                               _getIconData(interest.iconName),
-                              color: isSelected ? Colors.white : primaryColor,
+                              color: isSelected
+                                  ? context.colors.onPrimary
+                                  : context.primary,
                               size: 20,
                             ),
                             const SizedBox(width: 8),
@@ -140,8 +144,8 @@ class _InterestsStepState extends State<InterestsStep> {
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
                                   color: isSelected
-                                      ? Colors.white
-                                      : Colors.black87,
+                                      ? context.colors.onPrimary
+                                      : context.onSurface,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -175,8 +179,8 @@ class _InterestsStepState extends State<InterestsStep> {
               child: ElevatedButton(
                 onPressed: _isFormValid ? _saveAndNext : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
-                  foregroundColor: Colors.white,
+                  backgroundColor: context.primary,
+                  foregroundColor: context.colors.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),

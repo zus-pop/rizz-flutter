@@ -4,6 +4,7 @@ import 'package:rizz_mobile/pages/tabs/chat.dart';
 import 'package:rizz_mobile/pages/tabs/discover.dart';
 import 'package:rizz_mobile/pages/tabs/liked.dart';
 import 'package:rizz_mobile/pages/tabs/profile.dart';
+import 'package:rizz_mobile/theme/app_theme.dart';
 
 class BottomTabPage extends StatefulWidget {
   const BottomTabPage({super.key});
@@ -26,7 +27,6 @@ class _BottomTabPageState extends State<BottomTabPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       extendBody: true,
-      backgroundColor: Color(0xFF080026), // Secondary color background
       body: Stack(
         children: [
           Center(child: _tabs.elementAt(_selectedIndex)),
@@ -36,38 +36,43 @@ class _BottomTabPageState extends State<BottomTabPage> {
             right: 0,
             child: Center(
               child: Container(
-                margin: EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+                margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF080026), // Secondary color background
+                  color: context.surface,
                   borderRadius: BorderRadius.circular(30.0),
+                  border: Border.all(
+                    color: context.outline.withValues(alpha: 0.2),
+                    width: 1,
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.2),
+                      color: context.onSurface.withValues(alpha: 0.1),
                       spreadRadius: 2,
-                      blurRadius: 12,
-                      offset: Offset(0, 6),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(30.0),
                   child: GNav(
-                    rippleColor: Color(0xFFfa5eff).withValues(alpha: 0.3),
-                    hoverColor: Color(0xFFfa5eff).withValues(alpha: 0.2),
+                    rippleColor: context.primary.withValues(alpha: 0.3),
+                    hoverColor: context.primary.withValues(alpha: 0.2),
                     gap: 8,
-                    activeColor: Color(0xFF080026),
+                    activeColor: context.onPrimary,
                     iconSize: 24,
-                    tabMargin: EdgeInsetsGeometry.symmetric(
+                    tabMargin: const EdgeInsetsGeometry.symmetric(
                       vertical: 5,
                       horizontal: 5,
                     ),
-                    padding: EdgeInsets.symmetric(horizontal: 15, vertical: 15),
-                    duration: Duration(milliseconds: 400),
-                    tabBackgroundColor: Color(
-                      0xFFfa5eff,
-                    ).withValues(alpha: 0.8),
-                    color: Colors.white70,
-                    tabs: [
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 15,
+                      vertical: 15,
+                    ),
+                    duration: const Duration(milliseconds: 400),
+                    tabBackgroundColor: context.primary,
+                    color: context.onSurface.withValues(alpha: 0.6),
+                    tabs: const [
                       GButton(icon: Icons.home, text: 'Discover'),
                       GButton(icon: Icons.favorite, text: 'Liked'),
                       GButton(icon: Icons.chat, text: 'Chat'),
