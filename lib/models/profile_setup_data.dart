@@ -85,8 +85,9 @@ class ProfileSetupData {
         lastName != null &&
         birthday != null &&
         gender != null &&
-        university != null)
+        university != null) {
       completed++;
+    }
     if (interestedIn != null) completed++;
     if (studyStyle != null) completed++;
     if (weekendHabit != null) completed++;

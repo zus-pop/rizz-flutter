@@ -205,12 +205,14 @@ class _ProfileVerificationStepState extends State<ProfileVerificationStep> {
       _showSuccessDialog();
     } catch (e) {
       debugPrint('Error capturing photo: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error capturing photo: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error capturing photo: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -229,7 +231,7 @@ class _ProfileVerificationStepState extends State<ProfileVerificationStep> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
+                  color: Colors.green.withValues(alpha: .1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.check, color: Colors.green, size: 48),
@@ -325,7 +327,9 @@ class _ProfileVerificationStepState extends State<ProfileVerificationStep> {
           // Overlay with circle guide
           Positioned.fill(
             child: Container(
-              decoration: BoxDecoration(color: Colors.black.withOpacity(0.5)),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: .5),
+              ),
               child: CustomPaint(painter: CircleOverlayPainter(_faceDetected)),
             ),
           ),
@@ -351,7 +355,7 @@ class _ProfileVerificationStepState extends State<ProfileVerificationStep> {
                   'We use AI technology to verify your profile images with the selfie image to order to make sure that you have uploaded real images of you.',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withValues(alpha: .9),
                   ),
                   textAlign: TextAlign.center,
                 ),

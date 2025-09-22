@@ -75,7 +75,7 @@ class _AfterGraduationStepState extends State<AfterGraduationStep> {
                       boxShadow: [
                         if (isSelected)
                           BoxShadow(
-                            color: primaryColor.withOpacity(0.3),
+                            color: primaryColor.withValues(alpha: .3),
                             blurRadius: 8,
                             spreadRadius: 0,
                           ),
