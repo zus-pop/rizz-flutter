@@ -1,4 +1,4 @@
-class UserProfile {
+class Profile {
   final String id;
   final String name;
   final int age;
@@ -9,7 +9,7 @@ class UserProfile {
   final double distanceKm; // Distance in kilometers
   final String? audioUrl; // Optional audio URL for voice messages
 
-  UserProfile({
+  Profile({
     required this.id,
     required this.name,
     required this.age,
@@ -22,7 +22,7 @@ class UserProfile {
   });
 
   // Create a sample user profile
-  factory UserProfile.sample({
+  factory Profile.sample({
     required String id,
     required String name,
     required int age,
@@ -33,7 +33,7 @@ class UserProfile {
     required double distanceKm,
     String? audioUrl,
   }) {
-    return UserProfile(
+    return Profile(
       id: id,
       name: name,
       age: age,
@@ -47,8 +47,8 @@ class UserProfile {
   }
 
   // JSON serialization
-  factory UserProfile.fromJson(Map<String, dynamic> json) {
-    return UserProfile(
+  factory Profile.fromJson(Map<String, dynamic> json) {
+    return Profile(
       id: json['id'] as String? ?? '',
       name: json['name'] as String? ?? '',
       age: json['age'] as int? ?? 18,
@@ -84,7 +84,7 @@ class UserProfile {
   }
 
   // Create a copy with modified fields
-  UserProfile copyWith({
+  Profile copyWith({
     String? id,
     String? name,
     int? age,
@@ -95,7 +95,7 @@ class UserProfile {
     double? distanceKm,
     String? audioUrl,
   }) {
-    return UserProfile(
+    return Profile(
       id: id ?? this.id,
       name: name ?? this.name,
       age: age ?? this.age,
@@ -111,7 +111,7 @@ class UserProfile {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is UserProfile && other.id == id;
+    return other is Profile && other.id == id;
   }
 
   @override

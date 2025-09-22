@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 import 'package:provider/provider.dart';
-import 'package:rizz_mobile/widgets/swipe_card.dart';
+import 'package:rizz_mobile/providers/auth_provider.dart';
+import 'package:rizz_mobile/providers/profile_provider.dart';
 import 'package:rizz_mobile/widgets/filter_modal.dart';
-import 'package:rizz_mobile/providers/user_profile_provider.dart';
+import 'package:rizz_mobile/widgets/swipe_card.dart';
 
 class Discover extends StatefulWidget {
   const Discover({super.key});
@@ -18,9 +19,13 @@ class _DiscoverState extends State<Discover> {
   @override
   void initState() {
     super.initState();
+    // final state = context.read<AuthProvider>().authState;
+    // if (state == AuthState.authenticated) {
+    context.read<AuthProvider>().updateToken();
+    // }
     // Initialize profiles when widget is created
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<UserProfileProvider>().initialize();
+      context.read<ProfileProvider>().initialize();
     });
   }
 
@@ -72,8 +77,9 @@ class _DiscoverState extends State<Discover> {
           ),
         ],
       ),
-      body: Consumer<UserProfileProvider>(
+      body: Consumer<ProfileProvider>(
         builder: (context, profileProvider, child) {
+          debugPrint(profileProvider.profiles.length.toString());
           // Handle different loading states
           if (profileProvider.isLoading) {
             return const Center(
@@ -171,7 +177,7 @@ class _DiscoverState extends State<Discover> {
                     debugPrint("end here");
                   },
                   threshold:
-                      30, // Lower threshold for easier swiping near phone edges
+                      80, // Lower threshold for easier swiping near phone edges
                   numberOfCardsDisplayed: 2,
                   backCardOffset: const Offset(0, -20),
                   padding: const EdgeInsets.all(8.0),
@@ -317,7 +323,7 @@ class _DiscoverState extends State<Discover> {
     int previousIndex,
     int? currentIndex,
     CardSwiperDirection direction,
-    UserProfileProvider profileProvider,
+    ProfileProvider profileProvider,
   ) {
     currentIndex = currentIndex ?? 0;
 
@@ -393,7 +399,7 @@ class _DiscoverState extends State<Discover> {
   }
 
   void _showFilterModal() {
-    final profileProvider = context.read<UserProfileProvider>();
+    final profileProvider = context.read<ProfileProvider>();
 
     showModalBottomSheet(
       context: context,
