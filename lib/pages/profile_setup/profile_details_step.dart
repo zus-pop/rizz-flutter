@@ -145,7 +145,6 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                     onChanged: (value) => setState(() {}),
                   ),
                   const SizedBox(height: 12),
-
                   // Last Name
                   Text(
                     'Last name',
@@ -202,6 +201,7 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                       decoration: BoxDecoration(
                         border: Border.all(color: context.outline),
                         borderRadius: BorderRadius.circular(12),
+                        color: context.colors.surfaceContainerHigh,
                       ),
                       child: Row(
                         children: [
@@ -219,7 +219,7 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                               fontSize: 16,
                               color: _selectedBirthday != null
                                   ? context.onSurface
-                                  : Colors.grey.shade600,
+                                  : context.onSurface.withValues(alpha: 0.6),
                             ),
                           ),
                         ],
@@ -246,13 +246,13 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             decoration: BoxDecoration(
                               color: _selectedGender == 'Male'
-                                  ? context.primary.withValues(alpha: .1)
-                                  : Colors.transparent,
+                                  ? context.primary.withValues(alpha: .15)
+                                  : context.colors.surfaceContainerHigh,
                               border: Border.all(
                                 color: _selectedGender == 'Male'
                                     ? context.primary
-                                    : Colors.grey.shade300,
-                                width: _selectedGender == 'Male' ? 2 : 1,
+                                    : context.outline,
+                                width: 2,
                               ),
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -263,7 +263,9 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                                   Icons.male,
                                   color: _selectedGender == 'Male'
                                       ? context.primary
-                                      : Colors.grey.shade600,
+                                      : context.onSurface.withValues(
+                                          alpha: 0.7,
+                                        ),
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
@@ -273,7 +275,9 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                                     fontWeight: FontWeight.w600,
                                     color: _selectedGender == 'Male'
                                         ? context.primary
-                                        : Colors.grey.shade600,
+                                        : context.onSurface.withValues(
+                                            alpha: 0.7,
+                                          ),
                                   ),
                                 ),
                               ],
@@ -290,13 +294,13 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             decoration: BoxDecoration(
                               color: _selectedGender == 'Female'
-                                  ? context.primary.withValues(alpha: .1)
-                                  : Colors.transparent,
+                                  ? context.primary.withValues(alpha: .15)
+                                  : context.colors.surfaceContainerHigh,
                               border: Border.all(
                                 color: _selectedGender == 'Female'
                                     ? context.primary
-                                    : Colors.grey.shade300,
-                                width: _selectedGender == 'Female' ? 2 : 1,
+                                    : context.outline,
+                                width: 2,
                               ),
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -307,7 +311,9 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                                   Icons.female,
                                   color: _selectedGender == 'Female'
                                       ? context.primary
-                                      : Colors.grey.shade600,
+                                      : context.onSurface.withValues(
+                                          alpha: 0.7,
+                                        ),
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
@@ -317,7 +323,9 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                                     fontWeight: FontWeight.w600,
                                     color: _selectedGender == 'Female'
                                         ? context.primary
-                                        : Colors.grey.shade600,
+                                        : context.onSurface.withValues(
+                                            alpha: 0.7,
+                                          ),
                                   ),
                                 ),
                               ],
@@ -345,7 +353,7 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                       hintText: 'FPT University',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
+                        borderSide: BorderSide(color: context.outline),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -355,6 +363,8 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                         horizontal: 16,
                         vertical: 16,
                       ),
+                      fillColor: context.colors.surfaceContainerHigh,
+                      filled: true,
                     ),
                     items: universityOptions.map((university) {
                       return DropdownMenuItem(
@@ -362,6 +372,7 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                         child: Text(
                           university.name,
                           overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: context.onSurface),
                         ),
                       );
                     }).toList(),
@@ -392,7 +403,10 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        disabledBackgroundColor: Colors.grey.shade300,
+                        disabledBackgroundColor: context.outline,
+                        disabledForegroundColor: context.onSurface.withValues(
+                          alpha: 0.5,
+                        ),
                       ),
                       child: const Text(
                         'Confirm',

@@ -53,7 +53,7 @@ class _InterestsStepState extends State<InterestsStep> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: context.colors.onPrimary,
+      backgroundColor: context.colors.surface,
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -66,7 +66,10 @@ class _InterestsStepState extends State<InterestsStep> {
             const SizedBox(height: 8),
             Text(
               'Select at least 3 of your interests and let everyone know what you\'re passionate about.',
-              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+              style: TextStyle(
+                fontSize: 16,
+                color: context.onSurface.withValues(alpha: 0.7),
+              ),
             ),
             const SizedBox(height: 24),
 
@@ -108,13 +111,11 @@ class _InterestsStepState extends State<InterestsStep> {
                       decoration: BoxDecoration(
                         color: isSelected
                             ? context.primary
-                            : context.colors.onPrimary,
+                            : context.colors.surface,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: isSelected
-                              ? context.primary
-                              : Colors.grey.shade300,
-                          width: isSelected ? 2 : 1,
+                          color: isSelected ? context.primary : context.outline,
+                          width: 2,
                         ),
                         boxShadow: [
                           if (isSelected)
@@ -167,7 +168,10 @@ class _InterestsStepState extends State<InterestsStep> {
               children: [
                 Text(
                   '5/10',
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: context.onSurface.withValues(alpha: 0.7),
+                  ),
                 ),
               ],
             ),
@@ -185,7 +189,7 @@ class _InterestsStepState extends State<InterestsStep> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  disabledBackgroundColor: Colors.grey.shade300,
+                  disabledBackgroundColor: context.outline,
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,

@@ -144,7 +144,7 @@ class _PhotoUploadStepState extends State<PhotoUploadStep> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: context.colors.onPrimary,
+      backgroundColor: context.colors.surface,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -275,7 +275,7 @@ class _PhotoUploadStepState extends State<PhotoUploadStep> {
                         onTap: _showPhotoOptions,
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.grey.shade50,
+                            color: context.colors.surfaceContainerHigh,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: context.outline,
@@ -314,9 +314,9 @@ class _PhotoUploadStepState extends State<PhotoUploadStep> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
+                  color: context.colors.surfaceContainerHigh,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.blue.shade100),
+                  border: Border.all(color: context.outline),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -326,7 +326,7 @@ class _PhotoUploadStepState extends State<PhotoUploadStep> {
                         Icon(
                           Icons.lightbulb_outline,
                           size: 18,
-                          color: Colors.blue.shade600,
+                          color: context.primary,
                         ),
                         const SizedBox(width: 8),
                         Text(
@@ -334,7 +334,7 @@ class _PhotoUploadStepState extends State<PhotoUploadStep> {
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: Colors.blue.shade700,
+                            color: context.primary,
                           ),
                         ),
                       ],
@@ -344,7 +344,7 @@ class _PhotoUploadStepState extends State<PhotoUploadStep> {
                       '• Use clear, well-lit photos\n• Show your face clearly in the first photo\n• Include variety in your photos',
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.blue.shade600,
+                        color: context.primary,
                         height: 1.4,
                       ),
                     ),
@@ -367,6 +367,7 @@ class _PhotoUploadStepState extends State<PhotoUploadStep> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     elevation: 2,
+                    disabledBackgroundColor: context.outline,
                   ),
                   child: const Text(
                     'Continue',

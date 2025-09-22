@@ -20,6 +20,8 @@ class DealBreakersStep extends StatefulWidget {
 class _DealBreakersStepState extends State<DealBreakersStep> {
   Set<String> _selectedDealBreakers = <String>{};
 
+  bool get _isFormValid => _selectedDealBreakers.isNotEmpty;
+
   @override
   void initState() {
     super.initState();
@@ -58,7 +60,10 @@ class _DealBreakersStepState extends State<DealBreakersStep> {
             const SizedBox(height: 8),
             Text(
               'Optional. Tap to select what you absolutely',
-              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+              style: TextStyle(
+                fontSize: 16,
+                color: context.onSurface.withValues(alpha: 0.7),
+              ),
             ),
             const SizedBox(height: 40),
 
@@ -82,12 +87,12 @@ class _DealBreakersStepState extends State<DealBreakersStep> {
                         decoration: BoxDecoration(
                           color: isSelected
                               ? context.primary
-                              : context.colors.onPrimary,
+                              : context.colors.surface,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: isSelected
                                 ? context.primary
-                                : Colors.grey.shade300,
+                                : context.outline,
                             width: 1,
                           ),
                           boxShadow: [
@@ -123,7 +128,10 @@ class _DealBreakersStepState extends State<DealBreakersStep> {
               children: [
                 Text(
                   '9/10',
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: context.onSurface.withValues(alpha: 0.7),
+                  ),
                 ),
               ],
             ),
@@ -133,7 +141,7 @@ class _DealBreakersStepState extends State<DealBreakersStep> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _saveAndNext,
+                onPressed: _isFormValid ? _saveAndNext : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: context.primary,
                   foregroundColor: context.colors.onPrimary,
@@ -141,6 +149,7 @@ class _DealBreakersStepState extends State<DealBreakersStep> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
+                  disabledBackgroundColor: context.outline,
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,

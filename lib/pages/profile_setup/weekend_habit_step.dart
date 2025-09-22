@@ -38,7 +38,7 @@ class _WeekendHabitStepState extends State<WeekendHabitStep> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: context.colors.onPrimary,
+      backgroundColor: context.colors.surface,
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -67,7 +67,7 @@ class _WeekendHabitStepState extends State<WeekendHabitStep> {
                     decoration: BoxDecoration(
                       color: isSelected
                           ? context.primary
-                          : context.colors.onPrimary,
+                          : context.colors.surface,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: isSelected ? context.primary : context.outline,

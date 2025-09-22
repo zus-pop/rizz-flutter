@@ -150,7 +150,7 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: context.colors.onPrimary,
+      backgroundColor: context.colors.surface,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
@@ -419,8 +419,9 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
                                       icon: const Icon(Icons.refresh),
                                       label: const Text('Re-record'),
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.grey.shade100,
-                                        foregroundColor: Colors.grey.shade700,
+                                        backgroundColor:
+                                            context.colors.surfaceContainerHigh,
+                                        foregroundColor: context.onSurface,
                                         padding: const EdgeInsets.symmetric(
                                           vertical: 14,
                                         ),
@@ -457,7 +458,7 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
                             : context.outline,
                         foregroundColor: _hasRecording
                             ? context.colors.onPrimary
-                            : Colors.grey.shade500,
+                            : context.onSurface.withValues(alpha: 0.5),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -483,7 +484,7 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
                     child: Text(
                       'Skip for now',
                       style: TextStyle(
-                        color: Colors.grey.shade500,
+                        color: context.onSurface.withValues(alpha: 0.5),
                         fontSize: 14,
                       ),
                     ),

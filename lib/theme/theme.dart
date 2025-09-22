@@ -9,9 +9,9 @@ class AppColors {
   // Light mode colors - Purple palette
   static const Color lightBackground = Color.fromARGB(
     255,
-    230,
-    225,
     245,
+    243,
+    251,
   ); // Very light purple tint
   static const Color lightSurface = Color(0xFFF4F1FF); // Light purple tint
   static const Color lightSurfaceVariant = Color(0xFFEEE9FF); // Purple tint
@@ -61,8 +61,8 @@ ThemeData lightMode = ThemeData(
     onSecondaryContainer: Color(0xFF2A1B5A),
 
     // Background colors
-    surface: AppColors.lightBackground,
-    onSurface: AppColors.lightOnBackground,
+    surface: AppColors.lightSurface,
+    onSurface: AppColors.lightOnSurface,
     surfaceContainerHighest: AppColors.lightSurface,
     surfaceContainerHigh: AppColors.lightSurfaceVariant,
     surfaceContainer: Color(0xFFF7F4FF), // Light purple tint
@@ -193,8 +193,8 @@ ThemeData darkMode = ThemeData(
     onSecondaryContainer: Color(0xFFE8DDFF),
 
     // Background colors
-    surface: AppColors.darkBackground,
-    onSurface: AppColors.darkOnBackground,
+    surface: AppColors.darkSurface,
+    onSurface: AppColors.darkOnSurface,
     surfaceContainerHighest: AppColors.darkSurface,
     surfaceContainerHigh: AppColors.darkSurfaceVariant,
     surfaceContainer: Color(0xFF1B1520), // Dark purple tint

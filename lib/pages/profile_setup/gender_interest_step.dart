@@ -38,7 +38,7 @@ class _GenderInterestStepState extends State<GenderInterestStep> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: context.colors.onPrimary,
+      backgroundColor: context.colors.surface,
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -57,13 +57,13 @@ class _GenderInterestStepState extends State<GenderInterestStep> {
                 color: context.onSurface.withValues(alpha: 0.7),
               ),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 120),
 
             // Gender Options
             ...genderOptions.map((gender) {
               final isSelected = _selectedGender == gender.name;
               return Container(
-                margin: const EdgeInsets.only(bottom: 16),
+                margin: const EdgeInsets.only(bottom: 20),
                 child: GestureDetector(
                   onTap: () {
                     setState(() {
@@ -76,7 +76,7 @@ class _GenderInterestStepState extends State<GenderInterestStep> {
                     decoration: BoxDecoration(
                       color: isSelected
                           ? context.primary
-                          : context.colors.onPrimary,
+                          : context.colors.surface,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: isSelected ? context.primary : context.outline,

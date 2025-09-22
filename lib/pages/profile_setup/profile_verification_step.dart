@@ -244,7 +244,10 @@ class _ProfileVerificationStepState extends State<ProfileVerificationStep> {
               const SizedBox(height: 8),
               Text(
                 'Make sure your face is clearly visible',
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: context.onSurface.withValues(alpha: 0.7),
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
@@ -297,7 +300,7 @@ class _ProfileVerificationStepState extends State<ProfileVerificationStep> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: context.onSurface,
+      // backgroundColor: context.onSurface,
       body: Stack(
         children: [
           // Camera Preview
@@ -340,7 +343,7 @@ class _ProfileVerificationStepState extends State<ProfileVerificationStep> {
 
           // Top Instructions
           Positioned(
-            top: 60,
+            top: 18,
             left: 16,
             right: 16,
             child: Column(
@@ -394,7 +397,9 @@ class _ProfileVerificationStepState extends State<ProfileVerificationStep> {
                       width: 80,
                       height: 80,
                       decoration: BoxDecoration(
-                        color: _faceDetected ? context.primary : Colors.grey,
+                        color: _faceDetected
+                            ? context.primary
+                            : context.onSurface.withValues(alpha: 0.5),
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: context.colors.onPrimary,
@@ -416,7 +421,7 @@ class _ProfileVerificationStepState extends State<ProfileVerificationStep> {
                       ElevatedButton(
                         onPressed: _retakePhoto,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: context.colors.onPrimary,
+                          backgroundColor: context.colors.surface,
                           foregroundColor: context.onSurface,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 24,
