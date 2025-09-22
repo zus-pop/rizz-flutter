@@ -14,9 +14,9 @@ The setup includes:
 
 ## Files Created
 
-1. `lib/services/user_profile_service.dart` - API service layer
-2. `lib/providers/user_profile_provider.dart` - State management
-3. Updated `lib/models/user_profile.dart` - Added JSON serialization
+1. `lib/services/profile_service.dart` - API service layer
+2. `lib/providers/profile_provider.dart` - State management
+3. Updated `lib/models/profile.dart` - Added JSON serialization
 4. Updated `lib/main.dart` - Provider setup
 5. Updated `lib/pages/tabs/discover.dart` - Consumer integration
 
@@ -24,7 +24,7 @@ The setup includes:
 
 ### 1. Switch to Real API
 
-In `lib/providers/user_profile_provider.dart`, change:
+In `lib/providers/profile_provider.dart`, change:
 
 ```dart
 bool _useSampleData = true; // Set to false when you have a real API
@@ -32,7 +32,7 @@ bool _useSampleData = true; // Set to false when you have a real API
 
 ### 2. Update API URL
 
-In `lib/services/user_profile_service.dart`, update:
+In `lib/services/profile_service.dart`, update:
 
 ```dart
 static const String baseUrl = 'https://your-api.com'; // Replace with your actual API URL

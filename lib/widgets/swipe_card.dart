@@ -1,10 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:rizz_mobile/models/user_profile.dart';
+import 'package:rizz_mobile/models/profile.dart';
 
 class SwipeCard extends StatefulWidget {
-  final UserProfile profile;
+  final Profile profile;
 
   const SwipeCard({super.key, required this.profile});
 
