@@ -1,7 +1,8 @@
+import 'dart:async';
 import 'dart:io';
-import 'package:flutter/material.dart';
+
 import 'package:camera/camera.dart';
-import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
+import 'package:flutter/material.dart';
 import 'package:rizz_mobile/models/profile_setup_data.dart';
 import 'package:rizz_mobile/theme/app_theme.dart';
 
@@ -22,37 +23,28 @@ class ProfileVerificationStep extends StatefulWidget {
 
 class _ProfileVerificationStepState extends State<ProfileVerificationStep> {
   CameraController? _cameraController;
-  late FaceDetector _faceDetector;
-  bool _isDetecting = false;
-  List<Face> _faces = [];
-  bool _faceDetected = false;
   bool _isInitialized = false;
-  String _instructionText = 'Position your face in the circle';
   bool _photoTaken = false;
   File? _capturedImage;
+
+  // Verification states
+  bool _isVerifying = false;
+  bool _verificationSuccess = false;
+  String? _verificationError;
 
   @override
   void initState() {
     super.initState();
     _initializeCamera();
-    _initializeFaceDetector();
-  }
-
-  void _initializeFaceDetector() {
-    final options = FaceDetectorOptions(
-      enableContours: true,
-      enableLandmarks: true,
-      enableClassification: true,
-      enableTracking: true,
-      minFaceSize: 0.1,
-      performanceMode: FaceDetectorMode.fast,
-    );
-    _faceDetector = FaceDetector(options: options);
   }
 
   Future<void> _initializeCamera() async {
     try {
       final cameras = await availableCameras();
+      if (cameras.isEmpty) {
+        throw Exception('No cameras available');
+      }
+
       final frontCamera = cameras.firstWhere(
         (camera) => camera.lensDirection == CameraLensDirection.front,
         orElse: () => cameras.first,
@@ -60,8 +52,9 @@ class _ProfileVerificationStepState extends State<ProfileVerificationStep> {
 
       _cameraController = CameraController(
         frontCamera,
-        ResolutionPreset.medium,
+        ResolutionPreset.high,
         enableAudio: false,
+        imageFormatGroup: ImageFormatGroup.jpeg,
       );
 
       await _cameraController!.initialize();
@@ -70,126 +63,61 @@ class _ProfileVerificationStepState extends State<ProfileVerificationStep> {
         setState(() {
           _isInitialized = true;
         });
-        _startFaceDetection();
       }
     } catch (e) {
       debugPrint('Error initializing camera: $e');
+      if (mounted) {
+        _showError(
+          'Camera initialization failed. Please check camera permissions.',
+        );
+      }
     }
   }
 
-  void _startFaceDetection() {
-    if (_cameraController != null && _isInitialized) {
-      _cameraController!.startImageStream(_processCameraImage);
-    }
-  }
-
-  Future<void> _processCameraImage(CameraImage image) async {
-    if (_isDetecting || _photoTaken) return;
-
-    _isDetecting = true;
+  // Simulate server verification
+  Future<void> _verifyPhoto(File photo) async {
+    setState(() {
+      _isVerifying = true;
+    });
 
     try {
-      final inputImage = _inputImageFromCameraImage(image);
-      if (inputImage != null) {
-        final faces = await _faceDetector.processImage(inputImage);
-
-        if (mounted) {
-          setState(() {
-            _faces = faces;
-            _updateInstructions();
-          });
-        }
-      }
-    } catch (e) {
-      debugPrint('Error detecting faces: $e');
-    } finally {
-      _isDetecting = false;
-    }
-  }
-
-  void _updateInstructions() {
-    if (_faces.isEmpty) {
-      _faceDetected = false;
-      _instructionText = 'Position your face in the circle';
-    } else if (_faces.length > 1) {
-      _faceDetected = false;
-      _instructionText = 'Please ensure only one face is visible';
-    } else {
-      final face = _faces.first;
-
-      // Check if face is centered and properly sized
-      final faceArea = face.boundingBox.width * face.boundingBox.height;
-      final screenSize = MediaQuery.of(context).size;
-      final screenArea = screenSize.width * screenSize.height;
-      final faceRatio = faceArea / screenArea;
-
-      if (faceRatio < 0.1) {
-        _faceDetected = false;
-        _instructionText = 'Move closer to the camera';
-      } else if (faceRatio > 0.4) {
-        _faceDetected = false;
-        _instructionText = 'Move back from the camera';
+      if (_cameraController!.value.isPreviewPaused) {
+        await _cameraController!.resumePreview();
       } else {
-        // Check if face is centered
-        final faceCenterX = face.boundingBox.center.dx;
-        final faceCenterY = face.boundingBox.center.dy;
-        final screenCenterX = screenSize.width / 2;
-        final screenCenterY = screenSize.height / 2;
+        await _cameraController!.pausePreview();
+      }
+      // Simulate API call delay
+      await Future.delayed(const Duration(seconds: 2));
 
-        final offsetX = (faceCenterX - screenCenterX).abs();
-        final offsetY = (faceCenterY - screenCenterY).abs();
+      // Simulate random success/failure for demo
+      // In real implementation, you would send the photo to your server
+      final isSuccess = DateTime.now().millisecond % 2 == 0;
 
-        if (offsetX > 50 || offsetY > 50) {
-          _faceDetected = false;
-          _instructionText = 'Center your face in the circle';
-        } else {
-          _faceDetected = true;
-          _instructionText = 'Perfect! Tap to capture';
+      setState(() {
+        _isVerifying = false;
+        _verificationSuccess = isSuccess;
+        if (!isSuccess) {
+          _verificationError =
+              'Verification failed. Please ensure your face is clearly visible and well-lit.';
         }
-      }
-    }
-  }
+      });
 
-  InputImage? _inputImageFromCameraImage(CameraImage image) {
-    try {
-      final camera = _cameraController!.description;
-      final sensorOrientation = camera.sensorOrientation;
-
-      InputImageRotation? rotation;
-      if (Platform.isIOS) {
-        rotation = InputImageRotationValue.fromRawValue(sensorOrientation);
-      } else if (Platform.isAndroid) {
-        var rotationCompensation = sensorOrientation;
-        rotationCompensation = (sensorOrientation + 90) % 360;
-        rotation = InputImageRotationValue.fromRawValue(rotationCompensation);
-      }
-
-      if (rotation == null) return null;
-
-      final format = InputImageFormatValue.fromRawValue(image.format.raw);
-      if (format == null) return null;
-
-      return InputImage.fromBytes(
-        bytes: image.planes.first.bytes,
-        metadata: InputImageMetadata(
-          size: Size(image.width.toDouble(), image.height.toDouble()),
-          rotation: rotation,
-          format: format,
-          bytesPerRow: image.planes.first.bytesPerRow,
-        ),
-      );
+      _showVerificationResult();
     } catch (e) {
-      debugPrint('Error creating InputImage: $e');
-      return null;
+      setState(() {
+        _isVerifying = false;
+        _verificationSuccess = false;
+        _verificationError =
+            'Network error. Please check your connection and try again.';
+      });
+      _showVerificationResult();
     }
   }
 
   Future<void> _capturePhoto() async {
-    if (!_faceDetected || _cameraController == null || _photoTaken) return;
+    if (_photoTaken || _cameraController == null) return;
 
     try {
-      await _cameraController!.stopImageStream();
-
       final XFile photo = await _cameraController!.takePicture();
       final File imageFile = File(photo.path);
 
@@ -200,22 +128,30 @@ class _ProfileVerificationStepState extends State<ProfileVerificationStep> {
 
       widget.profileData.verificationPhoto = imageFile;
 
-      // Show success message
-      _showSuccessDialog();
+      // Start verification process
+      await _verifyPhoto(imageFile);
     } catch (e) {
       debugPrint('Error capturing photo: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error capturing photo: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      _showError('Error capturing photo. Please try again.');
     }
   }
 
-  void _showSuccessDialog() {
+  Future<void> _retakePhoto() async {
+    if (_cameraController!.value.isPreviewPaused) {
+      await _cameraController!.resumePreview();
+    } else {
+      await _cameraController!.pausePreview();
+    }
+    setState(() {
+      _photoTaken = false;
+      _capturedImage = null;
+      _isVerifying = false;
+      _verificationSuccess = false;
+      _verificationError = null;
+    });
+  }
+
+  void _showVerificationResult() {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -230,20 +166,33 @@ class _ProfileVerificationStepState extends State<ProfileVerificationStep> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: .1),
+                  color: _verificationSuccess
+                      ? Colors.green.withValues(alpha: 0.1)
+                      : Colors.red.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.check, color: Colors.green, size: 48),
+                child: Icon(
+                  _verificationSuccess ? Icons.check : Icons.close,
+                  color: _verificationSuccess ? Colors.green : Colors.red,
+                  size: 48,
+                ),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Your profile has been verified',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              Text(
+                _verificationSuccess
+                    ? 'Verification Successful!'
+                    : 'Verification Failed',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               Text(
-                'Make sure your face is clearly visible',
+                _verificationSuccess
+                    ? 'Your identity has been verified successfully.'
+                    : _verificationError ?? 'Please try again.',
                 style: TextStyle(
                   fontSize: 14,
                   color: context.onSurface.withValues(alpha: 0.7),
@@ -251,27 +200,57 @@ class _ProfileVerificationStepState extends State<ProfileVerificationStep> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    widget.onNext();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: context.primary,
-                    foregroundColor: context.colors.onPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+              if (_verificationSuccess) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      widget.onNext();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: context.primary,
+                      foregroundColor: context.colors.onPrimary,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text(
+                      'Continue',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                  child: const Text(
-                    'Continue',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+              ] else ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _retakePhoto();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: context.primary,
+                      foregroundColor: context.colors.onPrimary,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text(
+                      'Try Again',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
-              ),
+              ],
             ],
           ),
         );
@@ -279,258 +258,408 @@ class _ProfileVerificationStepState extends State<ProfileVerificationStep> {
     );
   }
 
-  void _retakePhoto() {
-    setState(() {
-      _photoTaken = false;
-      _capturedImage = null;
-      _faceDetected = false;
-      _instructionText = 'Position your face in the circle';
-    });
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
 
-    _startFaceDetection();
+  String get _instructionText {
+    if (_photoTaken) {
+      if (_isVerifying) return 'Verifying your identity...';
+      if (_verificationSuccess) return 'Verification successful!';
+      if (_verificationError != null) return 'Verification failed';
+      return 'Photo captured successfully!';
+    }
+
+    return 'Position your face in the oval and tap to capture';
   }
 
   @override
   void dispose() {
     _cameraController?.dispose();
-    _faceDetector.close();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // backgroundColor: context.onSurface,
-      body: Stack(
+      backgroundColor: Colors.black,
+      body: Column(
         children: [
-          // Camera Preview
-          if (_isInitialized && !_photoTaken)
-            Positioned.fill(child: CameraPreview(_cameraController!)),
-
-          // Captured Photo Preview
-          if (_photoTaken && _capturedImage != null)
-            Positioned.fill(
-              child: Image.file(_capturedImage!, fit: BoxFit.cover),
+          // Top Section - Header and Instructions
+          Container(
+            padding: EdgeInsets.only(
+              top: MediaQuery.of(context).padding.top + 16,
+              left: 16,
+              right: 16,
+              bottom: 16,
             ),
-
-          // Face Detection Overlay
-          if (_isInitialized && !_photoTaken)
-            Positioned.fill(
-              child: CustomPaint(
-                painter: FaceDetectionPainter(
-                  _faces,
-                  _cameraController!.value.previewSize!,
-                  MediaQuery.of(context).size,
-                  _faceDetected,
+            decoration: BoxDecoration(
+              color: context.colors.surface,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: .1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
                 ),
-              ),
+              ],
             ),
-
-          // Overlay with circle guide
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                color: context.onSurface.withValues(alpha: .5),
-              ),
-              child: CustomPaint(
-                painter: CircleOverlayPainter(
-                  _faceDetected,
-                  context.colors.onPrimary,
-                ),
-              ),
-            ),
-          ),
-
-          // Top Instructions
-          Positioned(
-            top: 18,
-            left: 16,
-            right: 16,
             child: Column(
               children: [
-                Text(
-                  'Profile verification',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: context.colors.onPrimary,
-                  ),
+                const Text(
+                  'Profile Verification',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'We use AI technology to verify your profile images with the selfie image to order to make sure that you have uploaded real images of you.',
+                  'Take a clear selfie for profile verification',
                   style: TextStyle(
                     fontSize: 14,
-                    color: context.colors.onPrimary.withValues(alpha: .9),
+                    color: context.onSurface.withValues(alpha: .7),
                   ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
-                Text(
-                  _instructionText,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: _faceDetected
-                        ? Colors.green
-                        : context.colors.onPrimary,
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
                   ),
-                  textAlign: TextAlign.center,
+                  decoration: BoxDecoration(
+                    color: _isVerifying
+                        ? Colors.blue.withValues(alpha: .1)
+                        : _verificationSuccess
+                        ? Colors.green.withValues(alpha: .1)
+                        : _verificationError != null
+                        ? Colors.red.withValues(alpha: .1)
+                        : context.colors.surfaceContainer,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: _isVerifying
+                          ? Colors.blue
+                          : _verificationSuccess
+                          ? Colors.green
+                          : _verificationError != null
+                          ? Colors.red
+                          : context.outline.withValues(alpha: .3),
+                      width: 1,
+                    ),
+                  ),
+                  child: AnimatedSwitcher(
+                    duration: Duration(milliseconds: 300),
+                    child: Text(
+                      _instructionText,
+                      key: ValueKey<String>(_instructionText),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: _isVerifying
+                            ? Colors.blue
+                            : _verificationSuccess
+                            ? Colors.green
+                            : _verificationError != null
+                            ? Colors.red
+                            : context.onSurface,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
 
-          // Bottom Controls
-          Positioned(
-            bottom: 60,
-            left: 0,
-            right: 0,
-            child: Column(
+          // Camera Section - Expanded to fill remaining space
+          Expanded(
+            child: Stack(
               children: [
-                if (!_photoTaken) ...[
-                  // Capture Button
+                // Camera Preview
+                if (_isInitialized && !_photoTaken)
+                  Positioned.fill(
+                    child: ClipRect(
+                      child: OverflowBox(
+                        alignment: Alignment.center,
+                        child: FittedBox(
+                          fit: BoxFit.fitWidth,
+                          child: SizedBox(
+                            width: MediaQuery.of(context).size.width,
+                            height:
+                                MediaQuery.of(context).size.width *
+                                _cameraController!.value.aspectRatio,
+                            child: CameraPreview(_cameraController!),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // Captured Photo Preview
+                if (_photoTaken && _capturedImage != null)
+                  Positioned.fill(
+                    child: ClipRect(
+                      child: OverflowBox(
+                        alignment: Alignment.center,
+                        child: FittedBox(
+                          fit: BoxFit.fitWidth,
+                          child: SizedBox(
+                            width: MediaQuery.of(context).size.width,
+                            height:
+                                MediaQuery.of(context).size.width *
+                                _cameraController!.value.aspectRatio,
+                            child: Image.file(
+                              _capturedImage!,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // Verification Loading Overlay
+                if (_isVerifying)
+                  Positioned.fill(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      color: Colors.black.withValues(alpha: 0.8),
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: 120,
+                              height: 120,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.1),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.blue,
+                                  width: 3,
+                                ),
+                              ),
+                              child: const Center(
+                                child: CircularProgressIndicator(
+                                  color: Colors.blue,
+                                  strokeWidth: 4,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            const Text(
+                              'Verifying your identity...',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Please wait while we verify your photo',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.white.withValues(alpha: 0.8),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // Oval Overlay (only show when not verifying)
+                if (!_isVerifying)
+                  Positioned.fill(
+                    child: CustomPaint(
+                      painter: SimpleOvalOverlayPainter(isCapturing: false),
+                    ),
+                  ),
+
+                // Loading indicator for camera initialization
+                if (!_isInitialized)
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(color: context.primary),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Initializing camera...',
+                          style: TextStyle(color: Colors.white, fontSize: 16),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+          // Bottom Section - Controls
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+            decoration: BoxDecoration(
+              color: context.colors.surface,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: .1),
+                  blurRadius: 4,
+                  offset: const Offset(0, -2),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (!_photoTaken && !_isVerifying) ...[
+                  // Manual Capture Button
                   GestureDetector(
                     onTap: _capturePhoto,
                     child: Container(
-                      width: 80,
+                      width: double.infinity,
                       height: 80,
                       decoration: BoxDecoration(
-                        color: _faceDetected
-                            ? context.primary
-                            : context.onSurface.withValues(alpha: 0.5),
+                        color: context.primary,
                         shape: BoxShape.circle,
-                        border: Border.all(
-                          color: context.colors.onPrimary,
-                          width: 4,
-                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: context.primary.withValues(alpha: .3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
                       child: Icon(
                         Icons.camera,
                         color: context.colors.onPrimary,
-                        size: 32,
+                        size: 50,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Tap to capture',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: context.onSurface.withValues(alpha: .7),
+                    ),
+                  ),
+                ] else if (_photoTaken &&
+                    !_verificationSuccess &&
+                    !_isVerifying) ...[
+                  // Retake Button (only show if verification failed or not started)
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _retakePhoto,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: context.colors.surfaceContainer,
+                        foregroundColor: context.onSurface,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Retake Photo',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
                 ] else ...[
-                  // Retake and Continue Buttons
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      ElevatedButton(
-                        onPressed: _retakePhoto,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: context.colors.surface,
-                          foregroundColor: context.onSurface,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
+                  // Placeholder to maintain height consistency
+                  Container(
+                    width: double.infinity,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: context.primary.withValues(alpha: .5),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: context.primary.withValues(alpha: .3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
                         ),
-                        child: const Text('Retake'),
-                      ),
-                      ElevatedButton(
-                        onPressed: () => _showSuccessDialog(),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: context.primary,
-                          foregroundColor: context.colors.onPrimary,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: const Text('Continue'),
-                      ),
-                    ],
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.camera,
+                      color: context.colors.onPrimary,
+                      size: 50,
+                    ),
                   ),
                 ],
               ],
             ),
           ),
-
-          // Loading indicator
-          if (!_isInitialized)
-            Center(child: CircularProgressIndicator(color: context.primary)),
         ],
       ),
     );
   }
 }
 
-class CircleOverlayPainter extends CustomPainter {
-  final bool faceDetected;
-  final Color borderColor;
+class SimpleOvalOverlayPainter extends CustomPainter {
+  final bool isCapturing;
 
-  CircleOverlayPainter(this.faceDetected, this.borderColor);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.transparent
-      ..blendMode = BlendMode.clear;
-
-    final center = Offset(size.width / 2, size.height / 2 - 50);
-    const radius = 120.0;
-
-    // Draw the transparent circle
-    canvas.drawCircle(center, radius, paint);
-
-    // Draw the circle border
-    final borderPaint = Paint()
-      ..color = faceDetected ? Colors.green : borderColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3;
-
-    canvas.drawCircle(center, radius, borderPaint);
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => true;
-}
-
-class FaceDetectionPainter extends CustomPainter {
-  final List<Face> faces;
-  final Size previewSize;
-  final Size screenSize;
-  final bool faceDetected;
-
-  FaceDetectionPainter(
-    this.faces,
-    this.previewSize,
-    this.screenSize,
-    this.faceDetected,
-  );
+  SimpleOvalOverlayPainter({required this.isCapturing});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = faceDetected ? Colors.green : Colors.red
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
+    final center = Offset(size.width / 2, size.height / 2);
+    const radiusX = 160.0;
+    const radiusY = 200.0;
 
-    for (final face in faces) {
-      final rect = _scaleRect(face.boundingBox, previewSize, screenSize);
-      canvas.drawRect(rect, paint);
-    }
-  }
-
-  Rect _scaleRect(Rect rect, Size previewSize, Size screenSize) {
-    final scaleX = screenSize.width / previewSize.height;
-    final scaleY = screenSize.height / previewSize.width;
-
-    return Rect.fromLTRB(
-      rect.left * scaleX,
-      rect.top * scaleY,
-      rect.right * scaleX,
-      rect.bottom * scaleY,
+    final ovalRect = Rect.fromCenter(
+      center: center,
+      width: radiusX * 2,
+      height: radiusY * 2,
     );
+
+    // Create outer path
+    final outerPath = Path()
+      ..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
+
+    // Create oval path
+    final ovalPath = Path()..addOval(ovalRect);
+
+    // Subtract oval from outer to create cutout
+    final overlayPath = Path.combine(
+      PathOperation.difference,
+      outerPath,
+      ovalPath,
+    );
+
+    // Draw dark overlay
+    final overlayPaint = Paint()..color = Colors.black.withValues(alpha: .7);
+    canvas.drawPath(overlayPath, overlayPaint);
+
+    // Draw oval border
+    final borderPaint = Paint()
+      ..color = isCapturing ? Colors.green : Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4;
+
+    canvas.drawOval(ovalRect, borderPaint);
+
+    // Draw pulsing effect when capturing
+    if (isCapturing) {
+      final pulsePaint = Paint()
+        ..color = Colors.green.withValues(alpha: .3)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 8;
+
+      canvas.drawOval(ovalRect, pulsePaint);
+    }
   }
 
   @override
