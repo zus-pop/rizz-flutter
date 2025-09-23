@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:rizz_mobile/constants/profile_options.dart';
+import 'package:rizz_mobile/providers/app_setting_provider.dart';
 import 'package:rizz_mobile/theme/app_theme.dart';
+import 'package:rizz_mobile/theme/theme.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -68,6 +71,7 @@ class _SettingsPageState extends State<SettingsPage>
 
   @override
   Widget build(BuildContext context) {
+    _darkMode = context.watch<AppSettingProvider>().themeData == darkMode;
     return Scaffold(
       backgroundColor: context.colors.surface,
       appBar: AppBar(
@@ -738,7 +742,7 @@ class _SettingsPageState extends State<SettingsPage>
               'Dark Mode',
               'Use dark theme for the app',
               _darkMode,
-              (value) => setState(() => _darkMode = value),
+              (value) => context.read<AppSettingProvider>().toggleTheme(),
             ),
             const Divider(),
             ListTile(

@@ -46,7 +46,7 @@ class _BottomTabPageState extends State<BottomTabPage> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: context.onSurface.withValues(alpha: 0.1),
+                      color: context.onSurface.withValues(alpha: 0.2),
                       spreadRadius: 2,
                       blurRadius: 8,
                       offset: const Offset(0, 2),

@@ -5,9 +5,9 @@ import 'package:provider/provider.dart';
 import 'package:rizz_mobile/firebase_options.dart';
 import 'package:rizz_mobile/pages/bottom_tab_page.dart';
 import 'package:rizz_mobile/pages/profile_setup_page.dart';
+import 'package:rizz_mobile/providers/app_setting_provider.dart';
 import 'package:rizz_mobile/providers/auth_provider.dart';
 import 'package:rizz_mobile/providers/profile_provider.dart';
-import 'package:rizz_mobile/theme/theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,7 +19,9 @@ Future<void> main() async {
     debugPrint('[Message]: ${remoteMessage.notification?.title}');
   });
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-  runApp(MyApp());
+  runApp(
+    ChangeNotifierProvider(create: (_) => AppSettingProvider(), child: MyApp()),
+  );
 }
 
 @pragma('vm:entry-point')
@@ -40,9 +42,9 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
       ],
       child: MaterialApp(
+        showPerformanceOverlay: false,
         title: "Rizz",
-        theme: lightMode,
-        darkTheme: darkMode,
+        theme: Provider.of<AppSettingProvider>(context).themeData,
         home: ProfileSetupPage(),
         routes: {'/home': (context) => BottomTabPage()},
       ),

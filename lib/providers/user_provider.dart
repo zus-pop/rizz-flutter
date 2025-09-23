@@ -145,7 +145,6 @@ class UserProvider extends ChangeNotifier {
         ageRange: const RangeValues(22, 30),
         distance: 50.0,
         pushNotifications: true,
-        darkMode: false,
       );
       notifyListeners();
     } catch (e) {
@@ -469,8 +468,6 @@ class UserProvider extends ChangeNotifier {
         return _userSettings!.selectedLookingFor as T?;
       case 'selectedInterests':
         return _userSettings!.selectedInterests as T?;
-      case 'darkMode':
-        return _userSettings!.darkMode as T?;
       case 'pushNotifications':
         return _userSettings!.pushNotifications as T?;
       default:

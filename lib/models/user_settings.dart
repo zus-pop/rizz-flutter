@@ -11,7 +11,6 @@ class UserSettings {
   final RangeValues ageRange;
   final double distance;
   final bool pushNotifications;
-  final bool darkMode;
 
   const UserSettings({
     this.selectedUniversity,
@@ -24,7 +23,6 @@ class UserSettings {
     this.ageRange = const RangeValues(18, 30),
     this.distance = 50,
     this.pushNotifications = true,
-    this.darkMode = false,
   });
 
   UserSettings copyWith({
@@ -52,7 +50,6 @@ class UserSettings {
       ageRange: ageRange ?? this.ageRange,
       distance: distance ?? this.distance,
       pushNotifications: pushNotifications ?? this.pushNotifications,
-      darkMode: darkMode ?? this.darkMode,
     );
   }
 
@@ -68,7 +65,6 @@ class UserSettings {
       'ageRange': {'start': ageRange.start, 'end': ageRange.end},
       'distance': distance,
       'pushNotifications': pushNotifications,
-      'darkMode': darkMode,
     };
   }
 
@@ -89,7 +85,6 @@ class UserSettings {
           : const RangeValues(18, 30),
       distance: json['distance']?.toDouble() ?? 50,
       pushNotifications: json['pushNotifications'] ?? true,
-      darkMode: json['darkMode'] ?? false,
     );
   }
 
@@ -107,8 +102,7 @@ class UserSettings {
         other.selectedInterests.every(selectedInterests.contains) &&
         other.ageRange == ageRange &&
         other.distance == distance &&
-        other.pushNotifications == pushNotifications &&
-        other.darkMode == darkMode;
+        other.pushNotifications == pushNotifications;
   }
 
   @override
@@ -124,7 +118,6 @@ class UserSettings {
       ageRange,
       distance,
       pushNotifications,
-      darkMode,
     );
   }
 }
