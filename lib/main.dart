@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rizz_mobile/firebase_options.dart';
 import 'package:rizz_mobile/pages/bottom_tab_page.dart';
+import 'package:rizz_mobile/pages/details/detail_chat.dart';
 import 'package:rizz_mobile/pages/test.dart';
 import 'package:rizz_mobile/providers/auth_provider.dart';
 import 'package:rizz_mobile/providers/profile_provider.dart';
@@ -23,8 +24,8 @@ Future<void> main() async {
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(
-  RemoteMessage remoteMessage,
-) async {
+    RemoteMessage remoteMessage,
+    ) async {
   debugPrint('[Background Message]: ${remoteMessage.notification?.title}');
 }
 
@@ -42,7 +43,9 @@ class MyApp extends StatelessWidget {
         title: "Rizz",
         theme: ThemeData(primaryColor: Color(0xFFfa5eff)),
         home: Test(),
-        routes: {'/home': (context) => BottomTabPage()},
+        routes: {'/home': (context) => BottomTabPage(),
+          '/detail_chat': (context) => const DetailChat(),
+        },
       ),
     );
   }

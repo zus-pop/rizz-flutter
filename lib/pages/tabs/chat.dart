@@ -12,12 +12,10 @@ class Chat extends StatefulWidget {
 class _ChatState extends State<Chat> {
   ServerSocket? server;
   Socket? clientSocket;
-  final List<String> messages = [];
-  final TextEditingController messageController = TextEditingController();
-  final TextEditingController ipController = TextEditingController();
   String myIP = "Đang lấy IP...";
+  final TextEditingController ipController = TextEditingController();
   bool isServer = false;
-  bool isConnected = false;
+  bool isConnecting = false;
 
   @override
   void initState() {
@@ -27,330 +25,231 @@ class _ChatState extends State<Chat> {
 
   @override
   void dispose() {
-    server?.close();
-    clientSocket?.close();
-    messageController.dispose();
+    // Don't close server here as it's still needed in detail_chat
     ipController.dispose();
     super.dispose();
   }
 
-  void _getMyIP() async {
+  Future<void> _getMyIP() async {
     try {
       final interfaces = await NetworkInterface.list(
           type: InternetAddressType.IPv4, includeLoopback: false);
-      if (interfaces.isNotEmpty) {
+      if (interfaces.isNotEmpty && mounted) {
         final ipv4Addr = interfaces.first.addresses.first.address;
         setState(() {
           myIP = ipv4Addr;
         });
-      } else {
+      } else if (mounted) {
         setState(() {
           myIP = "Không tìm thấy IP";
         });
       }
     } catch (e) {
-      setState(() {
-        myIP = "Lỗi lấy IP";
-      });
+      if (mounted) {
+        setState(() {
+          myIP = "Lỗi lấy IP";
+        });
+      }
     }
   }
 
-  void _startServer() async {
+  Future<void> _startServer() async {
+    if (isConnecting) return;
+
+    setState(() {
+      isConnecting = true;
+    });
+
     try {
       server = await ServerSocket.bind(InternetAddress.anyIPv4, 3000);
-      setState(() {
-        isServer = true;
-        messages.add("✅ Server đang chạy tại $myIP:3000");
-      });
 
-      server!.listen((Socket client) {
-        if (!isConnected) {
-          setState(() {
-            clientSocket = client;
-            isConnected = true;
-            messages.add("🔗 Client kết nối từ: ${client.remoteAddress.address}");
-          });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("✅ Server đang chạy tại $myIP:3000")),
+        );
 
-          client.listen(
-                (data) {
-              final message = String.fromCharCodes(data);
-              setState(() {
-                messages.add("Client: $message");
-              });
-            },
-            onDone: () {
-              setState(() {
-                isConnected = false;
-                clientSocket?.close();
-                clientSocket = null;
-                messages.add("❌ Client ngắt kết nối");
-              });
-            },
-            onError: (error) {
-              setState(() {
-                isConnected = false;
-                clientSocket?.close();
-                clientSocket = null;
-                messages.add("❌ Lỗi: $error");
-              });
-            },
-          );
-        } else {
-          client.close();
-        }
-      });
-    } catch (e) {
-      setState(() {
-        messages.add("❌ Lỗi khởi động server: $e");
-      });
-    }
-  }
-
-  void _connectToServer() async {
-    try {
-      String serverIP = ipController.text.trim();
-      if (serverIP.isEmpty) {
         setState(() {
-          messages.add("⚠️ Vui lòng nhập IP server");
+          isServer = true;
+          isConnecting = false;
         });
-        return;
+
+        // Listen for incoming connections
+        server!.listen((Socket client) {
+          if (mounted) {
+            Navigator.of(context).pushNamed(
+              '/detail_chat',
+              arguments: {
+                'socket': client,
+                'isServer': true,
+              },
+            );
+          }
+        });
       }
-
-      clientSocket = await Socket.connect(serverIP, 3000);
-      setState(() {
-        isConnected = true;
-        messages.add("✅ Đã kết nối tới server $serverIP:3000");
-      });
-
-      clientSocket!.listen(
-            (data) {
-          final message = String.fromCharCodes(data);
-          setState(() {
-            messages.add("Server: $message");
-          });
-        },
-        onDone: () {
-          setState(() {
-            isConnected = false;
-            clientSocket?.close();
-            clientSocket = null;
-            messages.add("❌ Mất kết nối với server");
-          });
-        },
-        onError: (error) {
-          setState(() {
-            isConnected = false;
-            clientSocket?.close();
-            clientSocket = null;
-            messages.add("❌ Lỗi: $error");
-          });
-        },
-      );
     } catch (e) {
-      setState(() {
-        messages.add("❌ Lỗi kết nối: $e");
-      });
+      if (mounted) {
+        setState(() {
+          isConnecting = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("❌ Lỗi khởi động server: $e")),
+        );
+      }
     }
   }
 
-  void _sendMessage() {
-    String message = messageController.text.trim();
-    if (message.isEmpty || !isConnected || clientSocket == null) return;
+  Future<void> _connectToServer() async {
+    final serverIP = ipController.text.trim();
+    if (serverIP.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("⚠️ Vui lòng nhập IP server")),
+      );
+      return;
+    }
 
-    clientSocket!.write(message);
-    setState(() {
-      messages.add("Tôi: $message");
-    });
-    messageController.clear();
-  }
+    if (isConnecting) return;
 
-  void _disconnect() {
-    server?.close();
-    clientSocket?.close();
     setState(() {
-      isServer = false;
-      isConnected = false;
-      server = null;
-      clientSocket = null;
-      messages.add("🔌 Đã ngắt kết nối");
+      isConnecting = true;
     });
+
+    try {
+      clientSocket = await Socket.connect(serverIP, 3000, timeout: const Duration(seconds: 5));
+
+      if (mounted) {
+        setState(() {
+          isConnecting = false;
+        });
+
+        Navigator.of(context).pushNamed(
+          '/detail_chat',
+          arguments: {
+            'socket': clientSocket,
+            'isServer': false,
+          },
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          isConnecting = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("❌ Lỗi kết nối: $e")),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Center(child: Text('Chat')),
+        title: const Text('Chat'),
         backgroundColor: Colors.blue,
-        actions: [
-          if (isServer || isConnected)
-            IconButton(
-              icon: const Icon(Icons.power_settings_new),
-              onPressed: _disconnect,
-              tooltip: 'Ngắt kết nối',
-            ),
-        ],
+        centerTitle: true,
       ),
-      body: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            color: Colors.blue.shade50,
-            child: Text(
-              'IP của bạn: $myIP',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.blue.shade700,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'IP của bạn: $myIP',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue.shade700,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
               ),
-              textAlign: TextAlign.center,
-            ),
-          ),
+              const SizedBox(height: 24),
 
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              children: [
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: (isServer || isConnected) ? null : _startServer,
-                    icon: const Icon(Icons.dns),
-                    label: const Text('Tạo Server'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
+              // Server status indicator
+              if (isServer)
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.check_circle, color: Colors.green),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Server đang chạy - Chờ kết nối...',
+                        style: TextStyle(color: Colors.green.shade700),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: ipController,
-                        decoration: const InputDecoration(
-                          hintText: 'Nhập IP server (vd: 192.168.1.100)',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.computer),
-                        ),
-                        enabled: !isServer && !isConnected,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton.icon(
-                      onPressed: (isServer || isConnected) ? null : _connectToServer,
-                      icon: const Icon(Icons.link),
-                      label: const Text('Kết nối'),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
 
-          const Divider(height: 1),
+              const SizedBox(height: 16),
 
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(8),
-              itemCount: messages.length,
-              itemBuilder: (context, index) {
-                final message = messages[index];
-                final isMyMessage = message.startsWith('Tôi:');
-                final isSystemMessage = message.contains('✅') ||
-                    message.contains('❌') ||
-                    message.contains('🔗') ||
-                    message.contains('⚠️') ||
-                    message.contains('🔌');
-
-                if (isSystemMessage) {
-                  return Center(
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(vertical: 4),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade200,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        message,
-                        style: TextStyle(
-                          color: Colors.grey.shade700,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  );
-                }
-
-                return Align(
-                  alignment: isMyMessage ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.7),
-                    decoration: BoxDecoration(
-                      color: isMyMessage ? Colors.blue : Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      message,
-                      style: TextStyle(
-                        color: isMyMessage ? Colors.white : Colors.black87,
-                      ),
-                    ),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: isConnecting || isServer ? null : _startServer,
+                  icon: isConnecting
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.dns),
+                  label: Text(isServer ? 'Server đang chạy' : 'Tạo Server'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    backgroundColor: isServer ? Colors.green : null,
                   ),
-                );
-              },
-            ),
-          ),
-
-          Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  offset: Offset(0, -2),
-                  blurRadius: 4,
-                  color: Colors.black12,
                 ),
-              ],
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Row(
+              ),
+              const SizedBox(height: 16),
+              const Text('HOẶC', style: TextStyle(color: Colors.grey)),
+              const SizedBox(height: 16),
+              Row(
                 children: [
                   Expanded(
                     child: TextField(
-                      controller: messageController,
-                      decoration: InputDecoration(
-                        hintText: isConnected ? 'Nhập tin nhắn...' : 'Kết nối để chat',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      controller: ipController,
+                      enabled: !isConnecting,
+                      decoration: const InputDecoration(
+                        hintText: 'Nhập IP server (vd: 192.168.1.100)',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.computer),
                       ),
-                      enabled: isConnected,
-                      onSubmitted: (_) => _sendMessage(),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  CircleAvatar(
-                    backgroundColor: isConnected ? Colors.blue : Colors.grey,
-                    child: IconButton(
-                      icon: const Icon(Icons.send, color: Colors.white),
-                      onPressed: isConnected ? _sendMessage : null,
+                  ElevatedButton.icon(
+                    onPressed: isConnecting ? null : _connectToServer,
+                    icon: isConnecting
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.link),
+                    label: const Text('Kết nối'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                     ),
                   ),
                 ],
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
