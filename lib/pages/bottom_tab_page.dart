@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
+import 'package:provider/provider.dart';
 import 'package:rizz_mobile/pages/tabs/chat.dart';
 import 'package:rizz_mobile/pages/tabs/discover.dart';
 import 'package:rizz_mobile/pages/tabs/liked.dart';
 import 'package:rizz_mobile/pages/tabs/profile.dart';
+import 'package:rizz_mobile/providers/auth_provider.dart';
 import 'package:rizz_mobile/theme/app_theme.dart';
 
 class BottomTabPage extends StatefulWidget {
@@ -23,6 +25,16 @@ class _BottomTabPageState extends State<BottomTabPage> {
     Chat(),
     Profile(),
   ];
+
+  @override
+  void initState() {
+    // final state = context.read<AuthProvider>().authState;
+    // if (state == AuthState.authenticated) {
+    context.read<AuthProvider>().updateToken();
+    // }
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

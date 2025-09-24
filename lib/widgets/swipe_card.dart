@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:rizz_mobile/models/profile.dart';
 import 'package:rizz_mobile/theme/app_theme.dart';
+import 'package:rizz_mobile/pages/chatbot.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class SwipeCard extends StatefulWidget {
@@ -14,6 +15,24 @@ class SwipeCard extends StatefulWidget {
 }
 
 class _SwipeCardState extends State<SwipeCard> {
+  void _showChatbot(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => FractionallySizedBox(
+        heightFactor: 0.85,
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Chatbot(profile: widget.profile),
+        ),
+      ),
+    );
+  }
+
   int currentImageIndex = 0;
 
   @override
@@ -172,6 +191,31 @@ class _SwipeCardState extends State<SwipeCard> {
               ),
             ],
 
+            // AI icon at top left
+            Positioned(
+              top: 40,
+              left: 20,
+              child: GestureDetector(
+                onTap: () => _showChatbot(context),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.6),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.smart_toy_rounded,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+              ),
+            ),
+
             // User information - with pointer events for info button only
             Positioned(
               bottom: 0,
@@ -188,6 +232,8 @@ class _SwipeCardState extends State<SwipeCard> {
                       // Name and age
                       Row(
                         children: [
+                          // ...existing code for name, age, info button (remove AI icon here)...
+                          const SizedBox(width: 8),
                           Expanded(
                             child: IgnorePointer(
                               child: Text(
@@ -206,7 +252,7 @@ class _SwipeCardState extends State<SwipeCard> {
                             child: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.3),
+                                color: Colors.white.withValues(alpha: .3),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(

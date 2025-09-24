@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 import 'package:provider/provider.dart';
-import 'package:rizz_mobile/providers/auth_provider.dart';
 import 'package:rizz_mobile/providers/profile_provider.dart';
+import 'package:rizz_mobile/theme/app_theme.dart';
 import 'package:rizz_mobile/widgets/filter_modal.dart';
 import 'package:rizz_mobile/widgets/swipe_card.dart';
-import 'package:rizz_mobile/theme/app_theme.dart';
 
 class Discover extends StatefulWidget {
   const Discover({super.key});
@@ -20,10 +19,6 @@ class _DiscoverState extends State<Discover> {
   @override
   void initState() {
     super.initState();
-    // final state = context.read<AuthProvider>().authState;
-    // if (state == AuthState.authenticated) {
-    context.read<AuthProvider>().updateToken();
-    // }
     // Initialize profiles when widget is created
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ProfileProvider>().initialize();
@@ -43,29 +38,18 @@ class _DiscoverState extends State<Discover> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          onPressed: () {
-            // Add your left icon action here
-            // For example: open drawer, go back, etc.
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('Left icon pressed!'),
-                backgroundColor: context.primary,
-                duration: const Duration(milliseconds: 1000),
-              ),
-            );
-          },
-          icon: Icon(Icons.gamepad, color: context.primary, size: 30),
-        ),
         title: Text(
           'Discover',
-          style: AppTheme.headline3.copyWith(color: context.primary),
+          style: AppTheme.headline3.copyWith(
+            color: context.primary,
+            fontSize: 30,
+          ),
         ),
-        centerTitle: true, // This ensures the title stays centered
+        centerTitle: false,
         actions: [
           IconButton(
             onPressed: _showFilterModal,
-            icon: Icon(Icons.tune, color: context.primary, size: 30),
+            icon: Icon(Icons.tune, color: context.primary, size: 36),
           ),
         ],
       ),
