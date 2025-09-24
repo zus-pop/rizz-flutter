@@ -1,17 +1,17 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
-import 'package:rizz_mobile/models/user_profile.dart';
+import 'package:rizz_mobile/models/profile.dart';
 
-class UserProfileService {
+class ProfileService {
   static const String baseUrl =
       'https://api.example.com'; // Replace with your actual API URL
   static const String _profilesEndpoint = '/profiles';
 
   // Singleton pattern
-  static final UserProfileService _instance = UserProfileService._internal();
-  factory UserProfileService() => _instance;
-  UserProfileService._internal();
+  static final ProfileService _instance = ProfileService._internal();
+  factory ProfileService() => _instance;
+  ProfileService._internal();
 
   /// Fetch user profiles with pagination
   /// [page] - Page number (starts from 1)
@@ -71,7 +71,7 @@ class UserProfileService {
   }
 
   /// Get a single profile by ID
-  Future<UserProfile> getProfile(String profileId) async {
+  Future<Profile> getProfile(String profileId) async {
     try {
       final uri = Uri.parse('$baseUrl$_profilesEndpoint/$profileId');
 
@@ -87,7 +87,7 @@ class UserProfileService {
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body) as Map<String, dynamic>;
-        return UserProfile.fromJson(jsonData);
+        return Profile.fromJson(jsonData);
       } else {
         throw ApiException(
           'Failed to fetch profile: ${response.statusCode}',
@@ -148,7 +148,7 @@ class UserProfileService {
 
 /// Response model for paginated profiles
 class ProfileResponse {
-  final List<UserProfile> profiles;
+  final List<Profile> profiles;
   final int currentPage;
   final int totalPages;
   final int totalProfiles;
@@ -169,8 +169,7 @@ class ProfileResponse {
       profiles:
           (json['data'] as List<dynamic>?)
               ?.map(
-                (profile) =>
-                    UserProfile.fromJson(profile as Map<String, dynamic>),
+                (profile) => Profile.fromJson(profile as Map<String, dynamic>),
               )
               .toList() ??
           [],
