@@ -89,10 +89,22 @@ class _BottomTabPageState extends State<BottomTabPage> {
                     tabBackgroundColor: const Color(0xFFfa5eff).withValues(alpha: 0.8),
                     color: Colors.white70,
                     tabs: const [
-                      GButton(icon: Icons.home, text: 'Discover'),
-                      GButton(icon: Icons.favorite, text: 'Liked'),
-                      GButton(icon: Icons.chat, text: 'Chat'),
-                      GButton(icon: Icons.person, text: 'Profile'),
+                      GButton(
+                        icon: Icons.explore,
+                        text: 'Discover',
+                      ),
+                      GButton(
+                        icon: Icons.favorite,
+                        text: 'Liked',
+                      ),
+                      GButton(
+                        icon: Icons.chat,
+                        text: 'Chat',
+                      ),
+                      GButton(
+                        icon: Icons.person,
+                        text: 'Profile',
+                      ),
                     ],
                     selectedIndex: _selectedIndex,
                     onTabChange: (index) {

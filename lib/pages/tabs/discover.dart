@@ -5,6 +5,7 @@ import 'package:rizz_mobile/providers/auth_provider.dart';
 import 'package:rizz_mobile/providers/profile_provider.dart';
 import 'package:rizz_mobile/widgets/filter_modal.dart';
 import 'package:rizz_mobile/widgets/swipe_card.dart';
+import 'package:rizz_mobile/pages/test.dart';
 
 class Discover extends StatefulWidget {
   const Discover({super.key});
@@ -49,13 +50,10 @@ class _DiscoverState extends State<Discover> {
         elevation: 0,
         leading: IconButton(
           onPressed: () {
-            // Add your left icon action here
-            // For example: open drawer, go back, etc.
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Left icon pressed!'),
-                backgroundColor: Color(0xFFfa5eff),
-                duration: Duration(milliseconds: 1000),
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const TestPage(),
               ),
             );
           },
