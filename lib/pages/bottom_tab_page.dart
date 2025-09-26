@@ -17,8 +17,9 @@ class BottomTabPage extends StatefulWidget {
 
 class _BottomTabPageState extends State<BottomTabPage> {
   int _selectedIndex = 0;
-  final padding = EdgeInsets.symmetric(horizontal: 18, vertical: 12);
-  double gap = 10;
+  late PageController _pageController;
+
+  // Use const widgets to avoid rebuilds
   static const List<Widget> _tabs = <Widget>[
     Discover(),
     Liked(),
@@ -32,7 +33,14 @@ class _BottomTabPageState extends State<BottomTabPage> {
     // if (state == AuthState.authenticated) {
     context.read<AuthProvider>().updateToken();
     // }
+    _pageController = PageController(initialPage: _selectedIndex);
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   @override
@@ -41,9 +49,18 @@ class _BottomTabPageState extends State<BottomTabPage> {
       extendBody: true,
       body: Stack(
         children: [
-          Center(child: _tabs.elementAt(_selectedIndex)),
+          // Use PageView for better performance
+          PageView(
+            controller: _pageController,
+            onPageChanged: (index) {
+              setState(() {
+                _selectedIndex = index;
+              });
+            },
+            children: _tabs,
+          ),
           Positioned(
-            bottom: 5, // Distance from bottom
+            bottom: 5,
             left: 0,
             right: 0,
             child: Center(
@@ -92,9 +109,11 @@ class _BottomTabPageState extends State<BottomTabPage> {
                     ],
                     selectedIndex: _selectedIndex,
                     onTabChange: (index) {
-                      setState(() {
-                        _selectedIndex = index;
-                      });
+                      _pageController.animateToPage(
+                        index,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
                     },
                   ),
                 ),
