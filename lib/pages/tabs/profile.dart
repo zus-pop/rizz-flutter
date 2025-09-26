@@ -11,10 +11,12 @@ class Profile extends StatefulWidget {
   State<Profile> createState() => _ProfileState();
 }
 
-class _ProfileState extends State<Profile> {
+class _ProfileState extends State<Profile>
+    with AutomaticKeepAliveClientMixin<Profile> {
   List<String> selectedImages = [];
   final ImagePicker _picker = ImagePicker();
-
+  @override
+  bool get wantKeepAlive => true;
   void _pickImage() async {
     if (selectedImages.length >= 6) {
       ScaffoldMessenger.of(
@@ -85,6 +87,7 @@ class _ProfileState extends State<Profile> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       backgroundColor: context.colors.surface,
       body: SafeArea(

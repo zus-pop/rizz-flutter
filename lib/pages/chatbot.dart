@@ -1,30 +1,97 @@
+import 'dart:convert';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_ai/firebase_ai.dart';
 import 'package:rizz_mobile/models/profile.dart';
 import 'package:rizz_mobile/theme/app_theme.dart';
 
+// Simple animated typing indicator widget
+class _TypingIndicator extends StatefulWidget {
+  @override
+  State<_TypingIndicator> createState() => _TypingIndicatorState();
+}
+
+class _TypingIndicatorState extends State<_TypingIndicator>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<int> _dotCount;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 900),
+      vsync: this,
+    )..repeat();
+    _dotCount = StepTween(
+      begin: 1,
+      end: 3,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.linear));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _dotCount,
+      builder: (context, child) {
+        String dots = '.' * _dotCount.value;
+        return Text(
+          'Đang trả lời$dots',
+          style: TextStyle(
+            color:
+                Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.color?.withOpacity(0.7) ??
+                Colors.black54,
+            fontSize: 15,
+            fontStyle: FontStyle.italic,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class StructureOutput {
+  final String message;
+  final int score;
+
+  StructureOutput({required this.message, required this.score});
+
+  StructureOutput.fromJson(Map<String, dynamic> json)
+    : message = json['message'] as String,
+      score = json['score'] as int;
+}
+
 class ChatMessage {
   final String id;
-  final String text;
+  final String message;
   final bool isUser;
   final DateTime timestamp;
-  final bool isStreaming;
+  final int score;
 
   ChatMessage({
     required this.id,
-    required this.text,
+    required this.message,
     required this.isUser,
     required this.timestamp,
-    this.isStreaming = false,
+    this.score = 0,
   });
 
-  ChatMessage copyWith({String? text, bool? isStreaming}) {
+  ChatMessage copyWith({String? message, int? score, bool? isPositive}) {
     return ChatMessage(
       id: id,
-      text: text ?? this.text,
+      message: message ?? this.message,
       isUser: isUser,
       timestamp: timestamp,
-      isStreaming: isStreaming ?? this.isStreaming,
+      score: score ?? this.score,
     );
   }
 }
@@ -42,6 +109,11 @@ class _ChatbotState extends State<Chatbot> {
   final List<ChatMessage> _messages = [];
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  int _userScore = 10;
+
+  int? _lastScoreChange; // For animation
+  bool _scoreChanged = false;
+  bool _gameOver = false;
 
   late final GenerativeModel _model;
   late final ChatSession _chatSession;
@@ -51,6 +123,7 @@ class _ChatbotState extends State<Chatbot> {
   @override
   void initState() {
     super.initState();
+
     _initializeAI();
     // listen once to controller to update send button state
     _controller.addListener(() {
@@ -61,10 +134,26 @@ class _ChatbotState extends State<Chatbot> {
   void _initializeAI() {
     // Tạo prompt hệ thống bằng tiếng Việt
     String systemPrompt = _buildCharacterPromptVN();
-
-    _model = FirebaseAI.vertexAI().generativeModel(
+    final jsonSchema = Schema.object(
+      properties: {
+        'message': Schema.string(
+          description: "Phản hồi cho đối phương",
+          nullable: false,
+        ),
+        'score': Schema.number(
+          description:
+              "Điểm số dành cho đối phương dựa vào tin nhắn của họ, đối phương có tổng điểm là $_userScore, nếu như là điểm cộng thì sẽ là số dương ngược lại điểm trừ sẽ là số âm, nếu như ko phải 2 trường hợp trước đó thì sẽ là trung tính không cộng không trừ",
+          nullable: false,
+        ),
+      },
+    );
+    _model = FirebaseAI.vertexAI(location: 'global').generativeModel(
       model: 'gemini-2.5-flash',
       systemInstruction: Content.text(systemPrompt),
+      generationConfig: GenerationConfig(
+        responseMimeType: 'application/json',
+        responseSchema: jsonSchema,
+      ),
     );
     _chatSession = _model.startChat();
   }
@@ -95,8 +184,10 @@ QUY TẮC QUAN TRỌNG:
 3. Trả lời tự nhiên, gần gũi, có thể hỏi lại để duy trì cuộc trò chuyện.
 5. Phản hồi ngắn gọn (1-3 câu), trừ khi chủ đề cần dài hơn.
 6. Luôn giữ đúng phong cách thân thiện, hỗ trợ và tôn trọng người dùng.
-7. Nếu có thông tin nào trong hồ sơ, hãy sử dụng nó để làm cho câu trả lời trở nên cá nhân hóa và chân thực nhất có thể.
+7. Nếu có thông tin nào trong hồ sơ, hãy sử dụng nó để làm cho câu trả lời trở nên cá nhân hóa và chân thực nhất có thể, tuy nhiên đừng có cứng nhắc quá về việc mang hết tất cả vào tin nhắn, hãy sử dụng thông tin của hồ sơ một cách tinh tế.
 8. Khi giới thiệu về bản thân, không nên nói ra hết tất cả, hãy nói 1 phần nhỏ để đối phương chủ động đào sâu vào thêm
+9. Hãy dựa vào nhưng tin nhắn của đối phương để dự đoán tính cách của họ liệu có nên tiếp tục nhắn tin hay không đặc biệt nếu như hồ sơ này là giới tính nữ thì đừng tích cực hỏi họ mà phải để họ chủ động
+10. Không cần lúc nào cũng phải xưng hô lịch sự, nếu đối phương tỏ ra thái độ bố láo thì mình bố láo luôn, có thể áp dụng ngôn ngữ của GenZ
 
 Không được trả lời quá dài dòng, hãy kiệm lời nhất có thể, hãy để đối phương chủ động mở lời cuộc trò chuyện.
 Như một người Việt Nam thực thụ và xưng hô dựa vào đối phương gọi xưng hô như thế nào.
@@ -106,72 +197,106 @@ Như một người Việt Nam thực thụ và xưng hô dựa vào đối phư
   // English prompt removed. Using Vietnamese prompt via _buildCharacterPromptVN().
 
   void _sendMessage(String text) async {
-    if (text.trim().isEmpty || _isTyping) return;
+    if (text.trim().isEmpty || _isTyping || _gameOver) return;
 
     final userMessage = ChatMessage(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      text: text.trim(),
+      message: text.trim(),
       isUser: true,
       timestamp: DateTime.now(),
     );
 
-    final aiMessageId = (DateTime.now().millisecondsSinceEpoch + 1).toString();
-    final aiMessage = ChatMessage(
-      id: aiMessageId,
-      text: '',
-      isUser: false,
-      timestamp: DateTime.now(),
-      isStreaming: true,
-    );
-
     setState(() {
       _messages.add(userMessage);
-      _messages.add(aiMessage);
-      _isTyping = true;
     });
 
     _controller.clear();
     _scrollToBottom();
-
+    await Future.delayed(Duration(seconds: Random().nextInt(5) + 1));
+    setState(() {
+      _isTyping = true;
+    });
     try {
-      final stream = _chatSession.sendMessageStream(Content.text(text));
-      String fullResponse = '';
-
-      await for (final response in stream) {
-        final chunk = response.text ?? '';
-        fullResponse += chunk;
-
-        setState(() {
-          final index = _messages.indexWhere((m) => m.id == aiMessageId);
-          if (index != -1) {
-            _messages[index] = _messages[index].copyWith(text: fullResponse);
-          }
-        });
-
-        _scrollToBottom();
-      }
-
-      // Mark streaming as complete
+      // Send message and get response (not streaming)
+      final response = await _chatSession.sendMessage(Content.text(text));
+      final structureOutput = StructureOutput.fromJson(
+        json.decode(response.text ?? '{"message": "Error", "score":"0"}'),
+      );
       setState(() {
-        final index = _messages.indexWhere((m) => m.id == aiMessageId);
-        if (index != -1) {
-          _messages[index] = _messages[index].copyWith(isStreaming: false);
-        }
+        _lastScoreChange = structureOutput.score;
+        _userScore += structureOutput.score;
+        _scoreChanged = true;
+      });
+      // Reset score change animation after a short delay
+      Future.delayed(const Duration(seconds: 1), () {
+        if (mounted) setState(() => _scoreChanged = false);
+      });
+      // Simulate a structure: message, score, isPositive
+      final aiMessage = ChatMessage(
+        id: (DateTime.now().millisecondsSinceEpoch + 1).toString(),
+        message: structureOutput.message,
+        isUser: false,
+        timestamp: DateTime.now(),
+        score: structureOutput.score,
+      );
+      setState(() {
+        _messages.add(aiMessage);
         _isTyping = false;
       });
-    } catch (e) {
-      setState(() {
-        final index = _messages.indexWhere((m) => m.id == aiMessageId);
-        if (index != -1) {
-          _messages[index] = _messages[index].copyWith(
-            text: 'Sorry, I encountered an error. Please try again.',
-            isStreaming: false,
+      _scrollToBottom();
+      // Check for game over AFTER AI message is shown
+      if (_userScore <= 0 && !_gameOver) {
+        setState(() {
+          _gameOver = true;
+        });
+        await Future.delayed(const Duration(milliseconds: 300));
+        if (mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: true,
+            builder: (context) => AlertDialog(
+              title: const Text('Game Over'),
+              content: const Text(
+                'Your score is below or equal zero. You can review your chat history or restart the game when ready.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Close'),
+                ),
+              ],
+            ),
           );
         }
+        return;
+      }
+    } catch (e) {
+      setState(() {
+        _messages.add(
+          ChatMessage(
+            id: (DateTime.now().millisecondsSinceEpoch + 2).toString(),
+            message: 'Sorry, I encountered an error. Please try again.',
+            isUser: false,
+            timestamp: DateTime.now(),
+          ),
+        );
         _isTyping = false;
       });
       debugPrint('Error sending message: $e');
     }
+  }
+
+  void _restartGame() {
+    setState(() {
+      _userScore = 10;
+      _messages.clear();
+      _gameOver = false;
+      _scoreChanged = false;
+      _lastScoreChange = null;
+      _isTyping = false;
+    });
   }
 
   void _scrollToBottom() {
@@ -183,13 +308,6 @@ Như một người Việt Nam thực thụ và xưng hô dựa vào đối phư
           curve: Curves.easeOut,
         );
       }
-    });
-  }
-
-  void _clearChat() {
-    setState(() {
-      _messages.clear();
-      _isTyping = false;
     });
   }
 
@@ -253,16 +371,89 @@ Như một người Việt Nam thực thụ và xưng hô dựa vào đối phư
         ),
         backgroundColor: context.colors.surface,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _clearChat,
-            tooltip: 'Clear chat',
-          ),
-        ],
       ),
       body: Column(
         children: [
+          // User score display
+          Padding(
+            padding: const EdgeInsets.only(top: 12, bottom: 4),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeInOut,
+              decoration: BoxDecoration(
+                color: _scoreChanged
+                    ? (_lastScoreChange ?? 0) > 0
+                          ? Colors.green.withValues(alpha: .15)
+                          : (_lastScoreChange ?? 0) < 0
+                          ? Colors.red.withValues(alpha: .15)
+                          : context.colors.surfaceContainer
+                    : context.colors.surfaceContainer,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.stars, color: context.primary, size: 22),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Score: ',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: context.onSurface,
+                    ),
+                  ),
+                  AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 400),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 22,
+                      color: _scoreChanged
+                          ? (_lastScoreChange ?? 0) > 0
+                                ? Colors.green
+                                : (_lastScoreChange ?? 0) < 0
+                                ? Colors.red
+                                : context.primary
+                          : context.primary,
+                    ),
+                    child: Text('$_userScore'),
+                  ),
+                  if (_scoreChanged && (_lastScoreChange ?? 0) != 0) ...[
+                    const SizedBox(width: 8),
+                    AnimatedOpacity(
+                      opacity: _scoreChanged ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 400),
+                      child: Row(
+                        children: [
+                          Icon(
+                            (_lastScoreChange ?? 0) > 0
+                                ? Icons.arrow_upward
+                                : Icons.arrow_downward,
+                            color: (_lastScoreChange ?? 0) > 0
+                                ? Colors.green
+                                : Colors.red,
+                            size: 20,
+                          ),
+                          Text(
+                            (_lastScoreChange ?? 0) > 0
+                                ? '+$_lastScoreChange'
+                                : '$_lastScoreChange',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                              color: (_lastScoreChange ?? 0) > 0
+                                  ? Colors.green
+                                  : Colors.red,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
@@ -274,7 +465,59 @@ Như một người Việt Nam thực thụ và xưng hô dựa vào đối phư
               },
             ),
           ),
+          if (_isTyping)
+            Padding(
+              padding: const EdgeInsets.only(
+                bottom: 8.0,
+                left: 24.0,
+                right: 24.0,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: context.primary,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(
+                      Icons.smart_toy,
+                      color: context.colors.onPrimary,
+                      size: 18,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  _TypingIndicator(),
+                ],
+              ),
+            ),
           _buildInputArea(),
+          if (_gameOver)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0, top: 4.0),
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.refresh),
+                label: const Text('Restart Game'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  textStyle: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                ),
+                onPressed: _restartGame,
+              ),
+            ),
         ],
       ),
     );
@@ -351,45 +594,21 @@ Như một người Việt Nam thực thụ và xưng hô dựa vào đối phư
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (message.isStreaming && !message.isUser) ...[
-                    StreamTextAnimation(text: message.text),
-                  ] else ...[
-                    Text(
-                      message.text.isEmpty ? '...' : message.text,
-                      style: TextStyle(
-                        color: message.isUser
-                            ? context.colors.onPrimary
-                            : context.onSurface,
-                        fontSize: 16,
-                        height: 1.4,
-                      ),
+                  Text(
+                    message.message.isEmpty ? '...' : message.message,
+                    style: TextStyle(
+                      color: message.isUser
+                          ? context.colors.onPrimary
+                          : context.onSurface,
+                      fontSize: 16,
+                      height: 1.4,
                     ),
-                  ],
-                  if (message.isStreaming) ...[
-                    const SizedBox(height: 8),
+                  ),
+                  if (!message.isUser) ...[
+                    const SizedBox(height: 4),
                     Row(
                       mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          width: 12,
-                          height: 12,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              context.primary.withValues(alpha: 0.7),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Đang trả lời...',
-                          style: TextStyle(
-                            color: context.onSurface.withValues(alpha: 0.6),
-                            fontSize: 12,
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                      ],
+                      children: [Text('Score: ${message.score}')],
                     ),
                   ],
                 ],
@@ -449,9 +668,11 @@ Như một người Việt Nam thực thụ và xưng hô dựa vào đối phư
                     maxLines: null,
                     textCapitalization: TextCapitalization.sentences,
                     onSubmitted: _sendMessage,
-                    enabled: !_isTyping,
+                    enabled: !_isTyping && !_gameOver,
                     decoration: InputDecoration(
-                      hintText: _isTyping
+                      hintText: _gameOver
+                          ? 'Game over! Please restart.'
+                          : _isTyping
                           ? 'AI đang trả lời...'
                           : 'Nhập tin nhắn...',
                       hintStyle: TextStyle(
@@ -470,7 +691,8 @@ Như một người Việt Nam thực thụ và xưng hô dựa vào đối phư
               const SizedBox(width: 12),
               Container(
                 decoration: BoxDecoration(
-                  color: _controller.text.trim().isEmpty || _isTyping
+                  color:
+                      _controller.text.trim().isEmpty || _isTyping || _gameOver
                       ? context.colors.surfaceContainer
                       : context.primary,
                   borderRadius: BorderRadius.circular(24),
@@ -478,11 +700,15 @@ Như một người Việt Nam thực thụ và xưng hô dựa vào đối phư
                 child: IconButton(
                   icon: Icon(
                     Icons.send_rounded,
-                    color: _controller.text.trim().isEmpty || _isTyping
+                    color:
+                        _controller.text.trim().isEmpty ||
+                            _isTyping ||
+                            _gameOver
                         ? context.onSurface.withValues(alpha: 0.5)
                         : context.colors.onPrimary,
                   ),
-                  onPressed: _controller.text.trim().isEmpty || _isTyping
+                  onPressed:
+                      _controller.text.trim().isEmpty || _isTyping || _gameOver
                       ? null
                       : () => _sendMessage(_controller.text),
                 ),
@@ -495,55 +721,4 @@ Như một người Việt Nam thực thụ và xưng hô dựa vào đối phư
   }
 }
 
-// Top-level animated streaming text widget for AI response
-class StreamTextAnimation extends StatefulWidget {
-  final String text;
-  const StreamTextAnimation({Key? key, required this.text}) : super(key: key);
-
-  @override
-  State<StreamTextAnimation> createState() => _StreamTextAnimationState();
-}
-
-class _StreamTextAnimationState extends State<StreamTextAnimation> {
-  String _displayed = '';
-  int _index = 0;
-
-  @override
-  void didUpdateWidget(covariant StreamTextAnimation oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.text != widget.text) {
-      _index = 0;
-      _displayed = '';
-      _animateText();
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _animateText();
-  }
-
-  void _animateText() async {
-    while (_index < widget.text.length) {
-      await Future.delayed(const Duration(milliseconds: 12));
-      if (!mounted) return;
-      setState(() {
-        _displayed = widget.text.substring(0, _index + 1);
-        _index++;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      _displayed,
-      style: TextStyle(
-        color: Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black,
-        fontSize: 16,
-        height: 1.4,
-      ),
-    );
-  }
-}
+// ...streaming animation widget removed (no longer needed)...

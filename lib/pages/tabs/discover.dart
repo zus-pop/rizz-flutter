@@ -13,9 +13,11 @@ class Discover extends StatefulWidget {
   State<Discover> createState() => _DiscoverState();
 }
 
-class _DiscoverState extends State<Discover> {
+class _DiscoverState extends State<Discover>
+    with AutomaticKeepAliveClientMixin<Discover> {
   final CardSwiperController controller = CardSwiperController();
-
+  @override
+  bool get wantKeepAlive => true;
   @override
   void initState() {
     super.initState();
@@ -23,6 +25,7 @@ class _DiscoverState extends State<Discover> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ProfileProvider>().initialize();
     });
+    debugPrint("It re-builded");
   }
 
   @override
@@ -33,6 +36,7 @@ class _DiscoverState extends State<Discover> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       backgroundColor: context.colors.surface,
       appBar: AppBar(

@@ -17,9 +17,10 @@ class BottomTabPage extends StatefulWidget {
 
 class _BottomTabPageState extends State<BottomTabPage> {
   int _selectedIndex = 0;
-  late PageController _pageController;
+  final PageController _pageController = PageController();
+  final padding = EdgeInsets.symmetric(horizontal: 18, vertical: 12);
+  double gap = 10;
 
-  // Use const widgets to avoid rebuilds
   static const List<Widget> _tabs = <Widget>[
     Discover(),
     Liked(),
@@ -29,12 +30,17 @@ class _BottomTabPageState extends State<BottomTabPage> {
 
   @override
   void initState() {
-    // final state = context.read<AuthProvider>().authState;
-    // if (state == AuthState.authenticated) {
     context.read<AuthProvider>().updateToken();
-    // }
-    _pageController = PageController(initialPage: _selectedIndex);
     super.initState();
+  }
+
+  void _onTabChange(int index) {
+    if (_selectedIndex != index) {
+      setState(() {
+        _selectedIndex = index;
+      });
+      _pageController.jumpToPage(index);
+    }
   }
 
   @override
@@ -49,18 +55,13 @@ class _BottomTabPageState extends State<BottomTabPage> {
       extendBody: true,
       body: Stack(
         children: [
-          // Use PageView for better performance
           PageView(
             controller: _pageController,
-            onPageChanged: (index) {
-              setState(() {
-                _selectedIndex = index;
-              });
-            },
+            physics: const NeverScrollableScrollPhysics(),
             children: _tabs,
           ),
           Positioned(
-            bottom: 5,
+            bottom: 5, // Distance from bottom
             left: 0,
             right: 0,
             child: Center(
@@ -108,13 +109,7 @@ class _BottomTabPageState extends State<BottomTabPage> {
                       GButton(icon: Icons.person, text: 'Profile'),
                     ],
                     selectedIndex: _selectedIndex,
-                    onTabChange: (index) {
-                      _pageController.animateToPage(
-                        index,
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                      );
-                    },
+                    onTabChange: _onTabChange,
                   ),
                 ),
               ),

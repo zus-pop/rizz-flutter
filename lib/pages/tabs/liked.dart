@@ -271,21 +271,39 @@ class Liked extends StatelessWidget {
       );
     }
 
-    return CachedNetworkImage(
-      imageUrl: imageUrl,
-      fit: BoxFit.cover,
-      placeholder: (context, url) => Container(
-        color: context.colors.surfaceContainerHigh,
-        child: Center(
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: context.primary,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          CachedNetworkImage(
+            imageUrl: imageUrl,
+            fit: BoxFit.cover,
+            placeholder: (context, url) => Container(
+              color: context.colors.surfaceContainerHigh,
+              child: Center(
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: context.primary,
+                ),
+              ),
+            ),
+            errorWidget: (context, url, error) => Container(
+              color: context.colors.surfaceContainerHigh,
+              child: Icon(Icons.error, size: 50, color: context.outline),
+            ),
           ),
-        ),
-      ),
-      errorWidget: (context, url, error) => Container(
-        color: context.colors.surfaceContainerHigh,
-        child: Icon(Icons.error, size: 50, color: context.outline),
+          Positioned.fill(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 50.0, sigmaY: 50.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: .2),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
