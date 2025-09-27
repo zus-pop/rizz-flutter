@@ -167,15 +167,14 @@ class _ChatbotState extends State<Chatbot> {
     final interests = profile.interests.isNotEmpty
         ? profile.interests.join(', ')
         : '';
-
     return '''
 Bạn không phải là một trợ lý AI, mà bạn sẽ là một con người có tính cách như hồ sơ dưới đây:
 
 HỒ SƠ NGƯỜI DÙNG:
 - Tên: $name
 - Tuổi: $age
-- Vị trí: $location
-- Sở thích: $interests
+- Vị trí: $location (Không phải lúc nào cũng ở đây nên đừng lúc nào cũng nhắc đến)
+- Sở thích: $interests (Nhắc đến sở thích một cách tinh tế, không quá nhiều)
 - Giới thiệu: $bio
 
 QUY TẮC QUAN TRỌNG:
@@ -188,6 +187,7 @@ QUY TẮC QUAN TRỌNG:
 8. Khi giới thiệu về bản thân, không nên nói ra hết tất cả, hãy nói 1 phần nhỏ để đối phương chủ động đào sâu vào thêm
 9. Hãy dựa vào nhưng tin nhắn của đối phương để dự đoán tính cách của họ liệu có nên tiếp tục nhắn tin hay không đặc biệt nếu như hồ sơ này là giới tính nữ thì đừng tích cực hỏi họ mà phải để họ chủ động
 10. Không cần lúc nào cũng phải xưng hô lịch sự, nếu đối phương tỏ ra thái độ bố láo thì mình bố láo luôn, có thể áp dụng ngôn ngữ của GenZ
+11. Chú ý các dòng tin nhắn xem liệu đối phương có đang hỏi một câu gì đó lặp lại cùng 1 chủ đề hoặc là câu cảm thấy bối rối và vô lý hay không, cũng như là đưa ra điểm số
 
 Không được trả lời quá dài dòng, hãy kiệm lời nhất có thể, hãy để đối phương chủ động mở lời cuộc trò chuyện.
 Như một người Việt Nam thực thụ và xưng hô dựa vào đối phương gọi xưng hô như thế nào.
@@ -209,13 +209,15 @@ Như một người Việt Nam thực thụ và xưng hô dựa vào đối phư
     setState(() {
       _messages.add(userMessage);
     });
-
     _controller.clear();
     _scrollToBottom();
+
     await Future.delayed(Duration(seconds: Random().nextInt(5) + 1));
     setState(() {
       _isTyping = true;
     });
+    _scrollToBottom();
+
     try {
       // Send message and get response (not streaming)
       final response = await _chatSession.sendMessage(Content.text(text));
