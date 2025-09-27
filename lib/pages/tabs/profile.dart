@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:rizz_mobile/pages/settings_page.dart';
+import 'package:rizz_mobile/theme/app_theme.dart';
 
 class Profile extends StatefulWidget {
   const Profile({super.key});
@@ -10,13 +11,12 @@ class Profile extends StatefulWidget {
   State<Profile> createState() => _ProfileState();
 }
 
-class _ProfileState extends State<Profile> {
-  final primaryColor = const Color(0xFFfa5eff);
-  final secondaryColor = const Color(0xFF080026);
-
+class _ProfileState extends State<Profile>
+    with AutomaticKeepAliveClientMixin<Profile> {
   List<String> selectedImages = [];
   final ImagePicker _picker = ImagePicker();
-
+  @override
+  bool get wantKeepAlive => true;
   void _pickImage() async {
     if (selectedImages.length >= 6) {
       ScaffoldMessenger.of(
@@ -47,7 +47,7 @@ class _ProfileState extends State<Profile> {
                 ),
               ),
               ListTile(
-                leading: Icon(Icons.photo_camera, color: primaryColor),
+                leading: Icon(Icons.photo_camera, color: context.primary),
                 title: const Text('Take Photo'),
                 onTap: () {
                   Navigator.pop(context);
@@ -55,7 +55,7 @@ class _ProfileState extends State<Profile> {
                 },
               ),
               ListTile(
-                leading: Icon(Icons.photo_library, color: primaryColor),
+                leading: Icon(Icons.photo_library, color: context.primary),
                 title: const Text('Choose from Gallery'),
                 onTap: () {
                   Navigator.pop(context);
@@ -87,8 +87,9 @@ class _ProfileState extends State<Profile> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.surface,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -101,17 +102,15 @@ class _ProfileState extends State<Profile> {
                   children: [
                     Text(
                       'My Profile',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: secondaryColor,
+                      style: AppTheme.headline3.copyWith(
+                        color: context.onSurface,
                       ),
                     ),
                     IconButton(
                       onPressed: () => _navigateToSettings(context),
                       icon: Icon(
                         Icons.settings,
-                        color: secondaryColor,
+                        color: context.onSurface,
                         size: 24,
                       ),
                     ),
@@ -129,7 +128,7 @@ class _ProfileState extends State<Profile> {
                         height: 120,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(color: primaryColor, width: 3),
+                          border: Border.all(color: context.primary, width: 3),
                         ),
                         child: selectedImages.isNotEmpty
                             ? ClipOval(
@@ -139,22 +138,24 @@ class _ProfileState extends State<Profile> {
                                   width: 120,
                                   height: 120,
                                   placeholder: (context, url) => Container(
-                                    color: primaryColor.withValues(alpha: 0.1),
+                                    color: context.primary.withValues(
+                                      alpha: 0.1,
+                                    ),
                                     child: Icon(
                                       Icons.person,
                                       size: 60,
-                                      color: primaryColor,
+                                      color: context.primary,
                                     ),
                                   ),
                                   errorWidget: (context, url, error) =>
                                       Container(
-                                        color: primaryColor.withValues(
+                                        color: context.primary.withValues(
                                           alpha: 0.1,
                                         ),
                                         child: Icon(
                                           Icons.person,
                                           size: 60,
-                                          color: primaryColor,
+                                          color: context.primary,
                                         ),
                                       ),
                                 ),
@@ -162,12 +163,12 @@ class _ProfileState extends State<Profile> {
                             : Container(
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(50),
-                                  color: primaryColor.withValues(alpha: 0.1),
+                                  color: context.primary.withValues(alpha: 0.1),
                                 ),
                                 child: Icon(
                                   Icons.person,
                                   size: 60,
-                                  color: primaryColor,
+                                  color: context.primary,
                                 ),
                               ),
                       ),
@@ -199,20 +200,15 @@ class _ProfileState extends State<Profile> {
                 // Profile Name
                 Text(
                   'John Doe, 22',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: secondaryColor,
-                  ),
+                  style: AppTheme.headline3.copyWith(color: context.onSurface),
                 ),
 
                 const SizedBox(height: 8),
 
                 Text(
                   'Computer Science Student',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: secondaryColor.withValues(alpha: 0.7),
+                  style: AppTheme.body1.copyWith(
+                    color: context.onSurface.withValues(alpha: 0.7),
                   ),
                 ),
 
@@ -223,7 +219,7 @@ class _ProfileState extends State<Profile> {
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     border: Border.all(
-                      color: primaryColor.withValues(alpha: 0.3),
+                      color: context.outline.withValues(alpha: 0.5),
                     ),
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -235,17 +231,14 @@ class _ProfileState extends State<Profile> {
                         children: [
                           Text(
                             'Photos',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: secondaryColor,
+                            style: AppTheme.headline4.copyWith(
+                              color: context.onSurface,
                             ),
                           ),
                           Text(
                             '${selectedImages.length}/6',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: secondaryColor.withValues(alpha: 0.7),
+                            style: AppTheme.body2.copyWith(
+                              color: context.onSurface.withValues(alpha: 0.7),
                             ),
                           ),
                         ],
@@ -270,8 +263,8 @@ class _ProfileState extends State<Profile> {
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: primaryColor.withValues(
-                                        alpha: 0.3,
+                                      color: context.outline.withValues(
+                                        alpha: 0.5,
                                       ),
                                     ),
                                   ),
@@ -283,22 +276,22 @@ class _ProfileState extends State<Profile> {
                                       width: double.infinity,
                                       height: double.infinity,
                                       placeholder: (context, url) => Container(
-                                        color: primaryColor.withValues(
+                                        color: context.primary.withValues(
                                           alpha: 0.1,
                                         ),
                                         child: Icon(
                                           Icons.image,
-                                          color: primaryColor,
+                                          color: context.primary,
                                         ),
                                       ),
                                       errorWidget: (context, url, error) =>
                                           Container(
-                                            color: primaryColor.withValues(
+                                            color: context.primary.withValues(
                                               alpha: 0.1,
                                             ),
                                             child: Icon(
                                               Icons.image,
-                                              color: primaryColor,
+                                              color: context.primary,
                                             ),
                                           ),
                                     ),
@@ -332,14 +325,16 @@ class _ProfileState extends State<Profile> {
                               child: Container(
                                 decoration: BoxDecoration(
                                   border: Border.all(
-                                    color: primaryColor.withValues(alpha: 0.3),
+                                    color: context.outline.withValues(
+                                      alpha: 0.5,
+                                    ),
                                     style: BorderStyle.solid,
                                   ),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Icon(
                                   Icons.add,
-                                  color: primaryColor,
+                                  color: context.primary,
                                   size: 32,
                                 ),
                               ),
@@ -362,8 +357,8 @@ class _ProfileState extends State<Profile> {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        primaryColor,
-                        primaryColor.withValues(alpha: 0.8),
+                        context.primary,
+                        context.primary.withValues(alpha: 0.8),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(16),
@@ -373,22 +368,20 @@ class _ProfileState extends State<Profile> {
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.star, color: Colors.white, size: 24),
+                          const Icon(Icons.star, color: Colors.white, size: 24),
                           const SizedBox(width: 8),
-                          const Text(
+                          Text(
                             'Rizz Plus',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+                            style: AppTheme.headline4.copyWith(
                               color: Colors.white,
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         'Unlock premium features and get unlimited swipes',
-                        style: TextStyle(fontSize: 14, color: Colors.white),
+                        style: AppTheme.body2.copyWith(color: Colors.white),
                       ),
                       const SizedBox(height: 16),
                       SizedBox(
@@ -397,16 +390,13 @@ class _ProfileState extends State<Profile> {
                           onPressed: _viewBilling,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
-                            foregroundColor: primaryColor,
+                            foregroundColor: context.primary,
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          child: const Text(
-                            'Upgrade Now',
-                            style: TextStyle(fontWeight: FontWeight.w600),
-                          ),
+                          child: Text('Upgrade Now', style: AppTheme.button),
                         ),
                       ),
                     ],
@@ -462,12 +452,12 @@ class _ProfileState extends State<Profile> {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              border: Border.all(color: secondaryColor.withValues(alpha: 0.2)),
+              border: Border.all(color: context.outline.withValues(alpha: 1)),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               children: [
-                Icon(icon, color: primaryColor, size: 24),
+                Icon(icon, color: context.primary, size: 24),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -475,18 +465,16 @@ class _ProfileState extends State<Profile> {
                     children: [
                       Text(
                         title,
-                        style: TextStyle(
-                          fontSize: 16,
+                        style: AppTheme.body1.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: secondaryColor,
+                          color: context.onSurface,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         subtitle,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: secondaryColor.withValues(alpha: 0.7),
+                        style: AppTheme.body2.copyWith(
+                          color: context.onSurface.withValues(alpha: 0.7),
                         ),
                       ),
                     ],
@@ -494,7 +482,7 @@ class _ProfileState extends State<Profile> {
                 ),
                 Icon(
                   Icons.arrow_forward_ios,
-                  color: secondaryColor.withValues(alpha: 0.5),
+                  color: context.onSurface.withValues(alpha: 0.5),
                   size: 16,
                 ),
               ],

@@ -9,13 +9,15 @@ class Chat extends StatefulWidget {
   State<Chat> createState() => _ChatState();
 }
 
-class _ChatState extends State<Chat> {
+class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
   ServerSocket? server;
   Socket? clientSocket;
   String myIP = "Đang lấy IP...";
   final TextEditingController ipController = TextEditingController();
   bool isServer = false;
   bool isConnecting = false;
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -33,7 +35,9 @@ class _ChatState extends State<Chat> {
   Future<void> _getMyIP() async {
     try {
       final interfaces = await NetworkInterface.list(
-          type: InternetAddressType.IPv4, includeLoopback: false);
+        type: InternetAddressType.IPv4,
+        includeLoopback: false,
+      );
       if (interfaces.isNotEmpty && mounted) {
         final ipv4Addr = interfaces.first.addresses.first.address;
         setState(() {
@@ -78,10 +82,7 @@ class _ChatState extends State<Chat> {
           if (mounted) {
             Navigator.of(context).pushNamed(
               '/detail_chat',
-              arguments: {
-                'socket': client,
-                'isServer': true,
-              },
+              arguments: {'socket': client, 'isServer': true},
             );
           }
         });
@@ -91,9 +92,9 @@ class _ChatState extends State<Chat> {
         setState(() {
           isConnecting = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("❌ Lỗi khởi động server: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("❌ Lỗi khởi động server: $e")));
       }
     }
   }
@@ -114,7 +115,11 @@ class _ChatState extends State<Chat> {
     });
 
     try {
-      clientSocket = await Socket.connect(serverIP, 3000, timeout: const Duration(seconds: 5));
+      clientSocket = await Socket.connect(
+        serverIP,
+        3000,
+        timeout: const Duration(seconds: 5),
+      );
 
       if (mounted) {
         setState(() {
@@ -123,10 +128,7 @@ class _ChatState extends State<Chat> {
 
         Navigator.of(context).pushNamed(
           '/detail_chat',
-          arguments: {
-            'socket': clientSocket,
-            'isServer': false,
-          },
+          arguments: {'socket': clientSocket, 'isServer': false},
         );
       }
     } catch (e) {
@@ -134,15 +136,16 @@ class _ChatState extends State<Chat> {
         setState(() {
           isConnecting = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("❌ Lỗi kết nối: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("❌ Lỗi kết nối: $e")));
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Chat'),
@@ -201,12 +204,12 @@ class _ChatState extends State<Chat> {
                 child: ElevatedButton.icon(
                   onPressed: isConnecting || isServer ? null : _startServer,
                   icon: isConnecting
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.dns),
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.dns),
                   label: Text(isServer ? 'Server đang chạy' : 'Tạo Server'),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
@@ -234,15 +237,18 @@ class _ChatState extends State<Chat> {
                   ElevatedButton.icon(
                     onPressed: isConnecting ? null : _connectToServer,
                     icon: isConnecting
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.link),
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.link),
                     label: const Text('Kết nối'),
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
                     ),
                   ),
                 ],

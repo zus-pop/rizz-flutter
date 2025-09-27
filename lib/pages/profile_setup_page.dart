@@ -13,6 +13,7 @@ import 'package:rizz_mobile/pages/profile_setup/deal_breakers_step.dart';
 import 'package:rizz_mobile/pages/profile_setup/photo_upload_step.dart';
 import 'package:rizz_mobile/pages/profile_setup/profile_verification_step.dart';
 import 'package:rizz_mobile/pages/profile_setup/voice_recording_step.dart';
+import 'package:rizz_mobile/theme/app_theme.dart';
 
 class ProfileSetupPage extends StatefulWidget {
   const ProfileSetupPage({super.key});
@@ -131,14 +132,28 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
 
   @override
   Widget build(BuildContext context) {
+    final steps = [
+      ProfileDetailsStep(profileData: _profileData, onNext: _nextStep),
+      GenderInterestStep(profileData: _profileData, onNext: _nextStep),
+      LookingForStep(profileData: _profileData, onNext: _nextStep),
+      StudyStyleStep(profileData: _profileData, onNext: _nextStep),
+      WeekendHabitStep(profileData: _profileData, onNext: _nextStep),
+      InterestsStep(profileData: _profileData, onNext: _nextStep),
+      CampusLifeStep(profileData: _profileData, onNext: _nextStep),
+      AfterGraduationStep(profileData: _profileData, onNext: _nextStep),
+      CommunicationStep(profileData: _profileData, onNext: _nextStep),
+      DealBreakersStep(profileData: _profileData, onNext: _nextStep),
+      PhotoUploadStep(profileData: _profileData, onNext: _nextStep),
+      ProfileVerificationStep(profileData: _profileData, onNext: _nextStep),
+      VoiceRecordingStep(profileData: _profileData, onNext: _nextStep),
+    ];
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.colors.surface,
         elevation: 0,
         leading: _currentStep > 0
             ? IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.black),
+                icon: Icon(Icons.arrow_back, color: context.colors.onSurface),
                 onPressed: _previousStep,
               )
             : null,
@@ -146,12 +161,12 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
           children: [
             Text(
               '${_currentStep + 1} of ${_stepTitles.length}',
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 14, color: context.colors.onSurface),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
             LinearProgressIndicator(
               value: (_currentStep + 1) / _stepTitles.length,
-              backgroundColor: Colors.grey.shade200,
+              backgroundColor: context.colors.onSurface,
               valueColor: const AlwaysStoppedAnimation<Color>(
                 Color(0xFFfa5eff),
               ),
@@ -163,21 +178,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
       body: PageView(
         controller: _pageController,
         physics: const NeverScrollableScrollPhysics(), // Prevent swiping
-        children: [
-          ProfileDetailsStep(profileData: _profileData, onNext: _nextStep),
-          GenderInterestStep(profileData: _profileData, onNext: _nextStep),
-          LookingForStep(profileData: _profileData, onNext: _nextStep),
-          StudyStyleStep(profileData: _profileData, onNext: _nextStep),
-          WeekendHabitStep(profileData: _profileData, onNext: _nextStep),
-          InterestsStep(profileData: _profileData, onNext: _nextStep),
-          CampusLifeStep(profileData: _profileData, onNext: _nextStep),
-          AfterGraduationStep(profileData: _profileData, onNext: _nextStep),
-          CommunicationStep(profileData: _profileData, onNext: _nextStep),
-          DealBreakersStep(profileData: _profileData, onNext: _nextStep),
-          PhotoUploadStep(profileData: _profileData, onNext: _nextStep),
-          ProfileVerificationStep(profileData: _profileData, onNext: _nextStep),
-          VoiceRecordingStep(profileData: _profileData, onNext: _nextStep),
-        ],
+        children: steps,
       ),
     );
   }

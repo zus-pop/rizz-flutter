@@ -1,7 +1,9 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:audioplayers/audioplayers.dart';
 import 'package:rizz_mobile/models/profile.dart';
+import 'package:rizz_mobile/theme/app_theme.dart';
+import 'package:rizz_mobile/pages/chatbot.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:rizz_mobile/widgets/audio_player_dialog.dart';
 
 class SwipeCard extends StatefulWidget {
   final Profile profile;
@@ -13,6 +15,24 @@ class SwipeCard extends StatefulWidget {
 }
 
 class _SwipeCardState extends State<SwipeCard> {
+  void _showChatbot(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => FractionallySizedBox(
+        heightFactor: 0.85,
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Chatbot(profile: widget.profile),
+        ),
+      ),
+    );
+  }
+
   int currentImageIndex = 0;
 
   @override
@@ -171,6 +191,31 @@ class _SwipeCardState extends State<SwipeCard> {
               ),
             ],
 
+            // AI icon at top left
+            Positioned(
+              top: 40,
+              left: 20,
+              child: GestureDetector(
+                onTap: () => _showChatbot(context),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.6),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.smart_toy_rounded,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+              ),
+            ),
+
             // User information - with pointer events for info button only
             Positioned(
               bottom: 0,
@@ -187,6 +232,8 @@ class _SwipeCardState extends State<SwipeCard> {
                       // Name and age
                       Row(
                         children: [
+                          // ...existing code for name, age, info button (remove AI icon here)...
+                          const SizedBox(width: 8),
                           Expanded(
                             child: IgnorePointer(
                               child: Text(
@@ -205,7 +252,7 @@ class _SwipeCardState extends State<SwipeCard> {
                             child: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.3),
+                                color: Colors.white.withValues(alpha: .3),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(
@@ -272,7 +319,7 @@ class _SwipeCardState extends State<SwipeCard> {
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: Color(0xFFfa5eff).withValues(alpha: 0.3),
+                                color: context.primary.withValues(alpha: 0.3),
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
                                   color: Colors.white.withValues(alpha: 0.5),
@@ -383,9 +430,9 @@ class _SwipeCardState extends State<SwipeCard> {
         snapSizes: [.75],
         builder: (context, scrollController) {
           return Container(
-            decoration: const BoxDecoration(
-              color: Color(0xFF080026), // Secondary color background
-              borderRadius: BorderRadius.only(
+            decoration: BoxDecoration(
+              color: context.colors.surfaceContainerHighest,
+              borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(20),
                 topRight: Radius.circular(20),
               ),
@@ -466,10 +513,8 @@ class _SwipeCardState extends State<SwipeCard> {
                               // Profile details
                               Text(
                                 '${widget.profile.name}, ${widget.profile.age}',
-                                style: const TextStyle(
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                                style: AppTheme.headline1.copyWith(
+                                  color: context.onSurface,
                                 ),
                               ),
 
@@ -480,14 +525,13 @@ class _SwipeCardState extends State<SwipeCard> {
                                   Icon(
                                     Icons.location_on,
                                     size: 20,
-                                    color: Color(0xFFfa5eff),
+                                    color: context.primary,
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
                                     widget.profile.location,
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      color: Colors.white,
+                                    style: AppTheme.body1.copyWith(
+                                      color: context.onSurface,
                                     ),
                                   ),
                                 ],
@@ -497,10 +541,8 @@ class _SwipeCardState extends State<SwipeCard> {
 
                               Text(
                                 'About',
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFFfa5eff),
+                                style: AppTheme.headline4.copyWith(
+                                  color: context.primary,
                                 ),
                               ),
 
@@ -508,9 +550,8 @@ class _SwipeCardState extends State<SwipeCard> {
 
                               Text(
                                 widget.profile.bio,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.white,
+                                style: AppTheme.body1.copyWith(
+                                  color: context.onSurface,
                                 ),
                               ),
 
@@ -518,10 +559,8 @@ class _SwipeCardState extends State<SwipeCard> {
 
                               Text(
                                 'Interests',
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFFfa5eff),
+                                style: AppTheme.headline4.copyWith(
+                                  color: context.primary,
                                 ),
                               ),
 
@@ -539,21 +578,20 @@ class _SwipeCardState extends State<SwipeCard> {
                                       vertical: 8,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: Color(
-                                        0xFFfa5eff,
-                                      ).withValues(alpha: 0.1),
+                                      color: context.primary.withValues(
+                                        alpha: 0.1,
+                                      ),
                                       borderRadius: BorderRadius.circular(25),
                                       border: Border.all(
-                                        color: Color(
-                                          0xFFfa5eff,
-                                        ).withValues(alpha: 0.3),
+                                        color: context.primary.withValues(
+                                          alpha: 0.3,
+                                        ),
                                       ),
                                     ),
                                     child: Text(
                                       interest,
-                                      style: TextStyle(
-                                        color: Color(0xFFfa5eff),
-                                        fontSize: 14,
+                                      style: AppTheme.body2.copyWith(
+                                        color: context.primary,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
@@ -575,324 +613,6 @@ class _SwipeCardState extends State<SwipeCard> {
             ),
           );
         },
-      ),
-    );
-  }
-}
-
-class AudioPlayerDialog extends StatefulWidget {
-  final String audioUrl;
-  final String userName;
-
-  const AudioPlayerDialog({
-    super.key,
-    required this.audioUrl,
-    required this.userName,
-  });
-
-  @override
-  State<AudioPlayerDialog> createState() => _AudioPlayerDialogState();
-}
-
-class _AudioPlayerDialogState extends State<AudioPlayerDialog> {
-  late AudioPlayer _audioPlayer;
-  bool _isPlaying = false;
-  bool _isLoading = false;
-  bool _hasError = false;
-  bool _isCompleted = false;
-  bool _isRestarting = false; // Track restart operation
-  Duration _duration = Duration.zero;
-  Duration _position = Duration.zero;
-
-  @override
-  void initState() {
-    super.initState();
-    _audioPlayer = AudioPlayer();
-    _setupAudioListeners();
-    _loadAudio();
-  }
-
-  void _setupAudioListeners() {
-    _audioPlayer.onDurationChanged.listen((duration) {
-      if (mounted) {
-        setState(() {
-          _duration = duration;
-        });
-      }
-    });
-
-    _audioPlayer.onPositionChanged.listen((position) {
-      if (mounted) {
-        setState(() {
-          _position = position;
-        });
-      }
-    });
-
-    _audioPlayer.onPlayerStateChanged.listen((state) {
-      debugPrint('Audio player state changed: $state');
-      if (mounted) {
-        setState(() {
-          _isPlaying = state == PlayerState.playing;
-          _isCompleted = state == PlayerState.completed;
-          if (state == PlayerState.completed) {
-            _isPlaying = false;
-            debugPrint('Audio completed - setting _isCompleted to true');
-          }
-        });
-      }
-    });
-  }
-
-  Future<void> _loadAudio() async {
-    setState(() {
-      _isLoading = true;
-      _hasError = false;
-    });
-
-    try {
-      await _audioPlayer.setSource(UrlSource(widget.audioUrl));
-      setState(() {
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _hasError = true;
-      });
-      debugPrint('Error loading audio: $e');
-    }
-  }
-
-  @override
-  void dispose() {
-    _audioPlayer.dispose();
-    super.dispose();
-  }
-
-  Future<void> _playPause() async {
-    if (_hasError) {
-      // Try to reload audio if there was an error
-      await _loadAudio();
-      return;
-    }
-
-    try {
-      if (_isPlaying) {
-        debugPrint('Pausing audio');
-        await _audioPlayer.pause();
-      } else {
-        // If audio has completed or is at the end, restart from beginning
-        if (_isCompleted ||
-            (_position >= _duration && _duration > Duration.zero)) {
-          debugPrint('Audio completed - restarting from beginning');
-
-          setState(() {
-            _isRestarting = true;
-          });
-
-          debugPrint('Trying stop/reload...');
-          // If seek fails, fall back to stop/reload
-          try {
-            await _audioPlayer.stop();
-            await _audioPlayer.setSource(UrlSource(widget.audioUrl));
-            await _audioPlayer.resume();
-
-            setState(() {
-              _isCompleted = false;
-              _position = Duration.zero;
-              _isRestarting = false;
-            });
-          } catch (reloadError) {
-            debugPrint('Reload also failed: $reloadError');
-            setState(() {
-              _hasError = true;
-              _isRestarting = false;
-            });
-          }
-        } else {
-          debugPrint('Resuming audio from position: $_position');
-          await _audioPlayer.resume();
-        }
-      }
-    } catch (e) {
-      debugPrint('Error playing/pausing audio: $e');
-      setState(() {
-        _hasError = true;
-      });
-    }
-  }
-
-  String _formatDuration(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, '0');
-    final minutes = twoDigits(duration.inMinutes.remainder(60));
-    final seconds = twoDigits(duration.inSeconds.remainder(60));
-    return '$minutes:$seconds';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      child: Container(
-        width: 320,
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: const Color(0xFF080026),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.3),
-              spreadRadius: 2,
-              blurRadius: 15,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header with close button
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    '${widget.userName}\'s Voice',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.close,
-                      color: Colors.white,
-                      size: 18,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            // Audio waveform visualization
-            Container(
-              height: 80,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Center(
-                child: Icon(
-                  Icons.graphic_eq,
-                  color: Color(0xFFfa5eff),
-                  size: 48,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Progress slider
-            SliderTheme(
-              data: SliderTheme.of(context).copyWith(
-                activeTrackColor: const Color(0xFFfa5eff),
-                inactiveTrackColor: Colors.white.withValues(alpha: 0.3),
-                thumbColor: const Color(0xFFfa5eff),
-                overlayColor: const Color(0xFFfa5eff).withValues(alpha: 0.2),
-                trackHeight: 4,
-              ),
-              child: Slider(
-                value: _duration.inSeconds > 0
-                    ? _position.inSeconds.toDouble()
-                    : 0.0,
-                max: _duration.inSeconds.toDouble() > 0
-                    ? _duration.inSeconds.toDouble()
-                    : 1.0,
-                onChanged: (value) async {
-                  await _audioPlayer.seek(Duration(seconds: value.toInt()));
-                  setState(() {
-                    _isCompleted = false; // Reset completed state when seeking
-                  });
-                },
-              ),
-            ),
-
-            // Time indicators
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    _formatDuration(_position),
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
-                  ),
-                  Text(
-                    _formatDuration(_duration),
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Play/Pause button
-            GestureDetector(
-              onTap: _playPause,
-              child: Container(
-                width: 64,
-                height: 64,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFfa5eff),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Color(0xFFfa5eff),
-                      spreadRadius: 0,
-                      blurRadius: 20,
-                      offset: Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: _isLoading || _isRestarting
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : _hasError
-                    ? const Icon(Icons.error, color: Colors.white, size: 32)
-                    : Icon(
-                        _isPlaying
-                            ? Icons.pause
-                            : _isCompleted
-                            ? Icons.replay
-                            : Icons.play_arrow,
-                        color: Colors.white,
-                        size: 32,
-                      ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

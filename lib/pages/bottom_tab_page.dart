@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
+import 'package:provider/provider.dart';
 import 'package:rizz_mobile/pages/tabs/chat.dart';
 import 'package:rizz_mobile/pages/tabs/discover.dart';
 import 'package:rizz_mobile/pages/tabs/liked.dart';
 import 'package:rizz_mobile/pages/tabs/profile.dart';
+import 'package:rizz_mobile/providers/auth_provider.dart';
+import 'package:rizz_mobile/theme/app_theme.dart';
 
 class BottomTabPage extends StatefulWidget {
   const BottomTabPage({super.key});
@@ -14,9 +17,10 @@ class BottomTabPage extends StatefulWidget {
 
 class _BottomTabPageState extends State<BottomTabPage> {
   int _selectedIndex = 0;
-  late PageController _pageController;
+  final PageController _pageController = PageController();
+  final padding = EdgeInsets.symmetric(horizontal: 18, vertical: 12);
+  double gap = 10;
 
-  // Use const widgets to avoid rebuilds
   static const List<Widget> _tabs = <Widget>[
     Discover(),
     Liked(),
@@ -26,8 +30,17 @@ class _BottomTabPageState extends State<BottomTabPage> {
 
   @override
   void initState() {
+    context.read<AuthProvider>().updateToken();
     super.initState();
-    _pageController = PageController(initialPage: _selectedIndex);
+  }
+
+  void _onTabChange(int index) {
+    if (_selectedIndex != index) {
+      setState(() {
+        _selectedIndex = index;
+      });
+      _pageController.jumpToPage(index);
+    }
   }
 
   @override
@@ -40,54 +53,55 @@ class _BottomTabPageState extends State<BottomTabPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       extendBody: true,
-      backgroundColor: const Color(0xFF080026),
       body: Stack(
         children: [
-          // Use PageView for better performance
           PageView(
             controller: _pageController,
-            onPageChanged: (index) {
-              setState(() {
-                _selectedIndex = index;
-              });
-            },
+            physics: const NeverScrollableScrollPhysics(),
             children: _tabs,
           ),
           Positioned(
-            bottom: 5,
+            bottom: 5, // Distance from bottom
             left: 0,
             right: 0,
             child: Center(
               child: Container(
                 margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF080026),
+                  color: context.surface,
                   borderRadius: BorderRadius.circular(30.0),
+                  border: Border.all(
+                    color: context.outline.withValues(alpha: 0.2),
+                    width: 1,
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.2),
+                      color: context.onSurface.withValues(alpha: 0.2),
                       spreadRadius: 2,
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(30.0),
                   child: GNav(
-                    rippleColor: const Color(0xFFfa5eff).withValues(alpha: 0.3),
-                    hoverColor: const Color(0xFFfa5eff).withValues(alpha: 0.2),
+                    rippleColor: context.primary.withValues(alpha: 0.3),
+                    hoverColor: context.primary.withValues(alpha: 0.2),
                     gap: 8,
-                    activeColor: Color(0xFF080026),
+                    activeColor: context.onPrimary,
                     iconSize: 24,
-                    tabMargin: const EdgeInsets.symmetric(
+                    tabMargin: const EdgeInsetsGeometry.symmetric(
                       vertical: 5,
                       horizontal: 5,
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 15,
+                      vertical: 15,
+                    ),
                     duration: const Duration(milliseconds: 400),
-                    tabBackgroundColor: const Color(0xFFfa5eff).withValues(alpha: 0.8),
-                    color: Colors.white70,
+                    tabBackgroundColor: context.primary,
+                    color: context.onSurface.withValues(alpha: 0.6),
                     tabs: const [
                       GButton(icon: Icons.home, text: 'Discover'),
                       GButton(icon: Icons.favorite, text: 'Liked'),
@@ -95,13 +109,7 @@ class _BottomTabPageState extends State<BottomTabPage> {
                       GButton(icon: Icons.person, text: 'Profile'),
                     ],
                     selectedIndex: _selectedIndex,
-                    onTabChange: (index) {
-                      _pageController.animateToPage(
-                        index,
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                      );
-                    },
+                    onTabChange: _onTabChange,
                   ),
                 ),
               ),

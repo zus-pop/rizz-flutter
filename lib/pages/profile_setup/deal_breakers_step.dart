@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rizz_mobile/models/profile_setup_data.dart';
 import 'package:rizz_mobile/constants/profile_options.dart';
+import 'package:rizz_mobile/theme/app_theme.dart';
 
 class DealBreakersStep extends StatefulWidget {
   final ProfileSetupData profileData;
@@ -18,7 +19,8 @@ class DealBreakersStep extends StatefulWidget {
 
 class _DealBreakersStepState extends State<DealBreakersStep> {
   Set<String> _selectedDealBreakers = <String>{};
-  final primaryColor = const Color(0xFFfa5eff);
+
+  bool get _isFormValid => _selectedDealBreakers.isNotEmpty;
 
   @override
   void initState() {
@@ -44,7 +46,7 @@ class _DealBreakersStepState extends State<DealBreakersStep> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.surface,
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -58,7 +60,10 @@ class _DealBreakersStepState extends State<DealBreakersStep> {
             const SizedBox(height: 8),
             Text(
               'Optional. Tap to select what you absolutely',
-              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+              style: TextStyle(
+                fontSize: 16,
+                color: context.onSurface.withValues(alpha: 0.7),
+              ),
             ),
             const SizedBox(height: 40),
 
@@ -80,18 +85,20 @@ class _DealBreakersStepState extends State<DealBreakersStep> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: isSelected ? primaryColor : Colors.white,
+                          color: isSelected
+                              ? context.primary
+                              : context.colors.surface,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: isSelected
-                                ? primaryColor
-                                : Colors.grey.shade300,
+                                ? context.primary
+                                : context.outline,
                             width: 1,
                           ),
                           boxShadow: [
                             if (isSelected)
                               BoxShadow(
-                                color: primaryColor.withValues(alpha: .3),
+                                color: context.primary.withValues(alpha: .3),
                                 blurRadius: 8,
                                 spreadRadius: 0,
                               ),
@@ -102,7 +109,9 @@ class _DealBreakersStepState extends State<DealBreakersStep> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
-                            color: isSelected ? Colors.white : Colors.black87,
+                            color: isSelected
+                                ? context.colors.onPrimary
+                                : context.onSurface,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -119,7 +128,10 @@ class _DealBreakersStepState extends State<DealBreakersStep> {
               children: [
                 Text(
                   '9/10',
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: context.onSurface.withValues(alpha: 0.7),
+                  ),
                 ),
               ],
             ),
@@ -129,14 +141,15 @@ class _DealBreakersStepState extends State<DealBreakersStep> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _saveAndNext,
+                onPressed: _isFormValid ? _saveAndNext : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
-                  foregroundColor: Colors.white,
+                  backgroundColor: context.primary,
+                  foregroundColor: context.colors.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
+                  disabledBackgroundColor: context.outline,
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,

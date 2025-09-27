@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rizz_mobile/models/profile_setup_data.dart';
 import 'package:rizz_mobile/constants/profile_options.dart';
+import 'package:rizz_mobile/theme/app_theme.dart';
 
 class CommunicationStep extends StatefulWidget {
   final ProfileSetupData profileData;
@@ -18,7 +19,6 @@ class CommunicationStep extends StatefulWidget {
 
 class _CommunicationStepState extends State<CommunicationStep> {
   String? _selectedCommunication;
-  final primaryColor = const Color(0xFFfa5eff);
 
   @override
   void initState() {
@@ -38,16 +38,16 @@ class _CommunicationStepState extends State<CommunicationStep> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.surface,
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 20),
-            const Text(
+            Text(
               'I prefer to',
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+              style: AppTheme.headline2.copyWith(color: context.onSurface),
             ),
             const SizedBox(height: 40),
 
@@ -66,16 +66,18 @@ class _CommunicationStepState extends State<CommunicationStep> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: isSelected ? primaryColor : Colors.white,
+                      color: isSelected
+                          ? context.primary
+                          : context.colors.surface,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isSelected ? primaryColor : Colors.grey.shade300,
+                        color: isSelected ? context.primary : context.outline,
                         width: 1,
                       ),
                       boxShadow: [
                         if (isSelected)
                           BoxShadow(
-                            color: primaryColor.withValues(alpha: .3),
+                            color: context.primary.withValues(alpha: .3),
                             blurRadius: 8,
                             spreadRadius: 0,
                           ),
@@ -86,21 +88,24 @@ class _CommunicationStepState extends State<CommunicationStep> {
                       children: [
                         Text(
                           comm.name,
-                          style: TextStyle(
+                          style: AppTheme.body1.copyWith(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
-                            color: isSelected ? Colors.white : Colors.black87,
+                            color: isSelected
+                                ? context.colors.onPrimary
+                                : context.onSurface,
                           ),
                         ),
                         if (comm.description != null) ...[
                           const SizedBox(height: 8),
                           Text(
                             comm.description!,
-                            style: TextStyle(
-                              fontSize: 14,
+                            style: AppTheme.caption.copyWith(
                               color: isSelected
-                                  ? Colors.white.withValues(alpha: .9)
-                                  : Colors.grey.shade600,
+                                  ? context.colors.onPrimary.withValues(
+                                      alpha: .9,
+                                    )
+                                  : context.onSurface.withValues(alpha: 0.7),
                             ),
                           ),
                         ],
@@ -119,7 +124,9 @@ class _CommunicationStepState extends State<CommunicationStep> {
               children: [
                 Text(
                   '8/10',
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                  style: AppTheme.caption.copyWith(
+                    color: context.onSurface.withValues(alpha: 0.7),
+                  ),
                 ),
               ],
             ),
@@ -131,26 +138,25 @@ class _CommunicationStepState extends State<CommunicationStep> {
               child: ElevatedButton(
                 onPressed: _isFormValid ? _saveAndNext : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
-                  foregroundColor: Colors.white,
+                  backgroundColor: context.primary,
+                  foregroundColor: context.colors.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  disabledBackgroundColor: Colors.grey.shade300,
+                  disabledBackgroundColor: context.outline,
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
+                    Text(
                       'Next',
-                      style: TextStyle(
-                        fontSize: 16,
+                      style: AppTheme.body1.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Icon(Icons.arrow_forward, size: 20),
+                    const Icon(Icons.arrow_forward, size: 20),
                   ],
                 ),
               ),
@@ -162,3 +168,4 @@ class _CommunicationStepState extends State<CommunicationStep> {
     );
   }
 }
+

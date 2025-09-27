@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:rizz_mobile/constants/profile_options.dart';
+import 'package:rizz_mobile/providers/app_setting_provider.dart';
+import 'package:rizz_mobile/theme/app_theme.dart';
+import 'package:rizz_mobile/theme/theme.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -10,9 +14,6 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage>
     with SingleTickerProviderStateMixin {
-  final primaryColor = const Color(0xFFfa5eff);
-  final secondaryColor = const Color(0xFF080026);
-
   late TabController _tabController;
 
   // Preference Settings (Discovery & Matching)
@@ -70,21 +71,22 @@ class _SettingsPageState extends State<SettingsPage>
 
   @override
   Widget build(BuildContext context) {
+    _darkMode = context.watch<AppSettingProvider>().themeData == darkMode;
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: context.colors.surface,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Settings',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+          style: AppTheme.headline3.copyWith(color: context.colors.onPrimary),
         ),
-        backgroundColor: primaryColor,
-        foregroundColor: Colors.white,
+        backgroundColor: context.primary,
+        foregroundColor: context.colors.onPrimary,
         elevation: 0,
         bottom: TabBar(
           controller: _tabController,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          indicatorColor: Colors.white,
+          labelColor: context.colors.onPrimary,
+          unselectedLabelColor: context.colors.onPrimary.withValues(alpha: 0.7),
+          indicatorColor: context.colors.onPrimary,
           indicatorWeight: 3,
           tabs: const [
             Tab(icon: Icon(Icons.tune), text: 'Preferences'),
@@ -168,7 +170,7 @@ class _SettingsPageState extends State<SettingsPage>
           children: [
             Row(
               children: [
-                Icon(Icons.cake, color: primaryColor, size: 20),
+                Icon(Icons.cake, color: context.primary, size: 20),
                 const SizedBox(width: 8),
                 const Text(
                   'Age Range',
@@ -179,15 +181,18 @@ class _SettingsPageState extends State<SettingsPage>
             const SizedBox(height: 8),
             Text(
               '${_ageRange.start.round()} - ${_ageRange.end.round()} years old',
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+              style: TextStyle(
+                fontSize: 14,
+                color: context.onSurface.withValues(alpha: 0.7),
+              ),
             ),
             const SizedBox(height: 16),
             RangeSlider(
               min: 18,
               max: 100,
               divisions: 82,
-              activeColor: primaryColor,
-              inactiveColor: primaryColor.withValues(alpha: 0.3),
+              activeColor: context.primary,
+              inactiveColor: context.primary.withValues(alpha: 0.3),
               values: _ageRange,
               labels: RangeLabels(
                 _ageRange.start.round().toString(),
@@ -210,7 +215,7 @@ class _SettingsPageState extends State<SettingsPage>
           children: [
             Row(
               children: [
-                Icon(Icons.location_on, color: primaryColor, size: 20),
+                Icon(Icons.location_on, color: context.primary, size: 20),
                 const SizedBox(width: 8),
                 const Text(
                   'Maximum Distance',
@@ -221,15 +226,18 @@ class _SettingsPageState extends State<SettingsPage>
             const SizedBox(height: 8),
             Text(
               _distance == 100 ? 'Anywhere' : '${_distance.round()} km away',
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+              style: TextStyle(
+                fontSize: 14,
+                color: context.onSurface.withValues(alpha: 0.7),
+              ),
             ),
             const SizedBox(height: 16),
             Slider(
               min: 1,
               max: 100,
               divisions: 99,
-              activeColor: primaryColor,
-              inactiveColor: primaryColor.withValues(alpha: 0.3),
+              activeColor: context.primary,
+              inactiveColor: context.primary.withValues(alpha: 0.3),
               value: _distance,
               label: _distance == 100 ? 'Anywhere' : '${_distance.round()} km',
               onChanged: (value) => setState(() => _distance = value),
@@ -249,7 +257,7 @@ class _SettingsPageState extends State<SettingsPage>
           children: [
             Row(
               children: [
-                Icon(Icons.favorite, color: primaryColor, size: 20),
+                Icon(Icons.favorite, color: context.primary, size: 20),
                 const SizedBox(width: 8),
                 const Text(
                   'Looking for',
@@ -272,16 +280,20 @@ class _SettingsPageState extends State<SettingsPage>
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: isSelected ? primaryColor : Colors.white,
+                      color: isSelected
+                          ? context.primary
+                          : context.colors.surfaceContainerHigh,
                       border: Border.all(
-                        color: isSelected ? primaryColor : Colors.grey.shade300,
+                        color: isSelected ? context.primary : context.outline,
                       ),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Text(
                       option.name,
                       style: TextStyle(
-                        color: isSelected ? Colors.white : Colors.black87,
+                        color: isSelected
+                            ? context.colors.onPrimary
+                            : context.onSurface,
                         fontWeight: isSelected
                             ? FontWeight.w600
                             : FontWeight.normal,
@@ -306,7 +318,7 @@ class _SettingsPageState extends State<SettingsPage>
           children: [
             Row(
               children: [
-                Icon(Icons.interests, color: primaryColor, size: 20),
+                Icon(Icons.interests, color: context.primary, size: 20),
                 const SizedBox(width: 8),
                 const Text(
                   'Interests',
@@ -317,7 +329,10 @@ class _SettingsPageState extends State<SettingsPage>
             const SizedBox(height: 8),
             Text(
               'Select up to 5 interests (${_selectedInterests.length}/5)',
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+              style: TextStyle(
+                fontSize: 14,
+                color: context.onSurface.withValues(alpha: 0.7),
+              ),
             ),
             const SizedBox(height: 16),
             Wrap(
@@ -341,16 +356,20 @@ class _SettingsPageState extends State<SettingsPage>
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: isSelected ? primaryColor : Colors.white,
+                      color: isSelected
+                          ? context.primary
+                          : context.colors.surfaceContainerHigh,
                       border: Border.all(
-                        color: isSelected ? primaryColor : Colors.grey.shade300,
+                        color: isSelected ? context.primary : context.outline,
                       ),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Text(
                       interest.name,
                       style: TextStyle(
-                        color: isSelected ? Colors.white : Colors.black87,
+                        color: isSelected
+                            ? context.colors.onPrimary
+                            : context.onSurface,
                         fontWeight: isSelected
                             ? FontWeight.w600
                             : FontWeight.normal,
@@ -376,7 +395,7 @@ class _SettingsPageState extends State<SettingsPage>
           children: [
             Row(
               children: [
-                Icon(Icons.school, color: primaryColor, size: 20),
+                Icon(Icons.school, color: context.primary, size: 20),
                 const SizedBox(width: 8),
                 const Text(
                   'University',
@@ -421,7 +440,7 @@ class _SettingsPageState extends State<SettingsPage>
           children: [
             Row(
               children: [
-                Icon(Icons.work, color: primaryColor, size: 20),
+                Icon(Icons.work, color: context.primary, size: 20),
                 const SizedBox(width: 8),
                 const Text(
                   'After Graduation',
@@ -465,7 +484,7 @@ class _SettingsPageState extends State<SettingsPage>
           children: [
             Row(
               children: [
-                Icon(Icons.favorite, color: primaryColor, size: 20),
+                Icon(Icons.favorite, color: context.primary, size: 20),
                 const SizedBox(width: 8),
                 const Text(
                   'Love Language',
@@ -509,7 +528,7 @@ class _SettingsPageState extends State<SettingsPage>
           children: [
             Row(
               children: [
-                Icon(Icons.stars, color: primaryColor, size: 20),
+                Icon(Icons.stars, color: context.primary, size: 20),
                 const SizedBox(width: 8),
                 const Text(
                   'Zodiac Sign',
@@ -552,7 +571,7 @@ class _SettingsPageState extends State<SettingsPage>
           children: [
             Row(
               children: [
-                Icon(Icons.person, color: primaryColor, size: 20),
+                Icon(Icons.person, color: context.primary, size: 20),
                 const SizedBox(width: 8),
                 const Text(
                   'Gender',
@@ -571,10 +590,10 @@ class _SettingsPageState extends State<SettingsPage>
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? primaryColor.withValues(alpha: 0.1)
+                          ? context.primary.withValues(alpha: 0.1)
                           : Colors.transparent,
                       border: Border.all(
-                        color: isSelected ? primaryColor : Colors.grey.shade300,
+                        color: isSelected ? context.primary : context.outline,
                       ),
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -583,8 +602,8 @@ class _SettingsPageState extends State<SettingsPage>
                         Icon(
                           Icons.person,
                           color: isSelected
-                              ? primaryColor
-                              : Colors.grey.shade600,
+                              ? context.primary
+                              : context.onSurface.withValues(alpha: 0.7),
                           size: 20,
                         ),
                         const SizedBox(width: 12),
@@ -595,14 +614,16 @@ class _SettingsPageState extends State<SettingsPage>
                               fontWeight: isSelected
                                   ? FontWeight.w600
                                   : FontWeight.normal,
-                              color: isSelected ? primaryColor : Colors.black87,
+                              color: isSelected
+                                  ? context.primary
+                                  : context.onSurface,
                             ),
                           ),
                         ),
                         if (isSelected)
                           Icon(
                             Icons.check_circle,
-                            color: primaryColor,
+                            color: context.primary,
                             size: 20,
                           ),
                       ],
@@ -627,7 +648,7 @@ class _SettingsPageState extends State<SettingsPage>
           children: [
             Row(
               children: [
-                Icon(Icons.notifications, color: primaryColor, size: 20),
+                Icon(Icons.notifications, color: context.primary, size: 20),
                 const SizedBox(width: 8),
                 const Text(
                   'Notifications',
@@ -664,7 +685,7 @@ class _SettingsPageState extends State<SettingsPage>
           children: [
             Row(
               children: [
-                Icon(Icons.privacy_tip, color: primaryColor, size: 20),
+                Icon(Icons.privacy_tip, color: context.primary, size: 20),
                 const SizedBox(width: 8),
                 const Text(
                   'Privacy & Visibility',
@@ -708,7 +729,7 @@ class _SettingsPageState extends State<SettingsPage>
           children: [
             Row(
               children: [
-                Icon(Icons.palette, color: primaryColor, size: 20),
+                Icon(Icons.palette, color: context.primary, size: 20),
                 const SizedBox(width: 8),
                 const Text(
                   'App Appearance',
@@ -721,7 +742,7 @@ class _SettingsPageState extends State<SettingsPage>
               'Dark Mode',
               'Use dark theme for the app',
               _darkMode,
-              (value) => setState(() => _darkMode = value),
+              (value) => context.read<AppSettingProvider>().toggleTheme(),
             ),
             const Divider(),
             ListTile(
@@ -750,7 +771,7 @@ class _SettingsPageState extends State<SettingsPage>
                         },
                         child: Text(
                           'Sign Out',
-                          style: TextStyle(color: Colors.red.shade400),
+                          style: TextStyle(color: context.colors.error),
                         ),
                       ),
                     ],
@@ -772,13 +793,18 @@ class _SettingsPageState extends State<SettingsPage>
   ) {
     return SwitchListTile(
       contentPadding: EdgeInsets.zero,
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
+      title: Text(
+        title,
+        style: AppTheme.body1.copyWith(fontWeight: FontWeight.w500),
+      ),
       subtitle: Text(
         subtitle,
-        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+        style: AppTheme.caption.copyWith(
+          color: context.onSurface.withValues(alpha: 0.7),
+        ),
       ),
       value: value,
-      activeThumbColor: primaryColor,
+      activeColor: context.primary,
       onChanged: onChanged,
     );
   }
@@ -788,8 +814,11 @@ class _SettingsPageState extends State<SettingsPage>
     // TODO: Save settings to backend/local storage
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('Settings saved successfully'),
-        backgroundColor: primaryColor,
+        content: Text(
+          'Settings saved successfully',
+          style: AppTheme.body1.copyWith(color: context.colors.onPrimary),
+        ),
+        backgroundColor: context.primary,
       ),
     );
   }

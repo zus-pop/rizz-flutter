@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:rizz_mobile/firebase_options.dart';
 import 'package:rizz_mobile/pages/bottom_tab_page.dart';
 import 'package:rizz_mobile/pages/details/detail_chat.dart';
-import 'package:rizz_mobile/pages/test.dart';
+import 'package:rizz_mobile/providers/app_setting_provider.dart';
 import 'package:rizz_mobile/providers/auth_provider.dart';
 import 'package:rizz_mobile/providers/profile_provider.dart';
 
@@ -19,13 +19,15 @@ Future<void> main() async {
     debugPrint('[Message]: ${remoteMessage.notification?.title}');
   });
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-  runApp(MyApp());
+  runApp(
+    ChangeNotifierProvider(create: (_) => AppSettingProvider(), child: MyApp()),
+  );
 }
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(
-    RemoteMessage remoteMessage,
-    ) async {
+  RemoteMessage remoteMessage,
+) async {
   debugPrint('[Background Message]: ${remoteMessage.notification?.title}');
 }
 
@@ -40,10 +42,12 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
       ],
       child: MaterialApp(
+        showPerformanceOverlay: false,
         title: "Rizz",
-        theme: ThemeData(primaryColor: Color(0xFFfa5eff)),
-        home: Test(),
-        routes: {'/home': (context) => BottomTabPage(),
+        theme: Provider.of<AppSettingProvider>(context).themeData,
+        home: BottomTabPage(),
+        routes: {
+          '/home': (context) => BottomTabPage(),
           '/detail_chat': (context) => const DetailChat(),
         },
       ),

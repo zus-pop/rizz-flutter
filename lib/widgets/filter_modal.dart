@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rizz_mobile/theme/app_theme.dart';
 
 class FilterModal extends StatefulWidget {
   final RangeValues initialAgeRange;
@@ -31,9 +32,9 @@ class _FilterModalState extends State<FilterModal> {
   Widget build(BuildContext context) {
     return Container(
       height: MediaQuery.of(context).size.height * 0.7,
-      decoration: const BoxDecoration(
-        color: Color(0xFF080026), // Secondary color background
-        borderRadius: BorderRadius.only(
+      decoration: BoxDecoration(
+        color: context.colors.surfaceContainerHighest,
+        borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(20),
           topRight: Radius.circular(20),
         ),
@@ -46,7 +47,7 @@ class _FilterModalState extends State<FilterModal> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.grey[400],
+              color: context.outline,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -59,23 +60,19 @@ class _FilterModalState extends State<FilterModal> {
               children: [
                 Text(
                   'Filters',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFFfa5eff),
-                  ),
+                  style: AppTheme.headline3.copyWith(color: context.primary),
                 ),
                 GestureDetector(
                   onTap: () => Navigator.pop(context),
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.1),
+                      color: context.onSurface.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.close,
-                      color: Colors.white,
+                      color: context.onSurface,
                       size: 20,
                     ),
                   ),
@@ -94,31 +91,30 @@ class _FilterModalState extends State<FilterModal> {
                   const SizedBox(height: 20),
                   Text(
                     'Age Range',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                    style: AppTheme.headline4.copyWith(
+                      color: context.onSurface,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     '${_ageRange.start.round()} - ${_ageRange.end.round()} years old',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Color(0xFFfa5eff),
+                    style: AppTheme.body1.copyWith(
+                      color: context.primary,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(height: 16),
                   SliderTheme(
                     data: SliderTheme.of(context).copyWith(
-                      activeTrackColor: Color(0xFFfa5eff),
-                      inactiveTrackColor: Colors.white.withValues(alpha: 0.3),
-                      thumbColor: Color(0xFFfa5eff),
-                      overlayColor: Color(0xFFfa5eff).withValues(alpha: 0.2),
-                      valueIndicatorColor: Color(0xFFfa5eff),
-                      valueIndicatorTextStyle: const TextStyle(
-                        color: Colors.white,
+                      activeTrackColor: context.primary,
+                      inactiveTrackColor: context.onSurface.withValues(
+                        alpha: 0.3,
+                      ),
+                      thumbColor: context.primary,
+                      overlayColor: context.primary.withValues(alpha: 0.2),
+                      valueIndicatorColor: context.primary,
+                      valueIndicatorTextStyle: AppTheme.caption.copyWith(
+                        color: context.colors.onPrimary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -143,31 +139,30 @@ class _FilterModalState extends State<FilterModal> {
                   const SizedBox(height: 40),
                   Text(
                     'Maximum Distance',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                    style: AppTheme.headline4.copyWith(
+                      color: context.onSurface,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     _distance == 100 ? 'Anywhere' : '${_distance.round()} km',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Color(0xFFfa5eff),
+                    style: AppTheme.body1.copyWith(
+                      color: context.primary,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(height: 16),
                   SliderTheme(
                     data: SliderTheme.of(context).copyWith(
-                      activeTrackColor: Color(0xFFfa5eff),
-                      inactiveTrackColor: Colors.white.withValues(alpha: 0.3),
-                      thumbColor: Color(0xFFfa5eff),
-                      overlayColor: Color(0xFFfa5eff).withValues(alpha: 0.2),
-                      valueIndicatorColor: Color(0xFFfa5eff),
-                      valueIndicatorTextStyle: const TextStyle(
-                        color: Colors.white,
+                      activeTrackColor: context.primary,
+                      inactiveTrackColor: context.onSurface.withValues(
+                        alpha: 0.3,
+                      ),
+                      thumbColor: context.primary,
+                      overlayColor: context.primary.withValues(alpha: 0.2),
+                      valueIndicatorColor: context.primary,
+                      valueIndicatorTextStyle: AppTheme.caption.copyWith(
+                        color: context.colors.onPrimary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -202,7 +197,7 @@ class _FilterModalState extends State<FilterModal> {
                             });
                           },
                           style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: Color(0xFFfa5eff)),
+                            side: BorderSide(color: context.primary),
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -210,9 +205,8 @@ class _FilterModalState extends State<FilterModal> {
                           ),
                           child: Text(
                             'Reset',
-                            style: TextStyle(
-                              color: Color(0xFFfa5eff),
-                              fontSize: 16,
+                            style: AppTheme.body1.copyWith(
+                              color: context.primary,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -230,18 +224,17 @@ class _FilterModalState extends State<FilterModal> {
                             Navigator.pop(context);
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFFfa5eff),
+                            backgroundColor: context.primary,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                             elevation: 0,
                           ),
-                          child: const Text(
+                          child: Text(
                             'Apply Filters',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
+                            style: AppTheme.body1.copyWith(
+                              color: context.colors.onPrimary,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
