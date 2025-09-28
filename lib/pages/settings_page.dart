@@ -804,7 +804,7 @@ class _SettingsPageState extends State<SettingsPage>
         ),
       ),
       value: value,
-      activeColor: context.primary,
+      activeThumbColor: context.primary,
       onChanged: onChanged,
     );
   }

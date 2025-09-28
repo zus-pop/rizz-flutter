@@ -48,7 +48,7 @@ class _TypingIndicatorState extends State<_TypingIndicator>
             color:
                 Theme.of(
                   context,
-                ).textTheme.bodyMedium?.color?.withOpacity(0.7) ??
+                ).textTheme.bodyMedium?.color?.withValues(alpha: .7) ??
                 Colors.black54,
             fontSize: 15,
             fontStyle: FontStyle.italic,

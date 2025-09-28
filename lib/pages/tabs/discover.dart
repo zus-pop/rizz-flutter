@@ -41,6 +41,7 @@ class _DiscoverState extends State<Discover>
       backgroundColor: context.colors.surface,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
+        automaticallyImplyLeading: false,
         elevation: 0,
         title: Text(
           'Discover',
