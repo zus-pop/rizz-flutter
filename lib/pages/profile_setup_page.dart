@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rizz_mobile/models/profile_setup_data.dart';
+import 'package:rizz_mobile/pages/bottom_tab_page.dart';
 import 'package:rizz_mobile/pages/profile_setup/profile_details_step.dart';
 import 'package:rizz_mobile/pages/profile_setup/gender_interest_step.dart';
 import 'package:rizz_mobile/pages/profile_setup/looking_for_step.dart';
@@ -13,6 +14,7 @@ import 'package:rizz_mobile/pages/profile_setup/deal_breakers_step.dart';
 import 'package:rizz_mobile/pages/profile_setup/photo_upload_step.dart';
 import 'package:rizz_mobile/pages/profile_setup/profile_verification_step.dart';
 import 'package:rizz_mobile/pages/profile_setup/voice_recording_step.dart';
+import 'package:rizz_mobile/services/profile_setup_service.dart';
 import 'package:rizz_mobile/theme/app_theme.dart';
 
 class ProfileSetupPage extends StatefulWidget {
@@ -69,7 +71,10 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
     }
   }
 
-  void _completeSetup() {
+  void _completeSetup() async {
+    // Mark profile setup as complete
+    await ProfileSetupService.completeProfileSetup();
+
     // Handle setup completion - navigate to main app or show success
     showDialog(
       context: context,
