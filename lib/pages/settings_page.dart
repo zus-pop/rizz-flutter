@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rizz_mobile/constants/profile_options.dart';
+import 'package:rizz_mobile/pages/splash_screen.dart';
 import 'package:rizz_mobile/providers/app_setting_provider.dart';
+import 'package:rizz_mobile/providers/authentication_provider.dart';
+import 'package:rizz_mobile/services/onboarding_service.dart';
+import 'package:rizz_mobile/services/profile_setup_service.dart';
 import 'package:rizz_mobile/theme/app_theme.dart';
 import 'package:rizz_mobile/theme/theme.dart';
 
@@ -765,13 +769,83 @@ class _SettingsPageState extends State<SettingsPage>
                         child: const Text('Cancel'),
                       ),
                       TextButton(
-                        onPressed: () {
+                        onPressed: () async {
                           Navigator.pop(context);
-                          // TODO: Implement actual sign out with AuthProvider
+                          await _performSignOut();
                         },
                         child: Text(
                           'Sign Out',
                           style: TextStyle(color: context.colors.error),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            const Divider(),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.person_outline, color: Colors.blue.shade400),
+              title: const Text(
+                'Reset Profile Setup',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
+              subtitle: const Text('Redo profile setup process'),
+              onTap: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Reset Profile Setup'),
+                    content: const Text('This will reset your profile setup. You\'ll need to complete it again. Are you sure?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () async {
+                          Navigator.pop(context);
+                          await _resetProfileSetup();
+                        },
+                        child: Text(
+                          'Reset',
+                          style: TextStyle(color: Colors.blue.shade400),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            const Divider(),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.refresh, color: Colors.orange.shade400),
+              title: const Text(
+                'Reset Demo',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
+              subtitle: const Text('Reset onboarding for demo purposes'),
+              onTap: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Reset Demo'),
+                    content: const Text('This will reset the onboarding flow for demo. Are you sure?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () async {
+                          Navigator.pop(context);
+                          await _resetDemoFlow();
+                        },
+                        child: Text(
+                          'Reset',
+                          style: TextStyle(color: Colors.orange.shade400),
                         ),
                       ),
                     ],
@@ -821,5 +895,115 @@ class _SettingsPageState extends State<SettingsPage>
         backgroundColor: context.primary,
       ),
     );
+  }
+
+  // Logout functionality
+  Future<void> _performSignOut() async {
+    try {
+      // Clear authentication data
+      final authProvider = Provider.of<AuthenticationProvider>(context, listen: false);
+      await authProvider.logout();
+      
+      // Reset onboarding for demo purposes
+      await OnboardingService.resetOnboarding();
+      
+      // Reset profile setup as well
+      await ProfileSetupService.resetProfileSetup();
+      
+      if (mounted) {
+        // Navigate to splash screen to restart the flow
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const SplashScreen()),
+          (route) => false,
+        );
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Signed out successfully. Demo flow reset!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error signing out: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // Reset profile setup only
+  Future<void> _resetProfileSetup() async {
+    try {
+      // Reset profile setup
+      await ProfileSetupService.resetProfileSetup();
+      
+      if (!mounted) return;
+      
+      // Update the auth provider
+      final authProvider = Provider.of<AuthenticationProvider>(context, listen: false);
+      await authProvider.updateProfileSetupStatus();
+      
+      if (mounted) {
+        // Navigate to splash screen to restart the flow
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const SplashScreen()),
+          (route) => false,
+        );
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profile setup reset! You\'ll need to complete it again.'),
+            backgroundColor: Colors.blue,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error resetting profile setup: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // Reset demo flow for testing
+  Future<void> _resetDemoFlow() async {
+    try {
+      // Clear authentication data without logging out
+      // Reset onboarding to show it again
+      await OnboardingService.resetOnboarding();
+      
+      if (mounted) {
+        // Navigate to splash screen to restart the flow
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const SplashScreen()),
+          (route) => false,
+        );
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Demo flow reset! You\'ll see onboarding again.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error resetting demo: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }

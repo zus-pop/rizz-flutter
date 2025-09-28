@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rizz_mobile/models/profile_setup_data.dart';
+import 'package:rizz_mobile/pages/bottom_tab_page.dart';
 import 'package:rizz_mobile/pages/profile_setup/profile_details_step.dart';
 import 'package:rizz_mobile/pages/profile_setup/gender_interest_step.dart';
 import 'package:rizz_mobile/pages/profile_setup/looking_for_step.dart';
@@ -13,6 +14,7 @@ import 'package:rizz_mobile/pages/profile_setup/deal_breakers_step.dart';
 import 'package:rizz_mobile/pages/profile_setup/photo_upload_step.dart';
 import 'package:rizz_mobile/pages/profile_setup/profile_verification_step.dart';
 import 'package:rizz_mobile/pages/profile_setup/voice_recording_step.dart';
+import 'package:rizz_mobile/services/profile_setup_service.dart';
 import 'package:rizz_mobile/theme/app_theme.dart';
 
 class ProfileSetupPage extends StatefulWidget {
@@ -69,65 +71,72 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
     }
   }
 
-  void _completeSetup() {
+  void _completeSetup() async {
+    // Mark profile setup as complete
+    await ProfileSetupService.completeProfileSetup();
+    
     // Handle setup completion - navigate to main app or show success
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: .1),
-                  shape: BoxShape.circle,
+    if (mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withValues(alpha: .1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.check, color: Colors.green, size: 48),
                 ),
-                child: const Icon(Icons.check, color: Colors.green, size: 48),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Profile Setup Complete!',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Welcome to Rizz! Your profile is now ready to connect with others.',
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pushReplacementNamed(context, '/home');
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFfa5eff),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                const SizedBox(height: 16),
+                const Text(
+                  'Profile Setup Complete!',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Welcome to Rizz! Your profile is now ready to connect with others.',
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(builder: (context) => const BottomTabPage()),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFfa5eff),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text(
+                      'Start Connecting',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                     ),
                   ),
-                  child: const Text(
-                    'Start Connecting',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
                 ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
+              ],
+            ),
+          );
+        },
+      );
+    }
   }
 
   @override
