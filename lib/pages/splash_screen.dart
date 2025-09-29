@@ -8,7 +8,7 @@ import 'package:rizz_mobile/providers/authentication_provider.dart';
 import 'package:rizz_mobile/services/onboarding_service.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({Key? key}) : super(key: key);
+  const SplashScreen({super.key});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -23,15 +23,18 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _checkOnboardingStatus() async {
     await Future.delayed(const Duration(seconds: 2)); // Splash delay
-    
+
     if (!mounted) return;
-    
+
     // Initialize authentication provider
-    final authProvider = Provider.of<AuthenticationProvider>(context, listen: false);
+    final authProvider = Provider.of<AuthenticationProvider>(
+      context,
+      listen: false,
+    );
     await authProvider.initializeAuth();
-    
+
     if (!mounted) return;
-    
+
     // Check if user is logged in and profile setup is complete
     if (authProvider.isLoggedIn && authProvider.isProfileSetupComplete) {
       Navigator.pushReplacement(
@@ -51,10 +54,11 @@ class _SplashScreenState extends State<SplashScreen> {
     }
 
     // Check onboarding status for not logged in users
-    final bool onboardingComplete = await OnboardingService.isOnboardingComplete();
-    
+    final bool onboardingComplete =
+        await OnboardingService.isOnboardingComplete();
+
     if (!mounted) return;
-    
+
     if (onboardingComplete) {
       // Show login screen
       Navigator.pushReplacement(
@@ -73,46 +77,60 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.pink.shade400,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              height: 120,
-              width: 120,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(60),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              const Color(0xFFFEC5D7), // Top color
+              const Color(
+                0xFFFFE500,
+              ).withValues(alpha: 0.55), // Bottom color with 55% opacity
+            ],
+          ),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                height: 120,
+                width: 120,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(30),
+                  child: Image.asset(
+                    'assets/images/appicon.png',
+                    width: 60,
+                    height: 60,
+                    fit: BoxFit.contain,
+                  ),
+                ),
               ),
-              child: Icon(
-                Icons.favorite,
-                size: 60,
-                color: Colors.pink.shade400,
+              const SizedBox(height: 24),
+              const Text(
+                'Rizz',
+                style: TextStyle(
+                  fontSize: 40,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFFA5EFF),
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Rizz',
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+              const SizedBox(height: 8),
+              const Text(
+                'Find your perfect match',
+                style: TextStyle(fontSize: 20, color: Color(0xFFFA5EFF)),
               ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Find your perfect match',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.white70,
+              const SizedBox(height: 48),
+              const CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFA5EFF)),
               ),
-            ),
-            const SizedBox(height: 48),
-            const CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

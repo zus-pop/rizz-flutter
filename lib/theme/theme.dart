@@ -9,11 +9,16 @@ class AppColors {
   // Light mode colors - Purple palette
   static const Color lightBackground = Color.fromARGB(
     255,
-    245,
-    243,
+    252,
     251,
+    255,
   ); // Very light purple tint
-  static const Color lightSurface = Color(0xFFF4F1FF); // Light purple tint
+  static const Color lightSurface = Color.fromARGB(
+    255,
+    249,
+    248,
+    255,
+  ); // Light purple tint
   static const Color lightSurfaceVariant = Color(0xFFEEE9FF); // Purple tint
   static const Color lightOnBackground = Color(0xFF2A1B3D); // Dark purple
   static const Color lightOnSurface = Color(0xFF3D2C5A); // Purple-tinted dark
