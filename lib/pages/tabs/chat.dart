@@ -16,6 +16,8 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
   final TextEditingController ipController = TextEditingController();
   bool isServer = false;
   bool isConnecting = false;
+  StreamSubscription? _serverSubscription;
+
   @override
   bool get wantKeepAlive => true;
 
@@ -27,7 +29,7 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
 
   @override
   void dispose() {
-    // Don't close server here as it's still needed in detail_chat
+    _serverSubscription?.cancel();
     ipController.dispose();
     super.dispose();
   }
@@ -38,38 +40,65 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
         type: InternetAddressType.IPv4,
         includeLoopback: false,
       );
-      if (interfaces.isNotEmpty && mounted) {
-        final ipv4Addr = interfaces.first.addresses.first.address;
+
+      // Find the best network interface (prefer WiFi over mobile)
+      String? bestIP;
+      for (final interface in interfaces) {
+        for (final addr in interface.addresses) {
+          final ip = addr.address;
+          // Prefer 192.168.x.x or 10.x.x.x networks (common WiFi ranges)
+          if (ip.startsWith('192.168.') || ip.startsWith('10.')) {
+            bestIP = ip;
+            break;
+          } else if (bestIP == null) {
+            bestIP = ip; // Fallback to any valid IP
+          }
+        }
+        if (bestIP != null && (bestIP.startsWith('192.168.') || bestIP.startsWith('10.'))) {
+          break;
+        }
+      }
+
+      if (bestIP != null && mounted) {
         setState(() {
-          myIP = ipv4Addr;
+          myIP = bestIP!;
         });
+        print("Detected IP: $myIP"); // Debug log
       } else if (mounted) {
         setState(() {
           myIP = "Không tìm thấy IP";
         });
       }
     } catch (e) {
+      print("Error getting IP: $e"); // Debug log
       if (mounted) {
         setState(() {
-          myIP = "Lỗi lấy IP";
+          myIP = "Lỗi lấy IP: $e";
         });
       }
     }
   }
 
   Future<void> _startServer() async {
-    if (isConnecting) return;
+    if (isConnecting || isServer) return;
 
     setState(() {
       isConnecting = true;
     });
 
     try {
+      // Close existing server if any
+      await _stopServer();
+
       server = await ServerSocket.bind(InternetAddress.anyIPv4, 3000);
+      print("Server started on ${myIP}:3000"); // Debug log
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("✅ Server đang chạy tại $myIP:3000")),
+          SnackBar(
+            content: Text("✅ Server đang chạy tại $myIP:3000"),
+            duration: const Duration(seconds: 3),
+          ),
         );
 
         setState(() {
@@ -78,24 +107,57 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
         });
 
         // Listen for incoming connections
-        server!.listen((Socket client) {
-          if (mounted) {
-            Navigator.of(context).pushNamed(
-              '/detail_chat',
-              arguments: {'socket': client, 'isServer': true},
-            );
-          }
-        });
+        _serverSubscription = server!.listen(
+          (Socket client) {
+            print("Client connected from: ${client.remoteAddress.address}:${client.remotePort}"); // Debug log
+            if (mounted) {
+              Navigator.of(context).pushNamed(
+                '/detail_chat',
+                arguments: {'socket': client, 'isServer': true},
+              );
+            }
+          },
+          onError: (error) {
+            print("Server error: $error"); // Debug log
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text("❌ Lỗi server: $error")),
+              );
+            }
+          },
+          onDone: () {
+            print("Server closed"); // Debug log
+          },
+        );
       }
     } catch (e) {
+      print("Error starting server: $e"); // Debug log
       if (mounted) {
         setState(() {
           isConnecting = false;
+          isServer = false;
         });
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("❌ Lỗi khởi động server: $e")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("❌ Lỗi khởi động server: $e"),
+            duration: const Duration(seconds: 5),
+          ),
+        );
       }
+    }
+  }
+
+  Future<void> _stopServer() async {
+    if (server != null) {
+      await server!.close();
+      server = null;
+    }
+    _serverSubscription?.cancel();
+    _serverSubscription = null;
+    if (mounted) {
+      setState(() {
+        isServer = false;
+      });
     }
   }
 
@@ -108,6 +170,14 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
       return;
     }
 
+    // Validate IP format
+    if (!_isValidIP(serverIP)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("⚠️ Định dạng IP không hợp lệ")),
+      );
+      return;
+    }
+
     if (isConnecting) return;
 
     setState(() {
@@ -115,16 +185,27 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
     });
 
     try {
+      print("Attempting to connect to $serverIP:3000"); // Debug log
+
       clientSocket = await Socket.connect(
         serverIP,
         3000,
-        timeout: const Duration(seconds: 5),
+        timeout: const Duration(seconds: 10), // Increased timeout
       );
+
+      print("Connected to server successfully"); // Debug log
 
       if (mounted) {
         setState(() {
           isConnecting = false;
         });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("✅ Kết nối thành công đến $serverIP"),
+            duration: const Duration(seconds: 2),
+          ),
+        );
 
         Navigator.of(context).pushNamed(
           '/detail_chat',
@@ -132,15 +213,46 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
         );
       }
     } catch (e) {
+      print("Connection failed: $e"); // Debug log
       if (mounted) {
         setState(() {
           isConnecting = false;
         });
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("❌ Lỗi kết nối: $e")));
+
+        String errorMessage = "❌ Lỗi kết nối: ";
+        if (e is SocketException) {
+          if (e.osError?.errorCode == 111) {
+            errorMessage += "Không thể kết nối - Kiểm tra IP và server";
+          } else if (e.osError?.errorCode == 113) {
+            errorMessage += "Không tìm thấy route đến host";
+          } else {
+            errorMessage += "Lỗi socket: ${e.message}";
+          }
+        } else if (e is TimeoutException) {
+          errorMessage += "Hết thời gian chờ - Kiểm tra kết nối mạng";
+        } else {
+          errorMessage += e.toString();
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            duration: const Duration(seconds: 5),
+          ),
+        );
       }
     }
+  }
+
+  bool _isValidIP(String ip) {
+    final parts = ip.split('.');
+    if (parts.length != 4) return false;
+
+    for (final part in parts) {
+      final num = int.tryParse(part);
+      if (num == null || num < 0 || num > 255) return false;
+    }
+    return true;
   }
 
   @override
@@ -151,6 +263,14 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
         title: const Text('Chat'),
         backgroundColor: Colors.blue,
         centerTitle: true,
+        actions: [
+          if (isServer)
+            IconButton(
+              icon: const Icon(Icons.stop),
+              onPressed: _stopServer,
+              tooltip: 'Dừng server',
+            ),
+        ],
       ),
       body: Center(
         child: Padding(
@@ -164,14 +284,35 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
                   color: Colors.blue.shade50,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(
-                  'IP của bạn: $myIP',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue.shade700,
-                  ),
-                  textAlign: TextAlign.center,
+                child: Column(
+                  children: [
+                    Text(
+                      'IP của bạn: $myIP',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue.shade700,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    if (myIP != "Đang lấy IP..." && myIP != "Không tìm thấy IP" && !myIP.startsWith("Lỗi"))
+                      GestureDetector(
+                        onTap: () {
+                          ipController.text = myIP;
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            'Nhấn để copy vào ô kết nối',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.blue.shade600,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
               const SizedBox(height: 24),
@@ -202,18 +343,19 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: isConnecting || isServer ? null : _startServer,
+                  onPressed: isConnecting ? null : (isServer ? _stopServer : _startServer),
                   icon: isConnecting
                       ? const SizedBox(
                           width: 16,
                           height: 16,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Icon(Icons.dns),
-                  label: Text(isServer ? 'Server đang chạy' : 'Tạo Server'),
+                      : Icon(isServer ? Icons.stop : Icons.dns),
+                  label: Text(isServer ? 'Dừng Server' : 'Tạo Server'),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: isServer ? Colors.green : null,
+                    backgroundColor: isServer ? Colors.red : Colors.blue,
+                    foregroundColor: Colors.white,
                   ),
                 ),
               ),
@@ -226,10 +368,13 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
                     child: TextField(
                       controller: ipController,
                       enabled: !isConnecting,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       decoration: const InputDecoration(
                         hintText: 'Nhập IP server (vd: 192.168.1.100)',
                         border: OutlineInputBorder(),
                         prefixIcon: Icon(Icons.computer),
+                        helperText: 'Cả hai thiết bị phải cùng mạng WiFi',
+                        helperMaxLines: 2,
                       ),
                     ),
                   ),
@@ -249,10 +394,46 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
                         horizontal: 16,
                         vertical: 16,
                       ),
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
                     ),
                   ),
                 ],
               ),
+
+              const SizedBox(height: 24),
+
+              // Debug info
+              if (myIP != "Đang lấy IP..." && !myIP.startsWith("Lỗi"))
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        'Hướng dẫn:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '1. Đảm bảo cả hai thiết bị cùng mạng WiFi\n'
+                        '2. Một người tạo server, người còn lại kết nối\n'
+                        '3. Kiểm tra tường lửa nếu không kết nối được',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
         ),
