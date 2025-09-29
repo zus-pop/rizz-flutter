@@ -8,6 +8,9 @@ class Profile {
   final List<String> interests;
   final double distanceKm; // Distance in kilometers
   final String? audioUrl; // Optional audio URL for voice messages
+  final String? emotion; // AI-analyzed emotion from voice
+  final String? voiceQuality; // AI-analyzed voice quality
+  final String? accent; // AI-analyzed accent/region
 
   Profile({
     required this.id,
@@ -19,6 +22,9 @@ class Profile {
     required this.interests,
     required this.distanceKm,
     this.audioUrl,
+    this.emotion,
+    this.voiceQuality,
+    this.accent,
   });
 
   // Create a sample user profile
@@ -32,6 +38,9 @@ class Profile {
     required List<String> interests,
     required double distanceKm,
     String? audioUrl,
+    String? emotion,
+    String? voiceQuality,
+    String? accent,
   }) {
     return Profile(
       id: id,
@@ -43,6 +52,9 @@ class Profile {
       interests: interests,
       distanceKm: distanceKm,
       audioUrl: audioUrl,
+      emotion: emotion,
+      voiceQuality: voiceQuality,
+      accent: accent,
     );
   }
 
@@ -66,6 +78,9 @@ class Profile {
           [],
       distanceKm: (json['distance_km'] as num?)?.toDouble() ?? 0.0,
       audioUrl: json['audio_url'] as String?,
+      emotion: json['emotion'] as String?,
+      voiceQuality: json['voice_quality'] as String?,
+      accent: json['accent'] as String?,
     );
   }
 
@@ -80,6 +95,9 @@ class Profile {
       'interests': interests,
       'distance_km': distanceKm,
       'audio_url': audioUrl,
+      'emotion': emotion,
+      'voice_quality': voiceQuality,
+      'accent': accent,
     };
   }
 
@@ -94,6 +112,9 @@ class Profile {
     List<String>? interests,
     double? distanceKm,
     String? audioUrl,
+    String? emotion,
+    String? voiceQuality,
+    String? accent,
   }) {
     return Profile(
       id: id ?? this.id,
@@ -105,6 +126,9 @@ class Profile {
       interests: interests ?? this.interests,
       distanceKm: distanceKm ?? this.distanceKm,
       audioUrl: audioUrl ?? this.audioUrl,
+      emotion: emotion ?? this.emotion,
+      voiceQuality: voiceQuality ?? this.voiceQuality,
+      accent: accent ?? this.accent,
     );
   }
 

@@ -35,7 +35,6 @@ class _SettingsPageState extends State<SettingsPage>
 
   // App Settings (Notifications & Privacy)
   bool _pushNotifications = true;
-  bool _emailNotifications = false;
   bool _showOnlineStatus = true;
   bool _showDistance = true;
   bool _discoverable = true;
@@ -80,7 +79,7 @@ class _SettingsPageState extends State<SettingsPage>
       backgroundColor: context.colors.surface,
       appBar: AppBar(
         title: Text(
-          'Settings',
+          'Cài đặt',
           style: AppTheme.headline3.copyWith(color: context.colors.onPrimary),
         ),
         backgroundColor: context.primary,
@@ -93,9 +92,9 @@ class _SettingsPageState extends State<SettingsPage>
           indicatorColor: context.colors.onPrimary,
           indicatorWeight: 3,
           tabs: const [
-            Tab(icon: Icon(Icons.tune), text: 'Preferences'),
-            Tab(icon: Icon(Icons.person), text: 'Profile'),
-            Tab(icon: Icon(Icons.settings), text: 'App'),
+            Tab(icon: Icon(Icons.tune), text: 'Ưa thích'),
+            Tab(icon: Icon(Icons.person), text: 'Hồ sơ'),
+            Tab(icon: Icon(Icons.settings), text: 'Ứng dụng'),
           ],
         ),
         actions: [
@@ -177,14 +176,14 @@ class _SettingsPageState extends State<SettingsPage>
                 Icon(Icons.cake, color: context.primary, size: 20),
                 const SizedBox(width: 8),
                 const Text(
-                  'Age Range',
+                  'Độ tuổi',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                 ),
               ],
             ),
             const SizedBox(height: 8),
             Text(
-              '${_ageRange.start.round()} - ${_ageRange.end.round()} years old',
+              '${_ageRange.start.round()} - ${_ageRange.end.round()} tuổi',
               style: TextStyle(
                 fontSize: 14,
                 color: context.onSurface.withValues(alpha: 0.7),
@@ -222,14 +221,14 @@ class _SettingsPageState extends State<SettingsPage>
                 Icon(Icons.location_on, color: context.primary, size: 20),
                 const SizedBox(width: 8),
                 const Text(
-                  'Maximum Distance',
+                  'Khoảng cách tối đa',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                 ),
               ],
             ),
             const SizedBox(height: 8),
             Text(
-              _distance == 100 ? 'Anywhere' : '${_distance.round()} km away',
+              _distance == 100 ? 'Bất cứ đâu' : 'Cách ${_distance.round()} km',
               style: TextStyle(
                 fontSize: 14,
                 color: context.onSurface.withValues(alpha: 0.7),
@@ -243,7 +242,9 @@ class _SettingsPageState extends State<SettingsPage>
               activeColor: context.primary,
               inactiveColor: context.primary.withValues(alpha: 0.3),
               value: _distance,
-              label: _distance == 100 ? 'Anywhere' : '${_distance.round()} km',
+              label: _distance == 100
+                  ? 'Bất cứ đâu'
+                  : '${_distance.round()} km',
               onChanged: (value) => setState(() => _distance = value),
             ),
           ],
@@ -264,7 +265,7 @@ class _SettingsPageState extends State<SettingsPage>
                 Icon(Icons.favorite, color: context.primary, size: 20),
                 const SizedBox(width: 8),
                 const Text(
-                  'Looking for',
+                  'Tìm kiếm',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                 ),
               ],
@@ -325,14 +326,14 @@ class _SettingsPageState extends State<SettingsPage>
                 Icon(Icons.interests, color: context.primary, size: 20),
                 const SizedBox(width: 8),
                 const Text(
-                  'Interests',
+                  'Sở thích',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                 ),
               ],
             ),
             const SizedBox(height: 8),
             Text(
-              'Select up to 5 interests (${_selectedInterests.length}/5)',
+              'Chọn tối đa 5 sở thích (${_selectedInterests.length}/5)',
               style: TextStyle(
                 fontSize: 14,
                 color: context.onSurface.withValues(alpha: 0.7),
@@ -402,7 +403,7 @@ class _SettingsPageState extends State<SettingsPage>
                 Icon(Icons.school, color: context.primary, size: 20),
                 const SizedBox(width: 8),
                 const Text(
-                  'University',
+                  'Đại học',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                   overflow: TextOverflow.fade,
                 ),
@@ -447,7 +448,7 @@ class _SettingsPageState extends State<SettingsPage>
                 Icon(Icons.work, color: context.primary, size: 20),
                 const SizedBox(width: 8),
                 const Text(
-                  'After Graduation',
+                  'Sau khi ra trường',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                 ),
               ],
@@ -491,7 +492,7 @@ class _SettingsPageState extends State<SettingsPage>
                 Icon(Icons.favorite, color: context.primary, size: 20),
                 const SizedBox(width: 8),
                 const Text(
-                  'Love Language',
+                  'Ngôn ngữ yêu thích',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                 ),
               ],
@@ -535,7 +536,7 @@ class _SettingsPageState extends State<SettingsPage>
                 Icon(Icons.stars, color: context.primary, size: 20),
                 const SizedBox(width: 8),
                 const Text(
-                  'Zodiac Sign',
+                  'Cung hoàng đạo',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                 ),
               ],
@@ -578,7 +579,7 @@ class _SettingsPageState extends State<SettingsPage>
                 Icon(Icons.person, color: context.primary, size: 20),
                 const SizedBox(width: 8),
                 const Text(
-                  'Gender',
+                  'Giới tính',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                 ),
               ],
@@ -655,7 +656,7 @@ class _SettingsPageState extends State<SettingsPage>
                 Icon(Icons.notifications, color: context.primary, size: 20),
                 const SizedBox(width: 8),
                 const Text(
-                  'Notifications',
+                  'Thông báo',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                 ),
               ],
@@ -663,16 +664,9 @@ class _SettingsPageState extends State<SettingsPage>
             const SizedBox(height: 16),
             _buildSwitchTile(
               'Push Notifications',
-              'Get notified about new matches and messages',
+              'Nhận thông báo cho match và chat',
               _pushNotifications,
               (value) => setState(() => _pushNotifications = value),
-            ),
-            const Divider(),
-            _buildSwitchTile(
-              'Email Notifications',
-              'Receive updates via email',
-              _emailNotifications,
-              (value) => setState(() => _emailNotifications = value),
             ),
           ],
         ),
@@ -692,29 +686,29 @@ class _SettingsPageState extends State<SettingsPage>
                 Icon(Icons.privacy_tip, color: context.primary, size: 20),
                 const SizedBox(width: 8),
                 const Text(
-                  'Privacy & Visibility',
+                  'Quyền riêng tư & Hiển thị',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                 ),
               ],
             ),
             const SizedBox(height: 16),
             _buildSwitchTile(
-              'Show Online Status',
-              'Let others see when you\'re active',
+              'Hiển thị trạng thái hoạt động',
+              'Cho phép người khác biết khi bạn đang hoạt động',
               _showOnlineStatus,
               (value) => setState(() => _showOnlineStatus = value),
             ),
             const Divider(),
             _buildSwitchTile(
-              'Show Distance',
-              'Display distance on your profile',
+              'Hiển thị khoảng cách',
+              'Hiển thị khoảng cách trên hồ sơ của bạn',
               _showDistance,
               (value) => setState(() => _showDistance = value),
             ),
             const Divider(),
             _buildSwitchTile(
-              'Discoverable',
-              'Allow others to find you in discovery',
+              'Có thể được tìm thấy',
+              'Cho phép người khác tìm thấy bạn trong khám phá',
               _discoverable,
               (value) => setState(() => _discoverable = value),
             ),
@@ -736,15 +730,15 @@ class _SettingsPageState extends State<SettingsPage>
                 Icon(Icons.palette, color: context.primary, size: 20),
                 const SizedBox(width: 8),
                 const Text(
-                  'App Appearance',
+                  'Giao diện ứng dụng',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                 ),
               ],
             ),
             const SizedBox(height: 16),
             _buildSwitchTile(
-              'Dark Mode',
-              'Use dark theme for the app',
+              'Chế độ tối',
+              'Sử dụng giao diện tối cho ứng dụng',
               _darkMode,
               (value) => context.read<AppSettingProvider>().toggleTheme(),
             ),
@@ -753,20 +747,22 @@ class _SettingsPageState extends State<SettingsPage>
               contentPadding: EdgeInsets.zero,
               leading: Icon(Icons.logout, color: Colors.red.shade400),
               title: const Text(
-                'Sign Out',
+                'Đăng xuất',
                 style: TextStyle(fontWeight: FontWeight.w500),
               ),
-              subtitle: const Text('Sign out of your account'),
+              subtitle: const Text('Đăng xuất khỏi tài khoản của bạn'),
               onTap: () {
                 showDialog(
                   context: context,
                   builder: (context) => AlertDialog(
-                    title: const Text('Sign Out'),
-                    content: const Text('Are you sure you want to sign out?'),
+                    title: const Text('Đăng xuất'),
+                    content: const Text(
+                      'Bạn có chắc chắn muốn đăng xuất không?',
+                    ),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text('Cancel'),
+                        child: const Text('Hủy'),
                       ),
                       TextButton(
                         onPressed: () async {
@@ -774,7 +770,7 @@ class _SettingsPageState extends State<SettingsPage>
                           await _performSignOut();
                         },
                         child: Text(
-                          'Sign Out',
+                          'Đăng xuất',
                           style: TextStyle(color: context.colors.error),
                         ),
                       ),
@@ -788,20 +784,22 @@ class _SettingsPageState extends State<SettingsPage>
               contentPadding: EdgeInsets.zero,
               leading: Icon(Icons.person_outline, color: Colors.blue.shade400),
               title: const Text(
-                'Reset Profile Setup',
+                'Đặt lại hồ sơ',
                 style: TextStyle(fontWeight: FontWeight.w500),
               ),
-              subtitle: const Text('Redo profile setup process'),
+              subtitle: const Text('Làm lại quá trình thiết lập hồ sơ'),
               onTap: () {
                 showDialog(
                   context: context,
                   builder: (context) => AlertDialog(
-                    title: const Text('Reset Profile Setup'),
-                    content: const Text('This will reset your profile setup. You\'ll need to complete it again. Are you sure?'),
+                    title: const Text('Đặt lại hồ sơ'),
+                    content: const Text(
+                      'Thao tác này sẽ đặt lại quá trình thiết lập hồ sơ. Bạn sẽ cần hoàn thành lại. Bạn có chắc không?',
+                    ),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text('Cancel'),
+                        child: const Text('Hủy'),
                       ),
                       TextButton(
                         onPressed: () async {
@@ -809,7 +807,7 @@ class _SettingsPageState extends State<SettingsPage>
                           await _resetProfileSetup();
                         },
                         child: Text(
-                          'Reset',
+                          'Đặt lại',
                           style: TextStyle(color: Colors.blue.shade400),
                         ),
                       ),
@@ -823,20 +821,22 @@ class _SettingsPageState extends State<SettingsPage>
               contentPadding: EdgeInsets.zero,
               leading: Icon(Icons.refresh, color: Colors.orange.shade400),
               title: const Text(
-                'Reset Demo',
+                'Đặt lại bản demo',
                 style: TextStyle(fontWeight: FontWeight.w500),
               ),
-              subtitle: const Text('Reset onboarding for demo purposes'),
+              subtitle: const Text('Đặt lại onboarding cho mục đích demo'),
               onTap: () {
                 showDialog(
                   context: context,
                   builder: (context) => AlertDialog(
-                    title: const Text('Reset Demo'),
-                    content: const Text('This will reset the onboarding flow for demo. Are you sure?'),
+                    title: const Text('Đặt lại bản demo'),
+                    content: const Text(
+                      'Thao tác này sẽ đặt lại luồng onboarding cho mục đích demo. Bạn có chắc không?',
+                    ),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text('Cancel'),
+                        child: const Text('Hủy'),
                       ),
                       TextButton(
                         onPressed: () async {
@@ -844,7 +844,7 @@ class _SettingsPageState extends State<SettingsPage>
                           await _resetDemoFlow();
                         },
                         child: Text(
-                          'Reset',
+                          'Đặt lại',
                           style: TextStyle(color: Colors.orange.shade400),
                         ),
                       ),
@@ -878,7 +878,7 @@ class _SettingsPageState extends State<SettingsPage>
         ),
       ),
       value: value,
-      activeColor: context.primary,
+      activeThumbColor: context.primary,
       onChanged: onChanged,
     );
   }
@@ -901,22 +901,25 @@ class _SettingsPageState extends State<SettingsPage>
   Future<void> _performSignOut() async {
     try {
       // Clear authentication data
-      final authProvider = Provider.of<AuthenticationProvider>(context, listen: false);
+      final authProvider = Provider.of<AuthenticationProvider>(
+        context,
+        listen: false,
+      );
       await authProvider.logout();
-      
+
       // Reset onboarding for demo purposes
       await OnboardingService.resetOnboarding();
-      
+
       // Reset profile setup as well
       await ProfileSetupService.resetProfileSetup();
-      
+
       if (mounted) {
         // Navigate to splash screen to restart the flow
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const SplashScreen()),
           (route) => false,
         );
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Signed out successfully. Demo flow reset!'),
@@ -941,23 +944,28 @@ class _SettingsPageState extends State<SettingsPage>
     try {
       // Reset profile setup
       await ProfileSetupService.resetProfileSetup();
-      
+
       if (!mounted) return;
-      
+
       // Update the auth provider
-      final authProvider = Provider.of<AuthenticationProvider>(context, listen: false);
+      final authProvider = Provider.of<AuthenticationProvider>(
+        context,
+        listen: false,
+      );
       await authProvider.updateProfileSetupStatus();
-      
+
       if (mounted) {
         // Navigate to splash screen to restart the flow
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const SplashScreen()),
           (route) => false,
         );
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Profile setup reset! You\'ll need to complete it again.'),
+            content: Text(
+              'Profile setup reset! You\'ll need to complete it again.',
+            ),
             backgroundColor: Colors.blue,
           ),
         );
@@ -980,14 +988,14 @@ class _SettingsPageState extends State<SettingsPage>
       // Clear authentication data without logging out
       // Reset onboarding to show it again
       await OnboardingService.resetOnboarding();
-      
+
       if (mounted) {
         // Navigate to splash screen to restart the flow
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const SplashScreen()),
           (route) => false,
         );
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Demo flow reset! You\'ll see onboarding again.'),

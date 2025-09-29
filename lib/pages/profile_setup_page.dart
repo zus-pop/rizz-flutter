@@ -1,19 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:rizz_mobile/models/profile_setup_data.dart';
-import 'package:rizz_mobile/pages/bottom_tab_page.dart';
-import 'package:rizz_mobile/pages/profile_setup/profile_details_step.dart';
-import 'package:rizz_mobile/pages/profile_setup/gender_interest_step.dart';
-import 'package:rizz_mobile/pages/profile_setup/looking_for_step.dart';
-import 'package:rizz_mobile/pages/profile_setup/study_style_step.dart';
-import 'package:rizz_mobile/pages/profile_setup/weekend_habit_step.dart';
-import 'package:rizz_mobile/pages/profile_setup/interests_step.dart';
-import 'package:rizz_mobile/pages/profile_setup/campus_life_step.dart';
 import 'package:rizz_mobile/pages/profile_setup/after_graduation_step.dart';
+import 'package:rizz_mobile/pages/profile_setup/campus_life_step.dart';
 import 'package:rizz_mobile/pages/profile_setup/communication_step.dart';
 import 'package:rizz_mobile/pages/profile_setup/deal_breakers_step.dart';
+import 'package:rizz_mobile/pages/profile_setup/gender_interest_step.dart';
+import 'package:rizz_mobile/pages/profile_setup/interests_step.dart';
+import 'package:rizz_mobile/pages/profile_setup/looking_for_step.dart';
 import 'package:rizz_mobile/pages/profile_setup/photo_upload_step.dart';
-import 'package:rizz_mobile/pages/profile_setup/profile_verification_step.dart';
+import 'package:rizz_mobile/pages/profile_setup/profile_details_step.dart';
+import 'package:rizz_mobile/pages/profile_setup/study_style_step.dart';
 import 'package:rizz_mobile/pages/profile_setup/voice_recording_step.dart';
+import 'package:rizz_mobile/pages/profile_setup/weekend_habit_step.dart';
 import 'package:rizz_mobile/services/profile_setup_service.dart';
 import 'package:rizz_mobile/theme/app_theme.dart';
 
@@ -41,7 +39,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
     'Communication',
     'Deal Breakers',
     'Photo Upload',
-    'Profile Verification',
+    // 'Profile Verification',
     'Voice Recording',
   ];
 
@@ -55,6 +53,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
         curve: Curves.easeInOut,
       );
     } else {
+      // call api here
       _completeSetup();
     }
   }
@@ -74,7 +73,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
   void _completeSetup() async {
     // Mark profile setup as complete
     await ProfileSetupService.completeProfileSetup();
-    
+
     // Handle setup completion - navigate to main app or show success
     if (mounted) {
       showDialog(
@@ -113,8 +112,10 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(builder: (context) => const BottomTabPage()),
+                      Navigator.pushNamedAndRemoveUntil(
+                        context,
+                        '/home',
+                        (route) => false,
                       );
                     },
                     style: ElevatedButton.styleFrom(
@@ -127,7 +128,10 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                     ),
                     child: const Text(
                       'Start Connecting',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -153,7 +157,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
       CommunicationStep(profileData: _profileData, onNext: _nextStep),
       DealBreakersStep(profileData: _profileData, onNext: _nextStep),
       PhotoUploadStep(profileData: _profileData, onNext: _nextStep),
-      ProfileVerificationStep(profileData: _profileData, onNext: _nextStep),
+      // ProfileVerificationStep(profileData: _profileData, onNext: _nextStep),
       VoiceRecordingStep(profileData: _profileData, onNext: _nextStep),
     ];
     return Scaffold(

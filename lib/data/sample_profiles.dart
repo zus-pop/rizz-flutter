@@ -1,6 +1,12 @@
 import 'package:rizz_mobile/models/profile.dart';
 
-// Sample data for testing swipe cards
+// Sample audio URLs to cycle through
+final List<String> audioSamples = [
+  'https://software-mansion.github.io/react-native-audio-api/audio/music/example-music-01.mp3',
+  'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+  'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+];
+
 final List<Profile> sampleProfiles = [
   Profile.sample(
     id: '1',
@@ -15,8 +21,10 @@ final List<Profile> sampleProfiles = [
     location: 'New York, NY',
     interests: ['Travel', 'Photography', 'Coffee', 'Dogs', 'Hiking'],
     distanceKm: 5.2,
-    audioUrl:
-        'https://software-mansion.github.io/react-native-audio-api/audio/music/example-music-01.mp3', // Sample audio URL
+    audioUrl: audioSamples[0],
+    emotion: 'Vui',
+    voiceQuality: 'Sáng',
+    accent: 'Đông Nam Bộ',
   ),
   Profile.sample(
     id: '2',
@@ -30,6 +38,10 @@ final List<Profile> sampleProfiles = [
     location: 'Los Angeles, CA',
     interests: ['Yoga', 'Meditation', 'Healthy Living', 'Books', 'Nature'],
     distanceKm: 12.8,
+    audioUrl: audioSamples[1],
+    emotion: 'Trung lập',
+    voiceQuality: 'Mượt',
+    accent: 'Tây Nguyên',
   ),
   Profile.sample(
     id: '3',
@@ -43,8 +55,10 @@ final List<Profile> sampleProfiles = [
     location: 'San Francisco, CA',
     interests: ['Art', 'Dancing', 'Music', 'Creativity', 'Museums'],
     distanceKm: 25.7,
-    audioUrl:
-        'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav', // Sample audio URL
+    audioUrl: audioSamples[2],
+    emotion: 'Tự tin',
+    voiceQuality: 'Trong',
+    accent: 'Bắc Trung Bộ',
   ),
   Profile.sample(
     id: '4',
@@ -58,6 +72,10 @@ final List<Profile> sampleProfiles = [
     location: 'Seattle, WA',
     interests: ['Technology', 'Cooking', 'Food', 'Innovation', 'Gaming'],
     distanceKm: 38.4,
+    audioUrl: audioSamples[0],
+    emotion: 'Buồn',
+    voiceQuality: 'Khàn',
+    accent: 'Đồng bằng sông Hồng',
   ),
   Profile.sample(
     id: '5',
@@ -77,6 +95,7 @@ final List<Profile> sampleProfiles = [
       'Outdoor Sports',
     ],
     distanceKm: 52.3,
+    audioUrl: audioSamples[1],
   ),
   Profile.sample(
     id: '6',
@@ -90,6 +109,7 @@ final List<Profile> sampleProfiles = [
     location: 'Boston, MA',
     interests: ['Reading', 'Writing', 'Literature', 'Poetry', 'Libraries'],
     distanceKm: 19.6,
+    audioUrl: audioSamples[2],
   ),
   Profile.sample(
     id: '7',
@@ -103,6 +123,7 @@ final List<Profile> sampleProfiles = [
     location: 'Miami, FL',
     interests: ['Marine Biology', 'Diving', 'Conservation', 'Science', 'Ocean'],
     distanceKm: 67.1,
+    audioUrl: audioSamples[0],
   ),
   Profile.sample(
     id: '8',
@@ -116,6 +137,7 @@ final List<Profile> sampleProfiles = [
     location: 'Nashville, TN',
     interests: ['Music', 'Guitar', 'Singing', 'Teaching', 'Concerts'],
     distanceKm: 33.9,
+    audioUrl: audioSamples[1],
   ),
   Profile.sample(
     id: '9',
@@ -129,8 +151,7 @@ final List<Profile> sampleProfiles = [
     location: 'Austin, TX',
     interests: ['Marketing', 'Hiking', 'Wine Tasting', 'Photography', 'Travel'],
     distanceKm: 8.7,
-    audioUrl:
-        'https://software-mansion.github.io/react-native-audio-api/audio/music/example-music-01.mp3',
+    audioUrl: audioSamples[2],
   ),
   Profile.sample(
     id: '10',
@@ -150,6 +171,7 @@ final List<Profile> sampleProfiles = [
       'Volunteer Work',
     ],
     distanceKm: 15.3,
+    audioUrl: audioSamples[0],
   ),
   Profile.sample(
     id: '11',
@@ -169,7 +191,7 @@ final List<Profile> sampleProfiles = [
       'Conservation',
     ],
     distanceKm: 42.1,
-    audioUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+    audioUrl: audioSamples[1],
   ),
   Profile.sample(
     id: '12',
@@ -190,6 +212,7 @@ final List<Profile> sampleProfiles = [
       'Sewing',
     ],
     distanceKm: 29.8,
+    audioUrl: audioSamples[2],
   ),
   Profile.sample(
     id: '13',
@@ -209,6 +232,7 @@ final List<Profile> sampleProfiles = [
       'Wellness',
     ],
     distanceKm: 61.4,
+    audioUrl: audioSamples[0],
   ),
   Profile.sample(
     id: '14',
@@ -228,8 +252,7 @@ final List<Profile> sampleProfiles = [
       'Coffee',
     ],
     distanceKm: 18.9,
-    audioUrl:
-        'https://software-mansion.github.io/react-native-audio-api/audio/music/example-music-01.mp3',
+    audioUrl: audioSamples[1],
   ),
   Profile.sample(
     id: '15',
@@ -243,6 +266,7 @@ final List<Profile> sampleProfiles = [
     location: 'Las Vegas, NV',
     interests: ['Dancing', 'Choreography', 'Teaching', 'Performance', 'Music'],
     distanceKm: 73.2,
+    audioUrl: audioSamples[2],
   ),
   Profile.sample(
     id: '16',
@@ -256,6 +280,7 @@ final List<Profile> sampleProfiles = [
     location: 'San Francisco, CA',
     interests: ['Programming', 'Gaming', 'Tech', 'Board Games', 'Anime'],
     distanceKm: 11.6,
+    audioUrl: audioSamples[0],
   ),
   Profile.sample(
     id: '17',
@@ -269,7 +294,7 @@ final List<Profile> sampleProfiles = [
     location: 'Boulder, CO',
     interests: ['Astronomy', 'Stargazing', 'Research', 'Physics', 'Nature'],
     distanceKm: 45.7,
-    audioUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+    audioUrl: audioSamples[1],
   ),
   Profile.sample(
     id: '18',
@@ -289,6 +314,7 @@ final List<Profile> sampleProfiles = [
       'Celebrating',
     ],
     distanceKm: 36.3,
+    audioUrl: audioSamples[2],
   ),
   Profile.sample(
     id: '19',
@@ -308,6 +334,7 @@ final List<Profile> sampleProfiles = [
       'Fine Dining',
     ],
     distanceKm: 89.1,
+    audioUrl: audioSamples[0],
   ),
   Profile.sample(
     id: '20',
@@ -327,8 +354,7 @@ final List<Profile> sampleProfiles = [
       'Creative Direction',
     ],
     distanceKm: 7.4,
-    audioUrl:
-        'https://software-mansion.github.io/react-native-audio-api/audio/music/example-music-01.mp3',
+    audioUrl: audioSamples[1],
   ),
   Profile.sample(
     id: '21',
@@ -348,6 +374,7 @@ final List<Profile> sampleProfiles = [
       'Research',
     ],
     distanceKm: 54.8,
+    audioUrl: audioSamples[2],
   ),
   Profile.sample(
     id: '22',
@@ -367,6 +394,7 @@ final List<Profile> sampleProfiles = [
       'Visual Storytelling',
     ],
     distanceKm: 67.9,
+    audioUrl: audioSamples[0],
   ),
   Profile.sample(
     id: '23',
@@ -386,7 +414,7 @@ final List<Profile> sampleProfiles = [
       'Antiques',
     ],
     distanceKm: 41.2,
-    audioUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+    audioUrl: audioSamples[1],
   ),
   Profile.sample(
     id: '24',
@@ -406,6 +434,7 @@ final List<Profile> sampleProfiles = [
       'Spiritual Growth',
     ],
     distanceKm: 78.3,
+    audioUrl: audioSamples[2],
   ),
   Profile.sample(
     id: '25',
@@ -425,6 +454,7 @@ final List<Profile> sampleProfiles = [
       'Cultural Exploration',
     ],
     distanceKm: 23.7,
+    audioUrl: audioSamples[0],
   ),
   Profile.sample(
     id: '26',
@@ -444,8 +474,7 @@ final List<Profile> sampleProfiles = [
       'Storytelling',
     ],
     distanceKm: 14.5,
-    audioUrl:
-        'https://software-mansion.github.io/react-native-audio-api/audio/music/example-music-01.mp3',
+    audioUrl: audioSamples[1],
   ),
   Profile.sample(
     id: '27',
@@ -465,6 +494,7 @@ final List<Profile> sampleProfiles = [
       'Environmental Advocacy',
     ],
     distanceKm: 52.1,
+    audioUrl: audioSamples[2],
   ),
   Profile.sample(
     id: '28',
@@ -484,6 +514,7 @@ final List<Profile> sampleProfiles = [
       'Travel',
     ],
     distanceKm: 95.6,
+    audioUrl: audioSamples[0],
   ),
   Profile.sample(
     id: '29',
@@ -503,7 +534,7 @@ final List<Profile> sampleProfiles = [
       'Wildlife',
     ],
     distanceKm: 84.7,
-    audioUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+    audioUrl: audioSamples[1],
   ),
   Profile.sample(
     id: '30',
@@ -523,6 +554,7 @@ final List<Profile> sampleProfiles = [
       'Illustration',
     ],
     distanceKm: 38.9,
+    audioUrl: audioSamples[2],
   ),
   Profile.sample(
     id: '31',
@@ -542,6 +574,7 @@ final List<Profile> sampleProfiles = [
       'Technology',
     ],
     distanceKm: 46.3,
+    audioUrl: audioSamples[0],
   ),
   Profile.sample(
     id: '32',
@@ -561,8 +594,7 @@ final List<Profile> sampleProfiles = [
       'Outdoor Education',
     ],
     distanceKm: 71.8,
-    audioUrl:
-        'https://software-mansion.github.io/react-native-audio-api/audio/music/example-music-01.mp3',
+    audioUrl: audioSamples[1],
   ),
   Profile.sample(
     id: '33',
@@ -582,6 +614,7 @@ final List<Profile> sampleProfiles = [
       'Nature Photography',
     ],
     distanceKm: 63.4,
+    audioUrl: audioSamples[2],
   ),
   Profile.sample(
     id: '34',
@@ -601,6 +634,7 @@ final List<Profile> sampleProfiles = [
       'Gardening',
     ],
     distanceKm: 56.7,
+    audioUrl: audioSamples[0],
   ),
   Profile.sample(
     id: '35',
@@ -620,6 +654,6 @@ final List<Profile> sampleProfiles = [
       'Science Fiction',
     ],
     distanceKm: 31.2,
-    audioUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+    audioUrl: audioSamples[1],
   ),
 ];

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'package:rizz_mobile/models/profile.dart';
@@ -19,12 +20,18 @@ class ProfileService {
   /// [ageMin] - Minimum age filter
   /// [ageMax] - Maximum age filter
   /// [maxDistance] - Maximum distance filter in kilometers
+  /// [emotion] - Emotion filter for AI analysis
+  /// [voiceQuality] - Voice quality filter for AI analysis
+  /// [accent] - Accent filter for AI analysis
   Future<ProfileResponse> getProfiles({
     int page = 1,
     int limit = 10,
     int? ageMin,
     int? ageMax,
     double? maxDistance,
+    String? emotion,
+    String? voiceQuality,
+    String? accent,
   }) async {
     try {
       final uri = Uri.parse('$baseUrl$_profilesEndpoint').replace(
@@ -34,6 +41,9 @@ class ProfileService {
           if (ageMin != null) 'age_min': ageMin.toString(),
           if (ageMax != null) 'age_max': ageMax.toString(),
           if (maxDistance != null) 'max_distance': maxDistance.toString(),
+          if (emotion != null) 'emotion': emotion,
+          if (voiceQuality != null) 'voice_quality': voiceQuality,
+          if (accent != null) 'accent': accent,
         },
       );
 
@@ -142,6 +152,78 @@ class ProfileService {
     } catch (e) {
       debugPrint('Error passing profile: $e');
       return false;
+    }
+  }
+
+  /// Upload user voice recording
+  Future<Map<String, dynamic>> uploadVoiceRecording({
+    required File audioFile,
+    required Map<String, dynamic> analysis,
+    String? userId,
+    Map<String, String>? additionalHeaders,
+    Map<String, dynamic>? additionalData,
+  }) async {
+    try {
+      final uri = Uri.parse('$baseUrl$_profilesEndpoint/voice');
+
+      // Create multipart request
+      final request = http.MultipartRequest('POST', uri)
+        ..headers.addAll({
+          'Accept': 'application/json',
+          // Add authorization header if needed
+          // 'Authorization': 'Bearer $token',
+          ...?additionalHeaders, // Add custom headers
+        });
+
+      // Add audio file
+      final audioStream = http.ByteStream(audioFile.openRead());
+      final audioLength = await audioFile.length();
+      final audioMultipartFile = http.MultipartFile(
+        'audio',
+        audioStream,
+        audioLength,
+        filename: 'voice_recording.wav',
+      );
+      request.files.add(audioMultipartFile);
+
+      // Add analysis data as JSON string
+      request.fields['analysis'] = jsonEncode(analysis);
+
+      // Add user ID if provided
+      if (userId != null) {
+        request.fields['user_id'] = userId;
+      }
+
+      // Add additional data if provided
+      if (additionalData != null) {
+        additionalData.forEach((key, value) {
+          request.fields[key] = value.toString();
+        });
+      }
+
+      debugPrint('Uploading voice recording to: $uri');
+
+      final streamedResponse = await request.send().timeout(
+        const Duration(seconds: 60),
+      );
+      final response = await http.Response.fromStream(streamedResponse);
+
+      debugPrint('Upload response status: ${response.statusCode}');
+      debugPrint('Upload response body: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final jsonData = json.decode(response.body) as Map<String, dynamic>;
+        return jsonData;
+      } else {
+        throw ApiException(
+          'Failed to upload voice recording: ${response.statusCode}',
+          statusCode: response.statusCode,
+        );
+      }
+    } catch (e) {
+      debugPrint('Error uploading voice recording: $e');
+      if (e is ApiException) rethrow;
+      throw ApiException('Network error: $e');
     }
   }
 }

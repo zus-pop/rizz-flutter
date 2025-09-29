@@ -23,6 +23,9 @@ class ProfileSetupData {
   List<File> photos = [];
   File? verificationPhoto;
   File? voiceRecording;
+  String? emotion;
+  String? voiceQuality;
+  String? accent;
 
   ProfileSetupData();
 

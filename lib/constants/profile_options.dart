@@ -75,6 +75,7 @@ const List<ProfileOption> zodiacOptions = [
 
 // Universities
 const List<ProfileOption> universityOptions = [
+  ProfileOption(id: 'fpt', name: 'FPT University'),
   ProfileOption(id: 'vnu-hanoi', name: 'Vietnam National University, Hanoi'),
   ProfileOption(
     id: 'vnu-hcmc',
@@ -174,8 +175,8 @@ const List<ProfileOption> dealBreakers = [
 
 // Gender Options
 const List<ProfileOption> genderOptions = [
-  ProfileOption(id: 'woman', name: 'Woman'),
-  ProfileOption(id: 'man', name: 'Man'),
+  ProfileOption(id: 'female', name: 'Female'),
+  ProfileOption(id: 'male', name: 'Male'),
 ];
 
 // Communication Preferences

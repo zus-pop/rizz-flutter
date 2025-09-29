@@ -8,10 +8,7 @@ import 'package:rizz_mobile/providers/authentication_provider.dart';
 class PhoneVerificationPage extends StatefulWidget {
   final String phoneNumber;
 
-  const PhoneVerificationPage({
-    Key? key,
-    required this.phoneNumber,
-  }) : super(key: key);
+  const PhoneVerificationPage({super.key, required this.phoneNumber});
 
   @override
   State<PhoneVerificationPage> createState() => _PhoneVerificationPageState();
@@ -55,8 +52,14 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
       _isLoading = true;
     });
 
-    final authProvider = Provider.of<AuthenticationProvider>(context, listen: false);
-    final success = await authProvider.loginWithPhone(widget.phoneNumber, _currentOtp);
+    final authProvider = Provider.of<AuthenticationProvider>(
+      context,
+      listen: false,
+    );
+    final success = await authProvider.loginWithPhone(
+      widget.phoneNumber,
+      _currentOtp,
+    );
 
     if (mounted) {
       setState(() {
@@ -66,7 +69,7 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
       if (success) {
         // Check if profile setup is complete
         await authProvider.updateProfileSetupStatus();
-        
+
         if (mounted) {
           if (authProvider.isProfileSetupComplete) {
             Navigator.pushReplacement(
@@ -110,8 +113,8 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: message.contains('Invalid') 
-            ? Colors.red.shade400 
+        backgroundColor: message.contains('Invalid')
+            ? Colors.red.shade400
             : Colors.green.shade400,
       ),
     );
@@ -135,7 +138,7 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
           child: Column(
             children: [
               const SizedBox(height: 32),
-              
+
               // Icon
               Container(
                 height: 100,
@@ -144,15 +147,11 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
                   color: Colors.pink.shade50,
                   borderRadius: BorderRadius.circular(50),
                 ),
-                child: Icon(
-                  Icons.sms,
-                  size: 50,
-                  color: Colors.pink.shade400,
-                ),
+                child: Icon(Icons.sms, size: 50, color: Colors.pink.shade400),
               ),
-              
+
               const SizedBox(height: 32),
-              
+
               const Text(
                 'Verify Your Phone',
                 style: TextStyle(
@@ -161,19 +160,16 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
                   color: Colors.black87,
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               Text(
                 'Enter the 6-digit code sent to',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey.shade600,
-                ),
+                style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
               ),
-              
+
               const SizedBox(height: 8),
-              
+
               Text(
                 widget.phoneNumber,
                 style: const TextStyle(
@@ -182,9 +178,9 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
                   color: Colors.black87,
                 ),
               ),
-              
+
               const SizedBox(height: 48),
-              
+
               // PIN Code Fields
               PinCodeTextField(
                 appContext: context,
@@ -216,9 +212,9 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
                   _verifyOTP();
                 },
               ),
-              
+
               const SizedBox(height: 32),
-              
+
               // Verify Button
               SizedBox(
                 width: double.infinity,
@@ -244,9 +240,9 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
                         ),
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Resend OTP
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -256,7 +252,9 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
                     style: TextStyle(color: Colors.grey),
                   ),
                   TextButton(
-                    onPressed: _resendTimer > 0 || _isResending ? null : _resendOTP,
+                    onPressed: _resendTimer > 0 || _isResending
+                        ? null
+                        : _resendOTP,
                     child: _isResending
                         ? const SizedBox(
                             width: 16,
@@ -264,10 +262,12 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : Text(
-                            _resendTimer > 0 ? 'Resend in ${_resendTimer}s' : 'Resend',
+                            _resendTimer > 0
+                                ? 'Resend in ${_resendTimer}s'
+                                : 'Resend',
                             style: TextStyle(
-                              color: _resendTimer > 0 
-                                  ? Colors.grey 
+                              color: _resendTimer > 0
+                                  ? Colors.grey
                                   : Colors.pink.shade400,
                               fontWeight: FontWeight.w600,
                             ),
@@ -275,16 +275,13 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
                   ),
                 ],
               ),
-              
+
               const Spacer(),
-              
+
               // Help Text
               Text(
                 'Enter the verification code to continue',
-                style: TextStyle(
-                  color: Colors.grey.shade500,
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
                 textAlign: TextAlign.center,
               ),
             ],

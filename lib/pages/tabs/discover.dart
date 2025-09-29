@@ -41,9 +41,10 @@ class _DiscoverState extends State<Discover>
       backgroundColor: context.colors.surface,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
+        automaticallyImplyLeading: false,
         elevation: 0,
         title: Text(
-          'Discover',
+          'Khám phá giọng nói',
           style: AppTheme.headline3.copyWith(
             color: context.primary,
             fontSize: 30,
@@ -69,7 +70,7 @@ class _DiscoverState extends State<Discover>
                   CircularProgressIndicator(color: context.primary),
                   const SizedBox(height: 16),
                   Text(
-                    'Loading profiles...',
+                    'Đang tải hồ sơ...',
                     style: AppTheme.body1.copyWith(color: context.onSurface),
                   ),
                 ],
@@ -85,7 +86,7 @@ class _DiscoverState extends State<Discover>
                   Icon(Icons.error_outline, size: 64, color: context.error),
                   const SizedBox(height: 16),
                   Text(
-                    'Error loading profiles',
+                    'Lỗi khi tải hồ sơ',
                     style: AppTheme.headline4.copyWith(
                       color: context.onSurface,
                     ),
@@ -101,14 +102,14 @@ class _DiscoverState extends State<Discover>
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => profileProvider.retry(),
-                    child: const Text('Retry'),
+                    child: const Text('Thử lại'),
                   ),
                 ],
               ),
             );
           }
 
-          if (profileProvider.isEmpty) {
+          if (profileProvider.isEmpty || profileProvider.profiles.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -116,14 +117,14 @@ class _DiscoverState extends State<Discover>
                   Icon(Icons.favorite_border, size: 64, color: context.outline),
                   const SizedBox(height: 16),
                   Text(
-                    'No more profiles to show',
+                    'Không còn hồ sơ để hiển thị',
                     style: AppTheme.headline4.copyWith(
                       color: context.onSurface,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Check back later for new matches!',
+                    'Quay lại khi có thêm hồ sơ mới!',
                     style: AppTheme.body2.copyWith(
                       color: context.onSurface.withValues(alpha: 0.7),
                     ),
@@ -133,7 +134,7 @@ class _DiscoverState extends State<Discover>
             );
           }
 
-          // Show profiles with swiper
+          // Case 1: Profiles array has items - show swiper with action buttons
           return Stack(
             children: [
               // Card swiper - takes full height
@@ -163,7 +164,9 @@ class _DiscoverState extends State<Discover>
                   },
                   threshold:
                       80, // Lower threshold for easier swiping near phone edges
-                  numberOfCardsDisplayed: 2,
+                  numberOfCardsDisplayed: profileProvider.profiles.length >= 2
+                      ? 2
+                      : 1,
                   backCardOffset: const Offset(0, -20),
                   padding: const EdgeInsets.all(8.0),
                   allowedSwipeDirection: const AllowedSwipeDirection.symmetric(
@@ -190,9 +193,7 @@ class _DiscoverState extends State<Discover>
                               borderRadius: BorderRadius.circular(20),
                               color: Colors.grey[300],
                             ),
-                            child: const Center(
-                              child: Text('No profile available'),
-                            ),
+                            child: const Center(child: Text('Không còn hồ sơ')),
                           );
                         }
                       },
@@ -226,7 +227,7 @@ class _DiscoverState extends State<Discover>
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Loading more...',
+                          'Đang tải thêm...',
                           style: AppTheme.caption.copyWith(
                             color: context.onSurface,
                           ),
@@ -322,7 +323,7 @@ class _DiscoverState extends State<Discover>
     String profileId = '';
     switch (direction) {
       case CardSwiperDirection.left:
-        action = 'passed';
+        action = 'bỏ qua';
         if (previousIndex >= 0 &&
             previousIndex < profileProvider.profiles.length) {
           profileId = profileProvider.profiles[previousIndex].id;
@@ -330,7 +331,7 @@ class _DiscoverState extends State<Discover>
         }
         break;
       case CardSwiperDirection.right:
-        action = 'liked';
+        action = 'đã thích';
         if (previousIndex >= 0 &&
             previousIndex < profileProvider.profiles.length) {
           profileId = profileProvider.profiles[previousIndex].id;
@@ -398,12 +399,25 @@ class _DiscoverState extends State<Discover>
       builder: (context) => FilterModal(
         initialAgeRange: profileProvider.ageRange,
         initialDistance: profileProvider.maxDistance,
-        onApplyFilter: (newAgeRange, newMaxDistance) {
-          profileProvider.applyFilters(
-            ageRange: newAgeRange,
-            maxDistance: newMaxDistance,
-          );
-        },
+        initialEmotion: profileProvider.emotionFilter,
+        initialVoiceQuality: profileProvider.voiceQualityFilter,
+        initialAccent: profileProvider.accentFilter,
+        onApplyFilter:
+            (
+              newAgeRange,
+              newMaxDistance,
+              newEmotion,
+              newVoiceQuality,
+              newAccent,
+            ) {
+              profileProvider.applyFilters(
+                ageRange: newAgeRange,
+                maxDistance: newMaxDistance,
+                emotion: newEmotion,
+                voiceQuality: newVoiceQuality,
+                accent: newAccent,
+              );
+            },
       ),
     );
   }

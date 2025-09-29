@@ -7,7 +7,6 @@ import 'package:rizz_mobile/pages/bottom_tab_page.dart';
 import 'package:rizz_mobile/pages/details/detail_chat.dart';
 import 'package:rizz_mobile/pages/splash_screen.dart';
 import 'package:rizz_mobile/providers/app_setting_provider.dart';
-import 'package:rizz_mobile/providers/auth_provider.dart';
 import 'package:rizz_mobile/providers/authentication_provider.dart';
 import 'package:rizz_mobile/providers/profile_provider.dart';
 
@@ -41,14 +40,13 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => AuthenticationProvider()),
       ],
       child: MaterialApp(
         showPerformanceOverlay: false,
         title: "Rizz",
         theme: Provider.of<AppSettingProvider>(context).themeData,
-        home: const BottomTabPage(),
+        home: const SplashScreen(),
         routes: {
           '/home': (context) => BottomTabPage(),
           '/detail_chat': (context) => const DetailChat(),

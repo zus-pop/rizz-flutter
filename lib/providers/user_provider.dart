@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:rizz_mobile/models/profile.dart';
 import 'package:rizz_mobile/models/user_settings.dart';
-import 'package:rizz_mobile/providers/auth_provider.dart';
+import 'package:rizz_mobile/providers/authentication_provider.dart';
 
 class UserProvider extends ChangeNotifier {
-  final AuthProvider _authProvider;
+  final AuthenticationProvider _authProvider;
 
   // State
   Profile? _userProfile;
@@ -37,7 +37,7 @@ class UserProvider extends ChangeNotifier {
 
   /// Initialize user data after authentication
   Future<void> initializeUserData() async {
-    if (!_authProvider.isAuthenticated) return;
+    if (!_authProvider.isLoggedIn) return;
 
     try {
       _setLoading(true);
@@ -55,7 +55,7 @@ class UserProvider extends ChangeNotifier {
 
   /// Load user profile from API
   Future<void> loadUserProfile() async {
-    if (!_authProvider.isAuthenticated) return;
+    if (!_authProvider.isLoggedIn) return;
 
     try {
       final token = await _authProvider.getValidAccessToken();
@@ -84,7 +84,7 @@ class UserProvider extends ChangeNotifier {
       // Simulated API response for development
       await Future.delayed(const Duration(seconds: 1));
       _userProfile = Profile(
-        id: _authProvider.userId ?? 'user_123',
+        id: 'user_123',
         name: 'John Doe',
         age: 25,
         bio: 'Love adventure and good coffee ☕',
@@ -106,7 +106,7 @@ class UserProvider extends ChangeNotifier {
 
   /// Load user settings from API
   Future<void> loadUserSettings() async {
-    if (!_authProvider.isAuthenticated) return;
+    if (!_authProvider.isLoggedIn) return;
 
     try {
       final token = await _authProvider.getValidAccessToken();
@@ -160,7 +160,7 @@ class UserProvider extends ChangeNotifier {
     List<String>? interests,
     List<String>? imageUrls,
   }) async {
-    if (!_authProvider.isAuthenticated || _userProfile == null) return false;
+    if (!_authProvider.isLoggedIn || _userProfile == null) return false;
 
     try {
       _setUpdating(true);
@@ -215,7 +215,7 @@ class UserProvider extends ChangeNotifier {
 
   /// Update user settings
   Future<bool> updateSettings(UserSettings newSettings) async {
-    if (!_authProvider.isAuthenticated) return false;
+    if (!_authProvider.isLoggedIn) return false;
 
     try {
       _setUpdating(true);
@@ -262,7 +262,7 @@ class UserProvider extends ChangeNotifier {
 
   /// Upload new profile photo
   Future<bool> uploadPhoto(String imagePath) async {
-    if (!_authProvider.isAuthenticated || _userProfile == null) return false;
+    if (!_authProvider.isLoggedIn || _userProfile == null) return false;
 
     try {
       _setUpdating(true);
@@ -315,7 +315,7 @@ class UserProvider extends ChangeNotifier {
 
   /// Delete profile photo
   Future<bool> deletePhoto(String imageUrl) async {
-    if (!_authProvider.isAuthenticated || _userProfile == null) return false;
+    if (!_authProvider.isLoggedIn || _userProfile == null) return false;
 
     try {
       _setUpdating(true);
@@ -365,7 +365,7 @@ class UserProvider extends ChangeNotifier {
 
   /// Delete user account
   Future<bool> deleteAccount() async {
-    if (!_authProvider.isAuthenticated) return false;
+    if (!_authProvider.isLoggedIn) return false;
 
     try {
       _setUpdating(true);

@@ -5,7 +5,7 @@ import 'package:rizz_mobile/pages/tabs/chat.dart';
 import 'package:rizz_mobile/pages/tabs/discover.dart';
 import 'package:rizz_mobile/pages/tabs/liked.dart';
 import 'package:rizz_mobile/pages/tabs/profile.dart';
-import 'package:rizz_mobile/providers/auth_provider.dart';
+import 'package:rizz_mobile/providers/authentication_provider.dart';
 import 'package:rizz_mobile/theme/app_theme.dart';
 
 class BottomTabPage extends StatefulWidget {
@@ -30,7 +30,7 @@ class _BottomTabPageState extends State<BottomTabPage> {
 
   @override
   void initState() {
-    context.read<AuthProvider>().updateToken();
+    context.read<AuthenticationProvider>().updateToken();
     super.initState();
   }
 
