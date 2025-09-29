@@ -122,7 +122,7 @@ class _SplashScreenState extends State<SplashScreen> {
               ),
               const SizedBox(height: 8),
               const Text(
-                'Find your perfect match',
+                'Tìm nửa kia của bạn bằng giọng nói',
                 style: TextStyle(fontSize: 20, color: Color(0xFFFA5EFF)),
               ),
               const SizedBox(height: 48),

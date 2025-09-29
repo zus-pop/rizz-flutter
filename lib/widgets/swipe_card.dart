@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:rizz_mobile/models/profile.dart';
 import 'package:rizz_mobile/theme/app_theme.dart';
-import 'package:rizz_mobile/pages/chatbot.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:rizz_mobile/widgets/audio_player_dialog.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 class SwipeCard extends StatefulWidget {
   final Profile profile;
@@ -15,71 +14,138 @@ class SwipeCard extends StatefulWidget {
 }
 
 class _SwipeCardState extends State<SwipeCard> {
-  void _showChatbot(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => FractionallySizedBox(
-        heightFactor: 0.85,
-        child: Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Chatbot(profile: widget.profile),
-        ),
-      ),
-    );
-  }
-
-  int currentImageIndex = 0;
+  late AudioPlayer _audioPlayer;
+  bool _isPlaying = false;
+  bool _isLoading = false;
+  bool _hasError = false;
+  bool _isCompleted = false;
+  Duration _duration = Duration.zero;
+  Duration _position = Duration.zero;
 
   @override
   void initState() {
     super.initState();
-    debugPrint(widget.profile.name);
-    // Ensure currentImageIndex is valid for the current profile
-    if (widget.profile.imageUrls.isEmpty) {
-      currentImageIndex = 0;
-    } else {
-      currentImageIndex = 0.clamp(0, widget.profile.imageUrls.length - 1);
+    _audioPlayer = AudioPlayer();
+    _setupAudioListeners();
+    if (widget.profile.audioUrl != null) {
+      _loadAudio();
+    }
+  }
+
+  void _setupAudioListeners() {
+    _audioPlayer.onDurationChanged.listen((duration) {
+      if (mounted) {
+        setState(() {
+          _duration = duration;
+        });
+      }
+    });
+
+    _audioPlayer.onPositionChanged.listen((position) {
+      if (mounted) {
+        setState(() {
+          _position = position;
+        });
+      }
+    });
+
+    _audioPlayer.onPlayerStateChanged.listen((state) {
+      if (mounted) {
+        setState(() {
+          _isPlaying = state == PlayerState.playing;
+          _isCompleted = state == PlayerState.completed;
+          if (state == PlayerState.completed) {
+            _isPlaying = false;
+          }
+        });
+      }
+    });
+  }
+
+  Future<void> _loadAudio() async {
+    setState(() {
+      _isLoading = true;
+      _hasError = false;
+    });
+
+    try {
+      await _audioPlayer.setSource(UrlSource(widget.profile.audioUrl!));
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _hasError = true;
+      });
     }
   }
 
   @override
   void didUpdateWidget(SwipeCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Reset image index when profile changes
-    if (widget.profile != oldWidget.profile) {
-      debugPrint(
-        '${oldWidget.profile.name} was replaced by ${widget.profile.name}',
-      );
-      if (widget.profile.imageUrls.isEmpty) {
-        currentImageIndex = 0;
-      } else {
-        currentImageIndex = 0.clamp(0, widget.profile.imageUrls.length - 1);
+    // Stop audio when the profile changes (card is being reused for different profile)
+    if (oldWidget.profile.id != widget.profile.id) {
+      _stopAudioPlayback();
+      // Load audio for the new profile
+      if (widget.profile.audioUrl != null) {
+        _loadAudio();
       }
     }
   }
 
-  void _nextImage() {
-    if (widget.profile.imageUrls.length > 1) {
+  @override
+  void dispose() {
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+
+  void _stopAudioPlayback() {
+    if (_isPlaying) {
+      _audioPlayer.stop();
       setState(() {
-        currentImageIndex =
-            (currentImageIndex + 1) % widget.profile.imageUrls.length;
+        _isPlaying = false;
+        _position = Duration.zero;
+        _isCompleted = false;
       });
     }
   }
 
-  void _previousImage() {
-    if (widget.profile.imageUrls.length > 1) {
+  Future<void> _playPause() async {
+    if (_hasError) {
+      await _loadAudio();
+      return;
+    }
+
+    try {
+      if (_isPlaying) {
+        await _audioPlayer.pause();
+      } else {
+        if (_isCompleted ||
+            (_position >= _duration && _duration > Duration.zero)) {
+          await _audioPlayer.stop();
+          await _audioPlayer.setSource(UrlSource(widget.profile.audioUrl!));
+          await _audioPlayer.resume();
+          setState(() {
+            _isCompleted = false;
+            _position = Duration.zero;
+          });
+        } else {
+          await _audioPlayer.resume();
+        }
+      }
+    } catch (e) {
       setState(() {
-        currentImageIndex = currentImageIndex > 0
-            ? currentImageIndex - 1
-            : widget.profile.imageUrls.length - 1;
+        _hasError = true;
       });
     }
+  }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final minutes = twoDigits(duration.inMinutes.remainder(60));
+    final seconds = twoDigits(duration.inSeconds.remainder(60));
+    return '$minutes:$seconds';
   }
 
   @override
@@ -87,6 +153,10 @@ class _SwipeCardState extends State<SwipeCard> {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: context.outline.withValues(alpha: 1),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.1),
@@ -100,319 +170,188 @@ class _SwipeCardState extends State<SwipeCard> {
         borderRadius: BorderRadius.circular(20),
         child: Stack(
           children: [
-            // Background image
             Container(
               width: double.infinity,
               height: double.infinity,
-              decoration: BoxDecoration(
-                image:
-                    widget.profile.imageUrls.isNotEmpty &&
-                        currentImageIndex >= 0 &&
-                        currentImageIndex < widget.profile.imageUrls.length
-                    ? DecorationImage(
-                        image: NetworkImage(
-                          widget.profile.imageUrls[currentImageIndex],
+              color: context.surface,
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Profile name and age in same row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        '${widget.profile.name}, ${widget.profile.age}',
+                        style: TextStyle(
+                          color: context.primary,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
                         ),
-                        fit: BoxFit.cover,
-                        onError: (exception, stackTrace) {
-                          // Handle image loading error
-                        },
-                      )
-                    : null,
-                color: widget.profile.imageUrls.isEmpty
-                    ? Colors.grey[300]
-                    : null,
-              ),
-              child:
-                  widget.profile.imageUrls.isNotEmpty &&
-                      currentImageIndex >= 0 &&
-                      currentImageIndex < widget.profile.imageUrls.length
-                  ? CachedNetworkImage(
-                      imageUrl: widget.profile.imageUrls[currentImageIndex],
-                      fit: BoxFit.cover,
-                      errorWidget: (context, url, error) => Icon(Icons.error),
-                    )
-                  : Container(
-                      color: Colors.grey[300],
-                      child: const Center(
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // Audio waveform visualization
+                  Expanded(
+                    child: Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: context.onSurface.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Center(
                         child: Icon(
-                          Icons.person,
-                          size: 100,
-                          color: Colors.grey,
+                          Icons.graphic_eq,
+                          color: context.primary,
+                          size: 64,
                         ),
                       ),
                     ),
-            ),
+                  ),
 
-            // Gradient overlay for better text visibility
-            Container(
-              width: double.infinity,
-              height: double.infinity,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.transparent,
-                    Colors.black.withValues(alpha: 0.7),
-                  ],
-                  stops: const [0.0, 0.5, 1.0],
-                ),
-              ),
-            ),
+                  const SizedBox(height: 24),
 
-            // Touch zones for image navigation - positioned on top
-            if (widget.profile.imageUrls.length > 1) ...[
-              // Left tap zone
-              Positioned(
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: MediaQuery.of(context).size.width * 0.4,
-                child: GestureDetector(
-                  onTap: _previousImage,
-                  behavior: HitTestBehavior.translucent,
-                  child: Container(color: Colors.transparent),
-                ),
-              ),
-
-              // Right tap zone
-              Positioned(
-                right: 0,
-                top: 0,
-                bottom: 0,
-                width: MediaQuery.of(context).size.width * 0.4,
-                child: GestureDetector(
-                  onTap: _nextImage,
-                  behavior: HitTestBehavior.translucent,
-                  child: Container(color: Colors.transparent),
-                ),
-              ),
-            ],
-
-            // AI icon at top left
-            Positioned(
-              top: 40,
-              left: 20,
-              child: GestureDetector(
-                onTap: () => _showChatbot(context),
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.6),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.3),
-                      width: 1,
+                  // Progress slider
+                  SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      activeTrackColor: context.primary,
+                      inactiveTrackColor: context.onSurface.withValues(
+                        alpha: 0.3,
+                      ),
+                      thumbColor: context.primary,
+                      overlayColor: context.primary.withValues(alpha: 0.2),
+                      trackHeight: 4,
+                    ),
+                    child: Slider(
+                      value: _duration.inSeconds > 0
+                          ? _position.inSeconds.toDouble()
+                          : 0.0,
+                      max: _duration.inSeconds.toDouble() > 0
+                          ? _duration.inSeconds.toDouble()
+                          : 1.0,
+                      onChanged: (value) async {
+                        await _audioPlayer.seek(
+                          Duration(seconds: value.toInt()),
+                        );
+                        setState(() {
+                          _isCompleted = false;
+                        });
+                      },
                     ),
                   ),
-                  child: const Icon(
-                    Icons.smart_toy_rounded,
-                    color: Colors.white,
+
+                  // Time indicators
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          _formatDuration(_position),
+                          style: AppTheme.caption.copyWith(
+                            color: context.onSurface.withValues(alpha: 0.7),
+                          ),
+                        ),
+                        Text(
+                          _formatDuration(_duration),
+                          style: AppTheme.caption.copyWith(
+                            color: context.onSurface.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Play/Pause button
+                  GestureDetector(
+                    onTap: _playPause,
+                    child: Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        color: context.primary,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: context.primary.withValues(alpha: 0.4),
+                            spreadRadius: 0,
+                            blurRadius: 20,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: _isLoading
+                          ? SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                color: context.onPrimary,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : _hasError
+                          ? Icon(
+                              Icons.error,
+                              color: context.onPrimary,
+                              size: 32,
+                            )
+                          : Icon(
+                              _isPlaying
+                                  ? Icons.pause
+                                  : _isCompleted
+                                  ? Icons.replay
+                                  : Icons.play_arrow,
+                              color: context.onPrimary,
+                              size: 36,
+                            ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
+
+            // Detail icon in top-right corner
+            Positioned(
+              top: 16,
+              right: 16,
+              child: GestureDetector(
+                onTap: () => _showProfileDetails(context),
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: context.surface.withValues(alpha: 0.95),
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(
+                      color: context.outline.withValues(alpha: 0.4),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    Icons.visibility,
+                    color: context.primary,
                     size: 24,
                   ),
                 ),
               ),
             ),
-
-            // User information - with pointer events for info button only
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: IgnorePointer(
-                ignoring: false,
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Name and age
-                      Row(
-                        children: [
-                          // ...existing code for name, age, info button (remove AI icon here)...
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: IgnorePointer(
-                              child: Text(
-                                '${widget.profile.name}, ${widget.profile.age}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                          // Info button - only this should be tappable
-                          GestureDetector(
-                            onTap: () => _showProfileDetails(context),
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: .3),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.info_outline_rounded,
-                                color: Colors.white,
-                                size: 24,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      // Location
-                      IgnorePointer(
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.location_on,
-                              color: Colors.white,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              widget.profile.location,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      // Bio (truncated)
-                      IgnorePointer(
-                        child: Text(
-                          widget.profile.bio,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      // Interests chips
-                      IgnorePointer(
-                        child: Wrap(
-                          spacing: 8,
-                          runSpacing: 4,
-                          children: widget.profile.interests.take(3).map((
-                            interest,
-                          ) {
-                            return Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: context.primary.withValues(alpha: 0.3),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.5),
-                                ),
-                              ),
-                              child: Text(
-                                interest,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            // Photo indicators
-            if (widget.profile.imageUrls.length > 1)
-              Positioned(
-                top: 20,
-                left: 20,
-                right: 20,
-                child: Row(
-                  children: widget.profile.imageUrls.asMap().entries.map((
-                    entry,
-                  ) {
-                    return Expanded(
-                      child: Container(
-                        height: 5,
-                        margin: EdgeInsets.only(
-                          right:
-                              entry.key == widget.profile.imageUrls.length - 1
-                              ? 0
-                              : 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: entry.key == currentImageIndex
-                              ? Colors.white
-                              : Colors.white.withValues(alpha: 0.5),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-
-            // Audio icon - positioned in top right corner
-            if (widget.profile.audioUrl != null)
-              Positioned(
-                top: 40,
-                right: 20,
-                child: GestureDetector(
-                  onTap: () => _showAudioModal(context),
-                  child: Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.6),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.3),
-                        width: 1,
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.graphic_eq_rounded,
-                      color: Colors.white,
-                      size: 30,
-                    ),
-                  ),
-                ),
-              ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _showAudioModal(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (context) => AudioPlayerDialog(
-        audioUrl: widget.profile.audioUrl!,
-        userName: widget.profile.name,
       ),
     );
   }
@@ -449,7 +388,7 @@ class _SwipeCardState extends State<SwipeCard> {
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: Colors.grey[400],
+                        color: context.outline.withValues(alpha: 0.4),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -488,11 +427,14 @@ class _SwipeCardState extends State<SwipeCard> {
                                           CircularProgressIndicator(),
                                       errorWidget: (context, url, error) {
                                         return Container(
-                                          color: Colors.grey[300],
-                                          child: const Center(
+                                          color: context.surface.withValues(
+                                            alpha: 0.5,
+                                          ),
+                                          child: Center(
                                             child: Icon(
                                               Icons.error,
-                                              color: Colors.grey,
+                                              color: context.onSurface
+                                                  .withValues(alpha: 0.6),
                                             ),
                                           ),
                                         );

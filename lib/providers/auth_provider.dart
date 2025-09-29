@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:rizz_mobile/services/auth_service.dart';
 import 'package:rizz_mobile/services/firebase_service.dart';
 
 enum AuthState { initial, loading, authenticated, unauthenticated, error }
@@ -10,6 +11,7 @@ class AuthProvider extends ChangeNotifier {
   // Secure storage instance
   static const _storage = FlutterSecureStorage();
   final _firebaseService = FirebaseService();
+  final _authService = AuthService();
 
   // State
   AuthState _authState = AuthState.initial;
@@ -103,6 +105,8 @@ class AuthProvider extends ChangeNotifier {
       _clearError();
 
       // TODO: Implement Google Sign-In
+      final user = await _authService.signInWithGoogle();
+      debugPrint(user.email);
       // This is a placeholder - you'll need to integrate with google_sign_in package
       // GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
       // if (googleUser != null) {
@@ -140,106 +144,6 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Start phone number verification
-  Future<bool> startPhoneVerification(String phoneNumber) async {
-    try {
-      _setAuthState(AuthState.loading);
-      _clearError();
-      _isVerifyingPhone = true;
-      notifyListeners();
-
-      // TODO: Implement phone verification with Firebase Auth or your backend
-      // await FirebaseAuth.instance.verifyPhoneNumber(
-      //   phoneNumber: phoneNumber,
-      //   verificationCompleted: (credential) {
-      //     // Auto verification completed
-      //   },
-      //   verificationFailed: (exception) {
-      //     _setError(exception.message ?? 'Verification failed');
-      //   },
-      //   codeSent: (verificationId, resendToken) {
-      //     _verificationId = verificationId;
-      //   },
-      //   codeAutoRetrievalTimeout: (verificationId) {
-      //     _verificationId = verificationId;
-      //   },
-      // );
-
-      // Simulated verification for development
-      await Future.delayed(const Duration(seconds: 2));
-      _verificationId = 'mock_verification_id';
-      _phoneNumber = phoneNumber;
-      _setAuthState(AuthState.unauthenticated); // Still need to verify code
-      return true;
-    } catch (e) {
-      debugPrint('Error starting phone verification: $e');
-      _setError('Failed to send verification code');
-      _isVerifyingPhone = false;
-      notifyListeners();
-      return false;
-    }
-  }
-
-  /// Verify phone number with SMS code
-  Future<bool> verifyPhoneCode(String smsCode) async {
-    try {
-      _setAuthState(AuthState.loading);
-      _clearError();
-
-      if (_verificationId == null) {
-        _setError('No verification ID found');
-        return false;
-      }
-
-      // TODO: Implement SMS code verification
-      // PhoneAuthCredential credential = PhoneAuthProvider.credential(
-      //   verificationId: _verificationId!,
-      //   smsCode: smsCode,
-      // );
-      // UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
-      //
-      // if (userCredential.user != null) {
-      //   // Send token to your backend
-      //   final response = await _sendPhoneTokenToBackend(userCredential.user!.uid);
-      //   if (response.success) {
-      //     await _saveAuthData(
-      //       userId: response.userId,
-      //       accessToken: response.accessToken,
-      //       refreshToken: response.refreshToken,
-      //       authMethod: AuthMethod.phone,
-      //       phoneNumber: _phoneNumber,
-      //     );
-      //     _setAuthState(AuthState.authenticated);
-      //     return true;
-      //   }
-      // }
-
-      // Simulated success for development
-      await Future.delayed(const Duration(seconds: 2));
-      await _saveAuthData(
-        userId: 'phone_user_123',
-        accessToken: 'mock_phone_access_token',
-        refreshToken: 'mock_phone_refresh_token',
-        authMethod: AuthMethod.phone,
-        phoneNumber: _phoneNumber,
-      );
-      _setAuthState(AuthState.authenticated);
-      _isVerifyingPhone = false;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      debugPrint('Error verifying phone code: $e');
-      _setError('Invalid verification code');
-      return false;
-    }
-  }
-
-  /// Resend SMS verification code
-  Future<bool> resendVerificationCode() async {
-    if (_phoneNumber == null) return false;
-    return await startPhoneVerification(_phoneNumber!);
-  }
-
   /// Logout user
   Future<void> logout() async {
     try {
@@ -248,6 +152,7 @@ class AuthProvider extends ChangeNotifier {
 
       // Clear secure storage
       await _storage.deleteAll();
+      await _authService.googleSignOut();
 
       // Clear state
       _userId = null;

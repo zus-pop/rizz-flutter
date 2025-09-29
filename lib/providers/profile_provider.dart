@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import 'package:rizz_mobile/data/sample_profiles.dart';
 import 'package:rizz_mobile/models/profile.dart';
 import 'package:rizz_mobile/services/profile_service.dart';
@@ -21,6 +22,9 @@ class ProfileProvider extends ChangeNotifier {
   // Filters
   RangeValues _ageRange = const RangeValues(18, 65);
   double _maxDistance = 100.0;
+  String? _emotionFilter;
+  String? _voiceQualityFilter;
+  String? _accentFilter;
 
   // Use sample data flag (for development/testing)
   bool _useSampleData = true; // Set to false when you have a real API
@@ -36,6 +40,9 @@ class ProfileProvider extends ChangeNotifier {
   bool get isLoadingMore => _isLoadingMore;
   RangeValues get ageRange => _ageRange;
   double get maxDistance => _maxDistance;
+  String? get emotionFilter => _emotionFilter;
+  String? get voiceQualityFilter => _voiceQualityFilter;
+  String? get accentFilter => _accentFilter;
   bool get isLoading => _loadingState == LoadingState.loading;
   bool get hasError => _loadingState == LoadingState.error;
   bool get isEmpty => _profiles.isEmpty;
@@ -101,7 +108,18 @@ class ProfileProvider extends ChangeNotifier {
       bool ageMatch =
           profile.age >= _ageRange.start && profile.age <= _ageRange.end;
       bool distanceMatch = profile.distanceKm <= _maxDistance;
-      return ageMatch && distanceMatch;
+      bool emotionMatch =
+          _emotionFilter == null || profile.emotion == _emotionFilter;
+      bool voiceQualityMatch =
+          _voiceQualityFilter == null ||
+          profile.voiceQuality == _voiceQualityFilter;
+      bool accentMatch =
+          _accentFilter == null || profile.accent == _accentFilter;
+      return ageMatch &&
+          distanceMatch &&
+          emotionMatch &&
+          voiceQualityMatch &&
+          accentMatch;
     }).toList();
 
     // Pagination settings
@@ -148,6 +166,9 @@ class ProfileProvider extends ChangeNotifier {
       ageMin: _ageRange.start.round(),
       ageMax: _ageRange.end.round(),
       maxDistance: _maxDistance,
+      emotion: _emotionFilter,
+      voiceQuality: _voiceQualityFilter,
+      accent: _accentFilter,
     );
 
     if (refresh) {
@@ -185,6 +206,9 @@ class ProfileProvider extends ChangeNotifier {
   Future<void> applyFilters({
     RangeValues? ageRange,
     double? maxDistance,
+    String? emotion,
+    String? voiceQuality,
+    String? accent,
   }) async {
     bool filtersChanged = false;
 
@@ -195,6 +219,21 @@ class ProfileProvider extends ChangeNotifier {
 
     if (maxDistance != null && maxDistance != _maxDistance) {
       _maxDistance = maxDistance;
+      filtersChanged = true;
+    }
+
+    if (emotion != _emotionFilter) {
+      _emotionFilter = emotion;
+      filtersChanged = true;
+    }
+
+    if (voiceQuality != _voiceQualityFilter) {
+      _voiceQualityFilter = voiceQuality;
+      filtersChanged = true;
+    }
+
+    if (accent != _accentFilter) {
+      _accentFilter = accent;
       filtersChanged = true;
     }
 
@@ -315,6 +354,39 @@ class ProfileProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('Error passing liked profile: $e');
       return false;
+    }
+  }
+
+  /// Upload voice recording to server (customizable)
+  Future<Map<String, dynamic>?> uploadVoiceRecording({
+    required File audioFile,
+    required Map<String, dynamic> analysis,
+    String? userId,
+    Map<String, String>? additionalHeaders,
+    Map<String, dynamic>? additionalData,
+  }) async {
+    try {
+      if (_useSampleData) {
+        // Simulate upload for development
+        await Future.delayed(const Duration(seconds: 2));
+        return {
+          'success': true,
+          'audio_url': 'https://example.com/sample_audio.wav',
+          'message': 'Voice recording uploaded successfully',
+        };
+      } else {
+        final result = await _profileService.uploadVoiceRecording(
+          audioFile: audioFile,
+          analysis: analysis,
+          userId: userId,
+          additionalHeaders: additionalHeaders,
+          additionalData: additionalData,
+        );
+        return result;
+      }
+    } catch (e) {
+      debugPrint('Error uploading voice recording: $e');
+      return null;
     }
   }
 }

@@ -41,12 +41,12 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _loginWithPhone() async {
     if (_phoneController.text.trim().isEmpty) {
-      _showSnackBar('Please enter your phone number');
+      _showSnackBar('Nhập số điện thoại của bạn');
       return;
     }
 
     if (_phoneController.text.trim().length < 10) {
-      _showSnackBar('Please enter a valid phone number');
+      _showSnackBar('Hãy nhập số điện thoại hợp lệ');
       return;
     }
 
@@ -106,7 +106,7 @@ class _LoginPageState extends State<LoginPage> {
           }
         }
       } else {
-        _showSnackBar('Failed to sign in with Google. Please try again.');
+        _showSnackBar('Lỗi đăng nhập Google. Vui lòng thử lại');
       }
     }
   }
@@ -150,7 +150,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 32),
                 Text(
-                  'Welcome Back!',
+                  'Chào mừng!',
                   style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
@@ -159,7 +159,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Sign in to continue your dating journey',
+                  'Đăng nhập để bắt đầu khám phá các giọng nói của mọi người',
                   style: TextStyle(
                     fontSize: 16,
                     color: context.colors.onSurface.withValues(alpha: .6),
@@ -180,7 +180,7 @@ class _LoginPageState extends State<LoginPage> {
                     keyboardType: TextInputType.phone,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     decoration: InputDecoration(
-                      hintText: 'Enter your phone number',
+                      hintText: 'Nhập số điện thoại của bạn',
                       prefixIcon: Icon(
                         Icons.phone,
                         color: context.colors.onSurface.withValues(alpha: .6),
@@ -209,7 +209,7 @@ class _LoginPageState extends State<LoginPage> {
                     child: _isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
                         : const Text(
-                            'Continue with Phone',
+                            'Tiếp tục với số điện thoại',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -227,7 +227,7 @@ class _LoginPageState extends State<LoginPage> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
-                        'OR',
+                        'Hoặc',
                         style: TextStyle(
                           color: context.colors.onSurface.withValues(alpha: .6),
                           fontWeight: FontWeight.w500,
@@ -252,7 +252,7 @@ class _LoginPageState extends State<LoginPage> {
                       size: 50,
                     ),
                     label: Text(
-                      'Continue with Google',
+                      'Tiếp tục với Google',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -278,14 +278,16 @@ class _LoginPageState extends State<LoginPage> {
                       fontSize: 14,
                     ),
                     children: [
-                      const TextSpan(text: 'By continuing, you agree to our '),
+                      const TextSpan(
+                        text: 'Bằng cách tiếp tục, bạn đồng ý với ',
+                      ),
                       TextSpan(
-                        text: 'Terms of Service',
+                        text: 'Điều khoản dịch vụ',
                         style: TextStyle(color: context.primary),
                       ),
-                      const TextSpan(text: ' and '),
+                      const TextSpan(text: ' và '),
                       TextSpan(
-                        text: 'Privacy Policy',
+                        text: 'Chính sách bảo mật',
                         style: TextStyle(color: context.primary),
                       ),
                     ],

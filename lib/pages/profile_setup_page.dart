@@ -9,7 +9,6 @@ import 'package:rizz_mobile/pages/profile_setup/interests_step.dart';
 import 'package:rizz_mobile/pages/profile_setup/looking_for_step.dart';
 import 'package:rizz_mobile/pages/profile_setup/photo_upload_step.dart';
 import 'package:rizz_mobile/pages/profile_setup/profile_details_step.dart';
-import 'package:rizz_mobile/pages/profile_setup/profile_verification_step.dart';
 import 'package:rizz_mobile/pages/profile_setup/study_style_step.dart';
 import 'package:rizz_mobile/pages/profile_setup/voice_recording_step.dart';
 import 'package:rizz_mobile/pages/profile_setup/weekend_habit_step.dart';
@@ -40,7 +39,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
     'Communication',
     'Deal Breakers',
     'Photo Upload',
-    'Profile Verification',
+    // 'Profile Verification',
     'Voice Recording',
   ];
 
@@ -54,6 +53,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
         curve: Curves.easeInOut,
       );
     } else {
+      // call api here
       _completeSetup();
     }
   }
@@ -157,7 +157,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
       CommunicationStep(profileData: _profileData, onNext: _nextStep),
       DealBreakersStep(profileData: _profileData, onNext: _nextStep),
       PhotoUploadStep(profileData: _profileData, onNext: _nextStep),
-      ProfileVerificationStep(profileData: _profileData, onNext: _nextStep),
+      // ProfileVerificationStep(profileData: _profileData, onNext: _nextStep),
       VoiceRecordingStep(profileData: _profileData, onNext: _nextStep),
     ];
     return Scaffold(

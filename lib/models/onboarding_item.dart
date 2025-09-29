@@ -14,21 +14,24 @@ class OnboardingItem {
 
 final List<OnboardingItem> onboardingItems = [
   OnboardingItem(
-    title: "Find Your Perfect Match",
-    subtitle: "Discover Love",
-    description: "Connect with people who share your interests and values. Our smart matching algorithm helps you find meaningful relationships.",
-    imagePath: "assets/images/onboarding1.png",
+    title: "Tìm Kiếm Qua Giọng Nói",
+    subtitle: "Khám Phá Bằng Âm Thanh",
+    description:
+        "Sử dụng giọng nói để tìm kiếm và kết nối với những người phù hợp. Công nghệ nhận diện giọng nói giúp bạn dễ dàng bắt đầu cuộc trò chuyện.",
+    imagePath: "assets/images/onboarding_voice1.png",
   ),
   OnboardingItem(
-    title: "Chat & Connect",
-    subtitle: "Start Conversations",
-    description: "Break the ice with engaging conversations. Share your thoughts, experiences, and build genuine connections.",
-    imagePath: "assets/images/onboarding2.png",
+    title: "Trò Chuyện",
+    subtitle: "Giao Tiếp Tự Nhiên",
+    description:
+        "Trải nghiệm trò chuyện tự nhiên hơn qua tin nhắn chat. Thể hiện cảm xúc và cá tính của bạn qua từng tin nhắn.",
+    imagePath: "assets/images/onboarding_voice2.png",
   ),
   OnboardingItem(
-    title: "Meet in Person",
-    subtitle: "Take It Further",
-    description: "When you're ready, plan real dates and meet in person. Turn your online connections into lasting relationships.",
-    imagePath: "assets/images/onboarding3.png",
+    title: "Kết Nối Thật Sự",
+    subtitle: "Tạo Dấu Ấn Cá Nhân",
+    description:
+        "Tạo ấn tượng mạnh mẽ bằng giọng nói của bạn. Xây dựng mối quan hệ chân thành và sâu sắc hơn.",
+    imagePath: "assets/images/onboarding_voice3.png",
   ),
 ];

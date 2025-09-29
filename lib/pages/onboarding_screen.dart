@@ -58,7 +58,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             TextButton(
               onPressed: _skipOnboarding,
               child: Text(
-                'Skip',
+                'Bỏ qua',
                 style: TextStyle(
                   color: context.colors.onSurface.withValues(alpha: .6),
                   fontSize: 16,
@@ -172,8 +172,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ),
                     child: Text(
                       _currentIndex == onboardingItems.length - 1
-                          ? 'Get Started'
-                          : 'Next',
+                          ? 'Bắt đầu'
+                          : 'Tiếp theo',
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,

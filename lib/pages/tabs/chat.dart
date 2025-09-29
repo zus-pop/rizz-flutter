@@ -50,11 +50,12 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
           if (ip.startsWith('192.168.') || ip.startsWith('10.')) {
             bestIP = ip;
             break;
-          } else if (bestIP == null) {
-            bestIP = ip; // Fallback to any valid IP
+          } else {
+            bestIP ??= ip;
           }
         }
-        if (bestIP != null && (bestIP.startsWith('192.168.') || bestIP.startsWith('10.'))) {
+        if (bestIP != null &&
+            (bestIP.startsWith('192.168.') || bestIP.startsWith('10.'))) {
           break;
         }
       }
@@ -63,14 +64,14 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
         setState(() {
           myIP = bestIP!;
         });
-        print("Detected IP: $myIP"); // Debug log
+        debugPrint("Detected IP: $myIP"); // Debug log
       } else if (mounted) {
         setState(() {
           myIP = "Không tìm thấy IP";
         });
       }
     } catch (e) {
-      print("Error getting IP: $e"); // Debug log
+      debugPrint("Error getting IP: $e"); // Debug log
       if (mounted) {
         setState(() {
           myIP = "Lỗi lấy IP: $e";
@@ -91,7 +92,7 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
       await _stopServer();
 
       server = await ServerSocket.bind(InternetAddress.anyIPv4, 3000);
-      print("Server started on ${myIP}:3000"); // Debug log
+      debugPrint("Server started on ${myIP}:3000"); // Debug log
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -109,7 +110,9 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
         // Listen for incoming connections
         _serverSubscription = server!.listen(
           (Socket client) {
-            print("Client connected from: ${client.remoteAddress.address}:${client.remotePort}"); // Debug log
+            debugPrint(
+              "Client connected from: ${client.remoteAddress.address}:${client.remotePort}",
+            ); // Debug log
             if (mounted) {
               Navigator.of(context).pushNamed(
                 '/detail_chat',
@@ -118,20 +121,20 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
             }
           },
           onError: (error) {
-            print("Server error: $error"); // Debug log
+            debugPrint("Server error: $error"); // Debug log
             if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("❌ Lỗi server: $error")),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text("❌ Lỗi server: $error")));
             }
           },
           onDone: () {
-            print("Server closed"); // Debug log
+            debugPrint("Server closed"); // Debug log
           },
         );
       }
     } catch (e) {
-      print("Error starting server: $e"); // Debug log
+      debugPrint("Error starting server: $e"); // Debug log
       if (mounted) {
         setState(() {
           isConnecting = false;
@@ -185,7 +188,7 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
     });
 
     try {
-      print("Attempting to connect to $serverIP:3000"); // Debug log
+      debugPrint("Attempting to connect to $serverIP:3000"); // Debug log
 
       clientSocket = await Socket.connect(
         serverIP,
@@ -193,7 +196,7 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
         timeout: const Duration(seconds: 10), // Increased timeout
       );
 
-      print("Connected to server successfully"); // Debug log
+      debugPrint("Connected to server successfully"); // Debug log
 
       if (mounted) {
         setState(() {
@@ -213,7 +216,7 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
         );
       }
     } catch (e) {
-      print("Connection failed: $e"); // Debug log
+      debugPrint("Connection failed: $e"); // Debug log
       if (mounted) {
         setState(() {
           isConnecting = false;
@@ -295,7 +298,9 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    if (myIP != "Đang lấy IP..." && myIP != "Không tìm thấy IP" && !myIP.startsWith("Lỗi"))
+                    if (myIP != "Đang lấy IP..." &&
+                        myIP != "Không tìm thấy IP" &&
+                        !myIP.startsWith("Lỗi"))
                       GestureDetector(
                         onTap: () {
                           ipController.text = myIP;
@@ -343,7 +348,9 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: isConnecting ? null : (isServer ? _stopServer : _startServer),
+                  onPressed: isConnecting
+                      ? null
+                      : (isServer ? _stopServer : _startServer),
                   icon: isConnecting
                       ? const SizedBox(
                           width: 16,
@@ -368,7 +375,9 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
                     child: TextField(
                       controller: ipController,
                       enabled: !isConnecting,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       decoration: const InputDecoration(
                         hintText: 'Nhập IP server (vd: 192.168.1.100)',
                         border: OutlineInputBorder(),
