@@ -46,12 +46,12 @@ class _GenderInterestStepState extends State<GenderInterestStep> {
           children: [
             const SizedBox(height: 20),
             const Text(
-              'Which gender do you interested in?',
+              'Bạn quan tâm đến giới tính nào?',
               style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
-              'You can like change this option later',
+              'Bạn có thể thay đổi lựa chọn này sau',
               style: TextStyle(
                 fontSize: 16,
                 color: context.onSurface.withValues(alpha: 0.7),
@@ -142,7 +142,7 @@ class _GenderInterestStepState extends State<GenderInterestStep> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Text(
-                      'Next',
+                      'Tiếp theo',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,

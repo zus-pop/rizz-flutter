@@ -61,6 +61,7 @@ class _FilterModalState extends State<FilterModal> {
     'Tây Nguyên',
     'Đông Nam Bộ',
     'Miền Tây',
+    "Không xác định",
   ];
 
   @override

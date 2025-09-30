@@ -28,19 +28,19 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
   int _currentStep = 0;
 
   final List<String> _stepTitles = [
-    'Profile Details',
-    'Gender Interest',
-    'Looking For',
-    'Study Style',
-    'Weekend Habits',
-    'Interests',
-    'Campus Life',
-    'After Graduation',
-    'Communication',
-    'Deal Breakers',
-    'Photo Upload',
-    // 'Profile Verification',
-    'Voice Recording',
+    'Thông tin hồ sơ',
+    'Giới tính bạn muốn tìm',
+    'Bạn đang tìm kiếm',
+    'Phong cách học tập',
+    'Thói quen cuối tuần',
+    'Sở thích',
+    'Cuộc sống tại trường',
+    'Sau khi tốt nghiệp',
+    'Giao tiếp',
+    'Điều không chấp nhận',
+    'Tải ảnh lên',
+    // 'Xác minh hồ sơ',
+    'Ghi âm giọng nói',
   ];
 
   void _nextStep() {
@@ -97,13 +97,13 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  'Profile Setup Complete!',
+                  'Hoàn tất thiết lập hồ sơ!',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Welcome to Rizz! Your profile is now ready to connect with others.',
+                  'Chào mừng bạn đến với Rizz! Hồ sơ của bạn đã sẵn sàng để kết nối với mọi người.',
                   style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
                   textAlign: TextAlign.center,
                 ),
@@ -127,7 +127,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                       ),
                     ),
                     child: const Text(
-                      'Start Connecting',
+                      'Bắt đầu kết nối',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,

@@ -46,7 +46,7 @@ class _AfterGraduationStepState extends State<AfterGraduationStep> {
           children: [
             const SizedBox(height: 20),
             const Text(
-              'After graduation,',
+              'Sau khi tốt nghiệp bạn sẽ,',
               style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 40),

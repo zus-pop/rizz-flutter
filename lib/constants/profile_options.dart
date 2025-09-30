@@ -27,180 +27,158 @@ class InterestOption {
 
 // Love Languages
 const List<ProfileOption> loveLanguageOptions = [
-  ProfileOption(
-    id: 'words_of_affirmation',
-    name: 'Words of Affirmation',
-    description:
-        'Feeling loved through verbal acknowledgments and encouragement',
-  ),
-  ProfileOption(
-    id: 'acts_of_service',
-    name: 'Acts of Service',
-    description: 'Feeling loved when others do helpful things for you',
-  ),
-  ProfileOption(
-    id: 'receiving_gifts',
-    name: 'Receiving Gifts',
-    description: 'Feeling loved through thoughtful gifts and symbols of love',
-  ),
-  ProfileOption(
-    id: 'quality_time',
-    name: 'Quality Time',
-    description:
-        'Feeling loved through undivided attention and meaningful time together',
-  ),
-  ProfileOption(
-    id: 'physical_touch',
-    name: 'Physical Touch',
-    description:
-        'Feeling loved through appropriate physical affection and closeness',
-  ),
+  ProfileOption(id: 'vietnamese', name: 'Tiếng Việt'),
+  ProfileOption(id: 'english', name: 'Tiếng Anh'),
+  ProfileOption(id: 'chinese', name: 'Tiếng Trung'),
+  ProfileOption(id: 'japanese', name: 'Tiếng Nhật'),
+  ProfileOption(id: 'korean', name: 'Tiếng Hàn'),
+  ProfileOption(id: 'french', name: 'Tiếng Pháp'),
+  ProfileOption(id: 'german', name: 'Tiếng Đức'),
+  ProfileOption(id: 'spanish', name: 'Tiếng Tây Ban Nha'),
 ];
-
 // Zodiac Signs
 const List<ProfileOption> zodiacOptions = [
-  ProfileOption(id: 'aries', name: 'Aries'),
-  ProfileOption(id: 'taurus', name: 'Taurus'),
-  ProfileOption(id: 'gemini', name: 'Gemini'),
-  ProfileOption(id: 'cancer', name: 'Cancer'),
-  ProfileOption(id: 'leo', name: 'Leo'),
-  ProfileOption(id: 'virgo', name: 'Virgo'),
-  ProfileOption(id: 'libra', name: 'Libra'),
-  ProfileOption(id: 'scorpio', name: 'Scorpio'),
-  ProfileOption(id: 'sagittarius', name: 'Sagittarius'),
-  ProfileOption(id: 'capricorn', name: 'Capricorn'),
-  ProfileOption(id: 'aquarius', name: 'Aquarius'),
-  ProfileOption(id: 'pisces', name: 'Pisces'),
+  ProfileOption(id: 'aries', name: 'Bạch Dương'),
+  ProfileOption(id: 'taurus', name: 'Kim Ngưu'),
+  ProfileOption(id: 'gemini', name: 'Song Tử'),
+  ProfileOption(id: 'cancer', name: 'Cự Giải'),
+  ProfileOption(id: 'leo', name: 'Sư Tử'),
+  ProfileOption(id: 'virgo', name: 'Xử Nữ'),
+  ProfileOption(id: 'libra', name: 'Thiên Bình'),
+  ProfileOption(id: 'scorpio', name: 'Bọ Cạp'),
+  ProfileOption(id: 'sagittarius', name: 'Nhân Mã'),
+  ProfileOption(id: 'capricorn', name: 'Ma Kết'),
+  ProfileOption(id: 'aquarius', name: 'Bảo Bình'),
+  ProfileOption(id: 'pisces', name: 'Song Ngư'),
 ];
 
 // Universities
 const List<ProfileOption> universityOptions = [
-  ProfileOption(id: 'fpt', name: 'FPT University'),
-  ProfileOption(id: 'vnu-hanoi', name: 'Vietnam National University, Hanoi'),
-  ProfileOption(
-    id: 'vnu-hcmc',
-    name: 'Vietnam National University, Ho Chi Minh City',
-  ),
-  ProfileOption(id: 'hust', name: 'Hanoi University of Science and Technology'),
-  ProfileOption(id: 'hcmut', name: 'Ho Chi Minh City University of Technology'),
-  ProfileOption(id: 'ftu', name: 'Foreign Trade University'),
-  ProfileOption(id: 'neu', name: 'National Economics University'),
-  ProfileOption(id: 'ueh', name: 'University of Economics Ho Chi Minh City'),
-  ProfileOption(id: 'hanu', name: 'Hanoi University'),
-  ProfileOption(id: 'hcmus', name: 'University of Science, VNU-HCM'),
-  ProfileOption(id: 'uel', name: 'University of Economics and Law, VNU-HCM'),
+  ProfileOption(id: 'fpt', name: 'Đại học FPT'),
+  ProfileOption(id: 'hust', name: 'Đại học Bách Khoa Hà Nội'),
+  ProfileOption(id: 'hcmut', name: 'Đại học Bách Khoa TP. Hồ Chí Minh'),
+  ProfileOption(id: 'ftu', name: 'Đại học Ngoại Thương'),
+  ProfileOption(id: 'neu', name: 'Đại học Kinh tế Quốc dân'),
+  ProfileOption(id: 'ueh', name: 'Đại học Kinh tế TP. Hồ Chí Minh'),
+  ProfileOption(id: 'hanu', name: 'Đại học Hà Nội'),
+  ProfileOption(id: 'hcmus', name: 'Đại học Khoa học Tự nhiên, ĐHQG-HCM'),
+  ProfileOption(id: 'uel', name: 'Đại học Kinh tế - Luật, ĐHQG-HCM'),
+  ProfileOption(id: 'other', name: 'Trường của tôi không có trong danh sách'),
 ];
 
 // Interests with icon names for Flutter Icons
 const List<InterestOption> interests = [
-  InterestOption(id: 'photography', name: 'Photography', iconName: 'camera'),
-  InterestOption(id: 'shopping', name: 'Shopping', iconName: 'shopping_bag'),
+  InterestOption(id: 'photography', name: 'Nhiếp ảnh', iconName: 'camera'),
+  InterestOption(id: 'shopping', name: 'Mua sắm', iconName: 'shopping_bag'),
   InterestOption(id: 'karaoke', name: 'Karaoke', iconName: 'mic'),
   InterestOption(id: 'yoga', name: 'Yoga', iconName: 'self_improvement'),
-  InterestOption(id: 'cooking', name: 'Cooking', iconName: 'restaurant'),
-  InterestOption(id: 'tennis', name: 'Tennis', iconName: 'sports_tennis'),
-  InterestOption(id: 'run', name: 'Run', iconName: 'directions_run'),
-  InterestOption(id: 'swimming', name: 'Swimming', iconName: 'pool'),
-  InterestOption(id: 'art', name: 'Art', iconName: 'palette'),
-  InterestOption(id: 'traveling', name: 'Traveling', iconName: 'flight'),
-  InterestOption(id: 'extreme', name: 'Extreme', iconName: 'paragliding'),
-  InterestOption(id: 'music', name: 'Music', iconName: 'music_note'),
-  InterestOption(id: 'drink', name: 'Drink', iconName: 'local_bar'),
+  InterestOption(id: 'cooking', name: 'Nấu ăn', iconName: 'restaurant'),
+  InterestOption(id: 'tennis', name: 'Quần vợt', iconName: 'sports_tennis'),
+  InterestOption(id: 'run', name: 'Chạy bộ', iconName: 'directions_run'),
+  InterestOption(id: 'swimming', name: 'Bơi lội', iconName: 'pool'),
+  InterestOption(id: 'art', name: 'Nghệ thuật', iconName: 'palette'),
+  InterestOption(id: 'traveling', name: 'Du lịch', iconName: 'flight'),
+  InterestOption(
+    id: 'extreme',
+    name: 'Thể thao mạo hiểm',
+    iconName: 'paragliding',
+  ),
+  InterestOption(id: 'music', name: 'Âm nhạc', iconName: 'music_note'),
+  InterestOption(id: 'drink', name: 'Đồ uống', iconName: 'local_bar'),
   InterestOption(
     id: 'video-games',
-    name: 'Video games',
+    name: 'Trò chơi điện tử',
     iconName: 'sports_esports',
   ),
 ];
 
 // Looking For Options
 const List<ProfileOption> lookingForOptions = [
-  ProfileOption(id: 'long-term-relationship', name: 'Long-term relationship'),
-  ProfileOption(id: 'new-friends', name: 'New friends'),
-  ProfileOption(id: 'something-casual', name: 'Something casual'),
-  ProfileOption(id: 'not-sure-yet', name: 'Not sure yet'),
+  ProfileOption(id: 'long-term-relationship', name: 'Mối quan hệ lâu dài'),
+  ProfileOption(id: 'new-friends', name: 'Kết bạn mới'),
+  ProfileOption(id: 'something-casual', name: 'Hẹn hò vui vẻ'),
+  ProfileOption(id: 'not-sure-yet', name: 'Chưa chắc chắn'),
 ];
 
 // After Graduation Plans
 const List<ProfileOption> afterGraduation = [
   ProfileOption(
     id: 'grad-school-bound',
-    name: 'Grad school bound',
+    name: 'Học tiếp cao học',
     slug: 'grad-school-bound',
   ),
   ProfileOption(
     id: 'career-focused',
-    name: 'Career focused',
+    name: 'Tập trung phát triển sự nghiệp',
     slug: 'career-focused',
   ),
   ProfileOption(
     id: 'travel-the-world',
-    name: 'Travel the world',
+    name: 'Đi du lịch vòng quanh thế giới',
     slug: 'travel-the-world',
   ),
   ProfileOption(
     id: 'start-a-business',
-    name: 'Start a business',
+    name: 'Khởi nghiệp kinh doanh',
     slug: 'start-a-business',
   ),
   ProfileOption(
     id: 'still-figuring-it-out',
-    name: 'Still figuring it out',
+    name: 'Vẫn đang suy nghĩ',
     slug: 'still-figuring-it-out',
   ),
 ];
 
 // Campus Life
 const List<ProfileOption> campusLife = [
-  ProfileOption(id: 'greek-life-member', name: 'Greek life member'),
-  ProfileOption(id: 'club-president', name: 'Club president'),
-  ProfileOption(id: 'sports-team', name: 'Sports team'),
-  ProfileOption(id: 'academic-societies', name: 'Academic societies'),
-  ProfileOption(id: 'not-involved', name: 'Not involved'),
-  ProfileOption(id: 'student-leader', name: 'Student leader'),
+  ProfileOption(id: 'greek-life-member', name: 'Thành viên hội nhóm'),
+  ProfileOption(id: 'club-president', name: 'Chủ nhiệm câu lạc bộ'),
+  ProfileOption(id: 'sports-team', name: 'Thành viên đội thể thao'),
+  ProfileOption(id: 'academic-societies', name: 'Thành viên hội học thuật'),
+  ProfileOption(id: 'not-involved', name: 'Không tham gia hoạt động'),
+  ProfileOption(id: 'student-leader', name: 'Lãnh đạo sinh viên'),
 ];
 
 // Deal Breakers
 const List<ProfileOption> dealBreakers = [
-  ProfileOption(id: 'smoking', name: 'Smoking'),
+  ProfileOption(id: 'smoking', name: 'Hút thuốc'),
   ProfileOption(
     id: 'different-political-views',
-    name: 'Different political views',
+    name: 'Khác quan điểm chính trị',
   ),
-  ProfileOption(id: 'no-ambition', name: 'No ambition'),
-  ProfileOption(id: 'heavy-drinking', name: 'Heavy drinking'),
-  ProfileOption(id: 'poor-hygiene', name: 'Poor hygiene'),
-  ProfileOption(id: 'dishonesty', name: 'Dishonesty'),
+  ProfileOption(id: 'no-ambition', name: 'Thiếu tham vọng'),
+  ProfileOption(id: 'heavy-drinking', name: 'Uống rượu nhiều'),
+  ProfileOption(id: 'poor-hygiene', name: 'Vệ sinh cá nhân kém'),
+  ProfileOption(id: 'dishonesty', name: 'Không trung thực'),
 ];
 
 // Gender Options
 const List<ProfileOption> genderOptions = [
-  ProfileOption(id: 'female', name: 'Female'),
-  ProfileOption(id: 'male', name: 'Male'),
+  ProfileOption(id: 'male', name: 'Nam'),
+  ProfileOption(id: 'female', name: 'Nữ'),
 ];
 
-// Communication Preferences
 // Communication Preferences
 const List<ProfileOption> communicationPreferences = [
   ProfileOption(
     id: 'text-throughout-day',
-    name: 'Text throughout the day',
-    description: 'I love staying connected with frequent messages',
+    name: 'Nhắn tin cả ngày',
+    description: 'Tôi thích giữ liên lạc bằng những tin nhắn thường xuyên',
   ),
   ProfileOption(
     id: 'long-phone-calls',
-    name: 'Long phone calls',
-    description: 'Deep conversations over the phone are my thing',
+    name: 'Gọi điện thoại lâu',
+    description: 'Những cuộc trò chuyện sâu qua điện thoại là sở thích của tôi',
   ),
   ProfileOption(
     id: 'video-chats',
-    name: 'Video chats',
-    description: 'Face-to-face connection, even when apart',
+    name: 'Gọi video',
+    description: 'Kết nối mặt đối mặt dù ở xa',
   ),
   ProfileOption(
     id: 'in-person-hangouts',
-    name: 'In-person hangouts',
-    description: 'Nothing beats spending time together in person',
+    name: 'Gặp mặt trực tiếp',
+    description: 'Không gì tuyệt hơn việc dành thời gian bên nhau ngoài đời',
   ),
 ];
 
@@ -208,30 +186,30 @@ const List<ProfileOption> communicationPreferences = [
 const List<ProfileOption> studyStyles = [
   ProfileOption(
     id: 'library-warrior',
-    name: 'Library warrior',
-    description: 'Dead silence and stacks of books - that\'s my zone',
+    name: 'Chiến binh thư viện',
+    description: 'Cắm mặt vào sách, im lặng như ninja!',
   ),
   ProfileOption(
     id: 'coffee-shop-studier',
-    name: 'Coffee shop studier',
-    description: 'Background noise and caffeine fuel my focus',
+    name: 'Học ở quán cà phê',
+    description: 'Cà phê, tiếng ồn, và mình là học bá!',
   ),
   ProfileOption(
     id: 'dorm-room-hermit',
-    name: 'Dorm room hermit',
-    description: 'My room, my rules, my perfect study environment',
+    name: 'Ẩn sĩ phòng ký túc',
+    description: 'Phòng mình, thế giới mình, học kiểu gì cũng được!',
   ),
   ProfileOption(
     id: 'study-group-leader',
-    name: 'Study group leader',
-    description: 'Learning is better when we\'re all in it together',
+    name: 'Trưởng nhóm học tập',
+    description: 'Cứ phải có team mới chịu học!',
   ),
 ];
 
-// Weekend Habits
+// Thói quen cuối tuần
 const List<ProfileOption> weekendHabits = [
   ProfileOption(id: 'netflix-and-chill', name: 'Netflix and chill'),
-  ProfileOption(id: 'party-hard', name: 'Party hard'),
-  ProfileOption(id: 'explore-the-city', name: 'Explore the city'),
-  ProfileOption(id: 'catch-up-on-sleep', name: 'Catch up on sleep'),
+  ProfileOption(id: 'party-hard', name: 'Quẩy hết mình'),
+  ProfileOption(id: 'explore-the-city', name: 'Khám phá thành phố'),
+  ProfileOption(id: 'catch-up-on-sleep', name: 'Ngủ bù'),
 ];

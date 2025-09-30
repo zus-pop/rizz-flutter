@@ -54,12 +54,12 @@ class _DealBreakersStepState extends State<DealBreakersStep> {
           children: [
             const SizedBox(height: 20),
             const Text(
-              'Your deal breakers',
+              'Deal breakers',
               style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
-              'Optional. Tap to select what you absolutely',
+              'Chọn các dấu hiệu mà bạn cho là phá vỡ mối quan hệ',
               style: TextStyle(
                 fontSize: 16,
                 color: context.onSurface.withValues(alpha: 0.7),

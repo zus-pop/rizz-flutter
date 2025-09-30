@@ -46,10 +46,10 @@ class _CommunicationStepState extends State<CommunicationStep> {
           children: [
             const SizedBox(height: 20),
             Text(
-              'I prefer to',
+              'Bạn thích',
               style: AppTheme.headline2.copyWith(color: context.onSurface),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 20),
 
             // Communication Options
             ...communicationPreferences.map((comm) {
@@ -168,4 +168,3 @@ class _CommunicationStepState extends State<CommunicationStep> {
     );
   }
 }
-

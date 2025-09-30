@@ -42,7 +42,7 @@ class _InterestsStepState extends State<InterestsStep> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('You can select up to 5 interests'),
+            content: Text('Bạn chỉ có thể chọn tối đa 5 sở thích'),
             duration: Duration(seconds: 2),
           ),
         );
@@ -60,12 +60,12 @@ class _InterestsStepState extends State<InterestsStep> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Your interests',
+              'Sở thích của bạn',
               style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
-              'Select at least 3 of your interests and let everyone know what you\'re passionate about.',
+              'Chọn ít nhất 3 sở thích của bạn và để mọi người biết bạn đam mê điều gì.',
               style: TextStyle(
                 fontSize: 16,
                 color: context.onSurface.withValues(alpha: 0.7),
@@ -81,7 +81,7 @@ class _InterestsStepState extends State<InterestsStep> {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                '${_selectedInterests.length}/5 selected',
+                '${_selectedInterests.length}/5 đã chọn',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -195,7 +195,7 @@ class _InterestsStepState extends State<InterestsStep> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Text(
-                      'Next',
+                      'Tiếp theo',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,

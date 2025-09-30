@@ -46,7 +46,7 @@ class _LookingForStepState extends State<LookingForStep> {
           children: [
             const SizedBox(height: 20),
             Text(
-              'Looking for',
+              'Bạn đang tìm kiếm',
               style: AppTheme.headline2.copyWith(color: context.onSurface),
             ),
             const SizedBox(height: 40),
@@ -133,7 +133,7 @@ class _LookingForStepState extends State<LookingForStep> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Next',
+                      'Tiếp theo',
                       style: AppTheme.body1.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -151,4 +151,3 @@ class _LookingForStepState extends State<LookingForStep> {
     );
   }
 }
-

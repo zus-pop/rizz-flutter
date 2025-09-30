@@ -78,7 +78,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               itemBuilder: (context, index) {
                 final item = onboardingItems[index];
                 return Padding(
-                  padding: const EdgeInsets.all(24.0),
+                  padding: const EdgeInsets.all(18.0),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -99,7 +99,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           color: context.primary,
                         ),
                       ),
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 20),
                       Text(
                         item.title,
                         style: TextStyle(

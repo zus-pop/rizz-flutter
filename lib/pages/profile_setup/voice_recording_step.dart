@@ -37,12 +37,14 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
   late final GenerativeModel _model;
   Map<String, dynamic>? _audioAnalysis;
 
+  // Max recording duration in seconds - easily changeable
+  static const int _maxRecordingDurationSeconds = 8;
   final List<String> prompts = [
-    "Tell us about your ideal study partner",
-    "What makes you laugh the most?",
-    "Describe your perfect weekend",
-    "What are you passionate about?",
-    "Share something interesting about yourself",
+    "Giới thiệu ngắn gọn về bản thân bạn",
+    "Bạn thích làm gì vào cuối tuần?",
+    "Điều gì khiến bạn cảm thấy hạnh phúc nhất?",
+    "Bạn đang tìm kiếm điều gì ở một người bạn đồng hành?",
+    "Chia sẻ một sở thích hoặc thói quen đặc biệt của bạn",
   ];
   int _currentPromptIndex = 0;
   void _initializeAI() {
@@ -211,8 +213,8 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
           );
         });
 
-        // Auto-stop recording after 10 seconds
-        if (_recordingDuration.inSeconds >= 10) {
+        // Auto-stop recording after max duration
+        if (_recordingDuration.inSeconds >= _maxRecordingDurationSeconds) {
           _stopRecording();
           return;
         }
@@ -372,14 +374,14 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
                 children: [
                   // Header Section - More prominent
                   Text(
-                    'Add your voice',
+                    'Thêm giọng nói của bạn',
                     style: AppTheme.headline1.copyWith(
                       color: context.onSurface,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Record a short voice message to help others get to know your personality better',
+                    'Ghi âm một đoạn giới thiệu ngắn để mọi người hiểu rõ hơn về cá tính của bạn.\n\nThời lượng tối đa: ${_maxRecordingDurationSeconds}s giây.',
                     style: TextStyle(
                       fontSize: 16,
                       color: context.onSurface.withValues(alpha: 0.7),
@@ -413,7 +415,7 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
                               ),
                               const SizedBox(width: 8),
                               const Text(
-                                'Try talking about:',
+                                'Hãy thử nói:',
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
@@ -437,7 +439,7 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
                               padding: const EdgeInsets.symmetric(vertical: 4),
                             ),
                             child: Text(
-                              'Try another prompt',
+                              'Thử một gợi ý khác',
                               style: TextStyle(
                                 color: context.primary,
                                 fontSize: 13,
@@ -497,8 +499,8 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
                                   // Recording Status Text - Prominent
                                   Text(
                                     _isRecording
-                                        ? 'Recording... (${10 - _recordingDuration.inSeconds}s remaining)'
-                                        : 'Tap to start recording (10s max)',
+                                        ? 'Recording... (${_maxRecordingDurationSeconds - _recordingDuration.inSeconds}s remaining)'
+                                        : 'Tap to start recording (${_maxRecordingDurationSeconds}s max)',
                                     style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.w600,
@@ -512,12 +514,13 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
                                   // Recording Duration - Only show when recording
                                   if (_isRecording) ...[
                                     const SizedBox(height: 16),
-                                    // Progress indicator for 10-second limit
+                                    // Progress indicator for max duration limit
                                     SizedBox(
                                       width: 200,
                                       child: LinearProgressIndicator(
                                         value:
-                                            _recordingDuration.inSeconds / 10,
+                                            _recordingDuration.inSeconds /
+                                            _maxRecordingDurationSeconds,
                                         backgroundColor: Colors.grey.withValues(
                                           alpha: 0.3,
                                         ),
@@ -569,47 +572,8 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
                               // Playback Interface - Cleaner layout
                               Column(
                                 children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 20,
-                                      vertical: 8,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.green.withValues(
-                                        alpha: 0.1,
-                                      ),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: Colors.green.withValues(
-                                          alpha: 0.3,
-                                        ),
-                                        width: 1.5,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Icon(
-                                          Icons.check_circle,
-                                          color: Colors.green,
-                                          size: 24,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          '$Duration: ${_formatDuration(_recordingDuration)}',
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.green,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-
                                   // Show AI Analysis when available
                                   if (_audioAnalysis != null) ...[
-                                    const SizedBox(height: 10),
                                     Container(
                                       padding: const EdgeInsets.all(20),
                                       decoration: BoxDecoration(
@@ -637,7 +601,7 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
                                               ),
                                               const SizedBox(width: 8),
                                               const Text(
-                                                'AI Analysis',
+                                                'Phân tích giọng nói qua AI',
                                                 style: TextStyle(
                                                   fontSize: 18,
                                                   fontWeight: FontWeight.bold,
@@ -698,11 +662,10 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
                                         ],
                                       ),
                                     ),
+                                    const SizedBox(height: 10),
                                   ],
 
-                                  const SizedBox(height: 10),
-
-                                  // Playback Progress
+                                  // Playback Progress with Recording Duration
                                   Container(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 20,
@@ -715,6 +678,27 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
                                     ),
                                     child: Column(
                                       children: [
+                                        // Recording Duration Header
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(
+                                              Icons.check_circle,
+                                              color: Colors.green,
+                                              size: 20,
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              'Recording Duration: ${_formatDuration(_recordingDuration)}',
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w600,
+                                                color: Colors.green,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 16),
                                         // Progress Bar
                                         SliderTheme(
                                           data: SliderTheme.of(context).copyWith(
@@ -756,7 +740,7 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
                                                 .withValues(alpha: 0.3),
                                           ),
                                         ),
-                                        const SizedBox(height: 8),
+                                        const SizedBox(height: 10),
                                         // Time Display
                                         Row(
                                           mainAxisAlignment:
@@ -853,7 +837,6 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
                       ),
                     ),
                   ),
-
                   // Bottom Actions - Compact
                   Column(
                     mainAxisSize: MainAxisSize.min,
@@ -884,7 +867,6 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 8),
                     ],
                   ),
                 ],

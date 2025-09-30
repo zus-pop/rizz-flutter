@@ -27,6 +27,7 @@ class _ProfileState extends State<Profile>
   final ImagePicker _picker = ImagePicker();
 
   // Audio related variables
+  static const Duration maxRecordingDuration = Duration(seconds: 8);
   bool _isRecording = false;
   bool _hasRecording = false;
   bool _isPlaying = false;
@@ -40,6 +41,10 @@ class _ProfileState extends State<Profile>
   late final GenerativeModel _model;
   Map<String, dynamic>? _audioAnalysis;
   File? _voiceRecording;
+  // Store previous recording for backup
+  File? _previousVoiceRecording;
+  Map<String, dynamic>? _previousAudioAnalysis;
+  Duration _previousRecordingDuration = Duration.zero;
 
   @override
   bool get wantKeepAlive => true;
@@ -98,12 +103,13 @@ class _ProfileState extends State<Profile>
             "Tây Nguyên",
             "Đông Nam Bộ",
             "Miền Tây",
+            "Không xác định",
           ],
           description: 'Nguồn gốc của chất giọng trong audio',
         ),
         'overview': Schema.string(
           description:
-              '1 câu đánh giá siêu ngắn gọn có thể pha thêm một chút vui nhộn của AI đối với audio, nói rõ giọng này là đến từ tỉnh nào nằm ở trong 8 tiểu vùng miền một chính xác nhất có thể',
+              '1 câu đánh giá siêu ngắn gọn có thể pha thêm một chút vui nhộn của AI đối với audio, nói rõ giọng này là đến từ tỉnh nào nằm ở trong 8 tiểu vùng miền một chính xác nhất có thể nhưng đừng có cứng nhắc quá lúc nào cũng nhắc về vùng miền',
         ),
       },
     );
@@ -357,7 +363,535 @@ class _ProfileState extends State<Profile>
 
                     const SizedBox(height: 32),
 
-                    // Photo Grid
+                    // Audio Section (moved up)
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: context.outline.withValues(alpha: 0.5),
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Giọng của bạn',
+                                style: AppTheme.headline4.copyWith(
+                                  color: context.onSurface,
+                                ),
+                              ),
+                              if (_hasRecording) ...[
+                                const Spacer(),
+                                Text(
+                                  'Thời gian: ${_formatDuration(_recordingDuration)}',
+                                  style: AppTheme.body2.copyWith(
+                                    color: context.onSurface.withValues(
+                                      alpha: 0.7,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+
+                          if (!_hasRecording) ...[
+                            // Recording Interface
+                            Column(
+                              children: [
+                                GestureDetector(
+                                  onTap: _record,
+                                  child: Container(
+                                    width: 80,
+                                    height: 80,
+                                    decoration: BoxDecoration(
+                                      color: _isRecording
+                                          ? Colors.red
+                                          : context.primary,
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color:
+                                              (_isRecording
+                                                      ? Colors.red
+                                                      : context.primary)
+                                                  .withValues(alpha: 0.3),
+                                          blurRadius: 15,
+                                          spreadRadius: 3,
+                                        ),
+                                      ],
+                                    ),
+                                    child: Icon(
+                                      _isRecording ? Icons.stop : Icons.mic,
+                                      color: context.colors.onPrimary,
+                                      size: 40,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  _isRecording
+                                      ? 'Đang ghi âm... (${maxRecordingDuration.inSeconds - _recordingDuration.inSeconds}s remaining)'
+                                      : 'Nhấn để ghi âm (tối đa ${maxRecordingDuration.inSeconds}s)',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    color: _isRecording
+                                        ? Colors.red
+                                        : context.onSurface,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                if (_isRecording) ...[
+                                  const SizedBox(height: 12),
+                                  SizedBox(
+                                    width: 150,
+                                    child: LinearProgressIndicator(
+                                      value:
+                                          _recordingDuration.inSeconds /
+                                          maxRecordingDuration.inSeconds,
+                                      backgroundColor: Colors.grey.withValues(
+                                        alpha: 0.3,
+                                      ),
+                                      valueColor:
+                                          const AlwaysStoppedAnimation<Color>(
+                                            Colors.red,
+                                          ),
+                                      minHeight: 4,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    _formatDuration(_recordingDuration),
+                                    style: const TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.red,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  // Cancel button when recording new audio
+                                  if (_previousVoiceRecording != null) ...[
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: ElevatedButton.icon(
+                                        onPressed: _cancelNewRecording,
+                                        icon: const Icon(Icons.cancel),
+                                        label: const Text(
+                                          'Cancel & Keep Current',
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.grey,
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 12,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ],
+                            ),
+                          ] else ...[
+                            // Playback Interface with option to record new
+                            Column(
+                              children: [
+                                // Success indicator
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: Colors.green.withValues(
+                                        alpha: 0.3,
+                                      ),
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.check_circle,
+                                        color: Colors.green,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Giọng nói đã được thu',
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.green,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                                // Show AI Analysis when available or analyzing
+                                if (_audioAnalysis != null ||
+                                    _isAnalyzingAudio) ...[
+                                  const SizedBox(height: 16),
+                                  Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: _isAnalyzingAudio
+                                          ? Colors.blue.withValues(alpha: 0.1)
+                                          : Colors.purple.withValues(
+                                              alpha: 0.1,
+                                            ),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: _isAnalyzingAudio
+                                            ? Colors.blue.withValues(alpha: 0.3)
+                                            : Colors.purple.withValues(
+                                                alpha: 0.3,
+                                              ),
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              _isAnalyzingAudio
+                                                  ? Icons.psychology
+                                                  : Icons.smart_toy,
+                                              color: _isAnalyzingAudio
+                                                  ? Colors.blue
+                                                  : Colors.purple,
+                                              size: 20,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              _isAnalyzingAudio
+                                                  ? 'AI đang phân tích...'
+                                                  : 'AI Analysis',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                                color: _isAnalyzingAudio
+                                                    ? Colors.blue
+                                                    : Colors.purple,
+                                              ),
+                                            ),
+                                            if (_isAnalyzingAudio) ...[
+                                              const SizedBox(width: 8),
+                                              const SizedBox(
+                                                width: 16,
+                                                height: 16,
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  valueColor:
+                                                      AlwaysStoppedAnimation<
+                                                        Color
+                                                      >(Colors.blue),
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                        if (_isAnalyzingAudio) ...[
+                                          const SizedBox(height: 12),
+                                          const Text(
+                                            'Vui lòng đợi trong giây lát...',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontStyle: FontStyle.italic,
+                                              color: Colors.blue,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ] else if (_audioAnalysis != null) ...[
+                                          const SizedBox(height: 12),
+                                          _buildAnalysisRow(
+                                            'Cảm xúc:',
+                                            _audioAnalysis!['emotion'] ?? 'N/A',
+                                          ),
+                                          const SizedBox(height: 6),
+                                          _buildAnalysisRow(
+                                            'Chất giọng:',
+                                            _audioAnalysis!['voice_quality'] ??
+                                                'N/A',
+                                          ),
+                                          const SizedBox(height: 6),
+                                          _buildAnalysisRow(
+                                            'Vùng miền:',
+                                            _audioAnalysis!['accent'] ?? 'N/A',
+                                          ),
+                                          const SizedBox(height: 10),
+                                          Container(
+                                            padding: const EdgeInsets.all(10),
+                                            decoration: BoxDecoration(
+                                              color: Colors.purple.withValues(
+                                                alpha: 0.05,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                const Icon(
+                                                  Icons.lightbulb,
+                                                  color: Colors.purple,
+                                                  size: 14,
+                                                ),
+                                                const SizedBox(width: 6),
+                                                Expanded(
+                                                  child: Text(
+                                                    _audioAnalysis!['overview'] ??
+                                                        'Không có đánh giá',
+                                                    style: const TextStyle(
+                                                      fontSize: 13,
+                                                      fontStyle:
+                                                          FontStyle.italic,
+                                                      color: Colors.purple,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                ],
+
+                                const SizedBox(height: 16),
+
+                                // Playback Progress
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 12,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: context.colors.surfaceContainerHigh
+                                        .withValues(alpha: 0.5),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      // Progress Bar
+                                      SliderTheme(
+                                        data: SliderTheme.of(context).copyWith(
+                                          trackHeight: 4,
+                                          thumbShape:
+                                              const RoundSliderThumbShape(
+                                                enabledThumbRadius: 6,
+                                              ),
+                                          overlayShape:
+                                              const RoundSliderOverlayShape(
+                                                overlayRadius: 12,
+                                              ),
+                                        ),
+                                        child: Slider(
+                                          value:
+                                              _totalDuration.inMilliseconds > 0
+                                              ? _playbackPosition
+                                                        .inMilliseconds /
+                                                    _totalDuration
+                                                        .inMilliseconds
+                                              : 0.0,
+                                          onChanged: (value) {
+                                            if (_totalDuration.inMilliseconds >
+                                                0) {
+                                              final newPosition = Duration(
+                                                milliseconds:
+                                                    (value *
+                                                            _totalDuration
+                                                                .inMilliseconds)
+                                                        .toInt(),
+                                              );
+                                              _audioPlayer.seek(newPosition);
+                                            }
+                                          },
+                                          activeColor: context.primary,
+                                          inactiveColor: Colors.grey.withValues(
+                                            alpha: 0.3,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      // Time Display
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            _formatDuration(_playbackPosition),
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w500,
+                                              color: context.onSurface
+                                                  .withValues(alpha: 0.7),
+                                            ),
+                                          ),
+                                          Text(
+                                            _formatDuration(_totalDuration),
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w500,
+                                              color: context.onSurface
+                                                  .withValues(alpha: 0.7),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                                const SizedBox(height: 16),
+
+                                // Playback Controls
+                                Column(
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceEvenly,
+                                      children: [
+                                        // Play/Pause Button
+                                        Expanded(
+                                          child: ElevatedButton.icon(
+                                            onPressed: _playRecording,
+                                            icon: Icon(
+                                              _isPlaying
+                                                  ? Icons.pause
+                                                  : Icons.play_arrow,
+                                            ),
+                                            label: Text(
+                                              _isPlaying ? 'Pause' : 'Play',
+                                            ),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: context.primary,
+                                              foregroundColor:
+                                                  context.colors.onPrimary,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    vertical: 12,
+                                                  ),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        // Submit Button
+                                        Expanded(
+                                          child: ElevatedButton.icon(
+                                            onPressed:
+                                                (_isUploadingAudio ||
+                                                    _isAnalyzingAudio)
+                                                ? null
+                                                : _submitAudio,
+                                            icon: _isUploadingAudio
+                                                ? const SizedBox(
+                                                    width: 16,
+                                                    height: 16,
+                                                    child: CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      valueColor:
+                                                          AlwaysStoppedAnimation<
+                                                            Color
+                                                          >(Colors.white),
+                                                    ),
+                                                  )
+                                                : _isAnalyzingAudio
+                                                ? const Icon(Icons.psychology)
+                                                : const Icon(
+                                                    Icons.cloud_upload,
+                                                  ),
+                                            label: Text(
+                                              _isUploadingAudio
+                                                  ? 'Uploading...'
+                                                  : _isAnalyzingAudio
+                                                  ? 'Analyzing...'
+                                                  : 'Submit',
+                                            ),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor:
+                                                  (_isUploadingAudio ||
+                                                      _isAnalyzingAudio)
+                                                  ? Colors.grey
+                                                  : Colors.green,
+                                              foregroundColor: Colors.white,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    vertical: 12,
+                                                  ),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    // Record New Button (full width)
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: ElevatedButton.icon(
+                                        onPressed: _isAnalyzingAudio
+                                            ? null
+                                            : _startNewRecording,
+                                        icon: const Icon(Icons.mic),
+                                        label: Text(
+                                          _isAnalyzingAudio
+                                              ? 'Analyzing Audio...'
+                                              : 'Record New Audio',
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: _isAnalyzingAudio
+                                              ? Colors.grey
+                                              : Colors.orange,
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 12,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Photo Grid (moved down)
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
@@ -492,452 +1026,6 @@ class _ProfileState extends State<Profile>
 
                     const SizedBox(height: 24),
 
-                    // Audio Section
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: context.outline.withValues(alpha: 0.5),
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                'Giọng của bạn',
-                                style: AppTheme.headline4.copyWith(
-                                  color: context.onSurface,
-                                ),
-                              ),
-                              if (_hasRecording) ...[
-                                const Spacer(),
-                                Text(
-                                  'Thời gian: ${_formatDuration(_recordingDuration)}',
-                                  style: AppTheme.body2.copyWith(
-                                    color: context.onSurface.withValues(
-                                      alpha: 0.7,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-
-                          if (!_hasRecording) ...[
-                            // Recording Interface
-                            Column(
-                              children: [
-                                GestureDetector(
-                                  onTap: _record,
-                                  child: Container(
-                                    width: 80,
-                                    height: 80,
-                                    decoration: BoxDecoration(
-                                      color: _isRecording
-                                          ? Colors.red
-                                          : context.primary,
-                                      shape: BoxShape.circle,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color:
-                                              (_isRecording
-                                                      ? Colors.red
-                                                      : context.primary)
-                                                  .withValues(alpha: 0.3),
-                                          blurRadius: 15,
-                                          spreadRadius: 3,
-                                        ),
-                                      ],
-                                    ),
-                                    child: Icon(
-                                      _isRecording ? Icons.stop : Icons.mic,
-                                      color: context.colors.onPrimary,
-                                      size: 40,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  _isRecording
-                                      ? 'Đang ghi âm... (${10 - _recordingDuration.inSeconds}s remaining)'
-                                      : 'Nhấn để ghi âm (tối đa 10s)',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    color: _isRecording
-                                        ? Colors.red
-                                        : context.onSurface,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                if (_isRecording) ...[
-                                  const SizedBox(height: 12),
-                                  SizedBox(
-                                    width: 150,
-                                    child: LinearProgressIndicator(
-                                      value: _recordingDuration.inSeconds / 10,
-                                      backgroundColor: Colors.grey.withValues(
-                                        alpha: 0.3,
-                                      ),
-                                      valueColor:
-                                          const AlwaysStoppedAnimation<Color>(
-                                            Colors.red,
-                                          ),
-                                      minHeight: 4,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    _formatDuration(_recordingDuration),
-                                    style: const TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.red,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ] else ...[
-                            // Playback Interface
-                            Column(
-                              children: [
-                                // Success indicator
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 8,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.green.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: Colors.green.withValues(
-                                        alpha: 0.3,
-                                      ),
-                                      width: 1.5,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(
-                                        Icons.check_circle,
-                                        color: Colors.green,
-                                        size: 20,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        'Giọng nói đã được thu',
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.green,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-
-                                // Show AI Analysis when available
-                                if (_audioAnalysis != null) ...[
-                                  const SizedBox(height: 16),
-                                  Container(
-                                    padding: const EdgeInsets.all(16),
-                                    decoration: BoxDecoration(
-                                      color: Colors.purple.withValues(
-                                        alpha: 0.1,
-                                      ),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: Colors.purple.withValues(
-                                          alpha: 0.3,
-                                        ),
-                                        width: 1.5,
-                                      ),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            const Icon(
-                                              Icons.smart_toy,
-                                              color: Colors.purple,
-                                              size: 20,
-                                            ),
-                                            const SizedBox(width: 8),
-                                            const Text(
-                                              'AI Analysis',
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.purple,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 12),
-                                        _buildAnalysisRow(
-                                          'Cảm xúc:',
-                                          _audioAnalysis!['emotion'] ?? 'N/A',
-                                        ),
-                                        const SizedBox(height: 6),
-                                        _buildAnalysisRow(
-                                          'Chất giọng:',
-                                          _audioAnalysis!['voice_quality'] ??
-                                              'N/A',
-                                        ),
-                                        const SizedBox(height: 6),
-                                        _buildAnalysisRow(
-                                          'Vùng miền:',
-                                          _audioAnalysis!['accent'] ?? 'N/A',
-                                        ),
-                                        const SizedBox(height: 10),
-                                        Container(
-                                          padding: const EdgeInsets.all(10),
-                                          decoration: BoxDecoration(
-                                            color: Colors.purple.withValues(
-                                              alpha: 0.05,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              6,
-                                            ),
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              const Icon(
-                                                Icons.lightbulb,
-                                                color: Colors.purple,
-                                                size: 14,
-                                              ),
-                                              const SizedBox(width: 6),
-                                              Expanded(
-                                                child: Text(
-                                                  _audioAnalysis!['overview'] ??
-                                                      'Không có đánh giá',
-                                                  style: const TextStyle(
-                                                    fontSize: 13,
-                                                    fontStyle: FontStyle.italic,
-                                                    color: Colors.purple,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-
-                                const SizedBox(height: 16),
-
-                                // Playback Progress
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 12,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: context.colors.surfaceContainerHigh
-                                        .withValues(alpha: 0.5),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Column(
-                                    children: [
-                                      // Progress Bar
-                                      SliderTheme(
-                                        data: SliderTheme.of(context).copyWith(
-                                          trackHeight: 4,
-                                          thumbShape:
-                                              const RoundSliderThumbShape(
-                                                enabledThumbRadius: 6,
-                                              ),
-                                          overlayShape:
-                                              const RoundSliderOverlayShape(
-                                                overlayRadius: 12,
-                                              ),
-                                        ),
-                                        child: Slider(
-                                          value:
-                                              _totalDuration.inMilliseconds > 0
-                                              ? _playbackPosition
-                                                        .inMilliseconds /
-                                                    _totalDuration
-                                                        .inMilliseconds
-                                              : 0.0,
-                                          onChanged: (value) {
-                                            if (_totalDuration.inMilliseconds >
-                                                0) {
-                                              final newPosition = Duration(
-                                                milliseconds:
-                                                    (value *
-                                                            _totalDuration
-                                                                .inMilliseconds)
-                                                        .toInt(),
-                                              );
-                                              _audioPlayer.seek(newPosition);
-                                            }
-                                          },
-                                          activeColor: context.primary,
-                                          inactiveColor: Colors.grey.withValues(
-                                            alpha: 0.3,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      // Time Display
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            _formatDuration(_playbackPosition),
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w500,
-                                              color: context.onSurface
-                                                  .withValues(alpha: 0.7),
-                                            ),
-                                          ),
-                                          Text(
-                                            _formatDuration(_totalDuration),
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w500,
-                                              color: context.onSurface
-                                                  .withValues(alpha: 0.7),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-
-                                const SizedBox(height: 16),
-
-                                // Playback Controls
-                                Column(
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceEvenly,
-                                      children: [
-                                        // Play/Pause Button
-                                        Expanded(
-                                          child: ElevatedButton.icon(
-                                            onPressed: _playRecording,
-                                            icon: Icon(
-                                              _isPlaying
-                                                  ? Icons.pause
-                                                  : Icons.play_arrow,
-                                            ),
-                                            label: Text(
-                                              _isPlaying ? 'Pause' : 'Play',
-                                            ),
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: context.primary,
-                                              foregroundColor:
-                                                  context.colors.onPrimary,
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    vertical: 12,
-                                                  ),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(10),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        // Submit Button
-                                        Expanded(
-                                          child: ElevatedButton.icon(
-                                            onPressed: _isUploadingAudio
-                                                ? null
-                                                : _submitAudio,
-                                            icon: _isUploadingAudio
-                                                ? const SizedBox(
-                                                    width: 16,
-                                                    height: 16,
-                                                    child: CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                      valueColor:
-                                                          AlwaysStoppedAnimation<
-                                                            Color
-                                                          >(Colors.white),
-                                                    ),
-                                                  )
-                                                : const Icon(
-                                                    Icons.cloud_upload,
-                                                  ),
-                                            label: Text(
-                                              _isUploadingAudio
-                                                  ? 'Uploading...'
-                                                  : 'Submit',
-                                            ),
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: _isUploadingAudio
-                                                  ? Colors.grey
-                                                  : Colors.green,
-                                              foregroundColor: Colors.white,
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    vertical: 12,
-                                                  ),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(10),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 12),
-                                    // Re-record Button (full width)
-                                    SizedBox(
-                                      width: double.infinity,
-                                      child: ElevatedButton.icon(
-                                        onPressed: _deleteRecording,
-                                        icon: const Icon(Icons.refresh),
-                                        label: const Text('Re-record'),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: context
-                                              .colors
-                                              .surfaceContainerHigh,
-                                          foregroundColor: context.onSurface,
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 12,
-                                          ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              10,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
                     // Rizz Plus Section
                     Container(
                       width: double.infinity,
@@ -974,7 +1062,7 @@ class _ProfileState extends State<Profile>
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Unlock premium features and get unlimited swipes',
+                            'Kích hoạt gói Rizz plus để nhận được nhiều thời gian voice hơn',
                             style: AppTheme.body2.copyWith(color: Colors.white),
                           ),
                           const SizedBox(height: 16),
@@ -993,7 +1081,7 @@ class _ProfileState extends State<Profile>
                                 ),
                               ),
                               child: Text(
-                                'Upgrade Now',
+                                'Nâng cấp ngay',
                                 style: AppTheme.button,
                               ),
                             ),
@@ -1033,9 +1121,10 @@ class _ProfileState extends State<Profile>
             ),
           ),
 
-          // Loading Overlay when AI is analyzing or uploading
-          if (_isAnalyzingAudio || _isUploadingAudio) ...[
+          // Loading Overlay when uploading (removed blocking overlay for analysis)
+          if (_isUploadingAudio) ...[
             Container(
+              height: double.infinity,
               color: Colors.black.withValues(alpha: 0.7),
               child: Center(
                 child: Container(
@@ -1066,19 +1155,15 @@ class _ProfileState extends State<Profile>
                         ),
                       ),
                       const SizedBox(height: 24),
-                      Icon(
-                        _isAnalyzingAudio
-                            ? Icons.psychology
-                            : Icons.cloud_upload,
+                      const Icon(
+                        Icons.cloud_upload,
                         color: Colors.blue,
                         size: 48,
                       ),
                       const SizedBox(height: 16),
-                      Text(
-                        _isAnalyzingAudio
-                            ? 'AI đang phân tích giọng nói của bạn...'
-                            : 'Đang tải lên giọng nói của bạn...',
-                        style: const TextStyle(
+                      const Text(
+                        'Đang tải lên giọng nói của bạn...',
+                        style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: Colors.blue,
@@ -1087,9 +1172,7 @@ class _ProfileState extends State<Profile>
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        _isAnalyzingAudio
-                            ? 'Vui lòng đợi trong giây lát'
-                            : 'Vui lòng đợi trong khi tải lên',
+                        'Vui lòng đợi trong khi tải lên',
                         style: TextStyle(
                           fontSize: 16,
                           color: context.onSurface.withValues(alpha: 0.7),
@@ -1257,7 +1340,7 @@ class _ProfileState extends State<Profile>
           );
         });
 
-        if (_recordingDuration.inSeconds >= 10) {
+        if (_recordingDuration.inSeconds >= maxRecordingDuration.inSeconds) {
           _stopRecording();
           return;
         }
@@ -1273,47 +1356,36 @@ class _ProfileState extends State<Profile>
         _isRecording = false;
         _isAnalyzingAudio = true;
       });
+
+      // Show toast message for AI analysis
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('AI đang phân tích giọng nói của bạn...'),
+            duration: Duration(seconds: 2),
+            backgroundColor: Colors.blue,
+          ),
+        );
+      }
+
       String? path = await _audioRecorder.stop();
 
       if (path == null) throw UnimplementedError('Path error for the record');
 
       final file = File(path);
-      final prompt = TextPart("Hãy phân tích giọng vùng miền trong audio này.");
-      final audio = await file.readAsBytes();
-      final audioPart = InlineDataPart('audio/mpeg', audio);
-      final response = await _model.generateContent([
-        Content.multi([prompt, audioPart]),
-      ]);
-      debugPrint(response.text);
+      _voiceRecording = file;
+      _hasRecording = true;
 
-      try {
-        if (response.text != null) {
-          final jsonResponse = jsonDecode(response.text!);
-          setState(() {
-            _audioAnalysis = jsonResponse;
-          });
-          _voiceRecording = file;
-        } else {
-          throw Exception('Empty response from AI');
-        }
-      } catch (e) {
-        debugPrint('Error parsing AI response: $e');
-        setState(() {
-          _audioAnalysis = {
-            'emotion': 'N/A',
-            'voice_quality': 'N/A',
-            'overview': 'Không thể phân tích audio',
-          };
-        });
-      }
-
-      // Upload audio to server after AI analysis
-      // await _uploadAudioToServer(file); // Removed automatic upload
-
+      // Reset audio player state for immediate playback
+      await _audioPlayer.stop();
       setState(() {
-        _hasRecording = true;
-        _isAnalyzingAudio = false;
+        _isPlaying = false;
+        _playbackPosition = Duration.zero;
+        _totalDuration = Duration.zero;
       });
+
+      // Start AI analysis asynchronously
+      _analyzeAudioAsync(file);
     } catch (e) {
       debugPrint('Error stopping recording: $e');
       setState(() {
@@ -1330,27 +1402,173 @@ class _ProfileState extends State<Profile>
     }
   }
 
-  Future<void> _playRecording() async {
-    if (_voiceRecording != null) {
-      if (_isPlaying) {
-        await _audioPlayer.pause();
-      } else {
-        await _audioPlayer.play(UrlSource(_voiceRecording!.path));
+  Future<void> _analyzeAudioAsync(File file) async {
+    try {
+      final prompt = TextPart("Hãy phân tích giọng vùng miền trong audio này.");
+      final audio = await file.readAsBytes();
+      final audioPart = InlineDataPart('audio/mpeg', audio);
+      final response = await _model.generateContent([
+        Content.multi([prompt, audioPart]),
+      ]);
+      debugPrint(response.text);
+
+      if (mounted) {
+        try {
+          if (response.text != null) {
+            final jsonResponse = jsonDecode(response.text!);
+            setState(() {
+              _audioAnalysis = jsonResponse;
+            });
+
+            // Show success toast when analysis completes
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('AI đã hoàn thành phân tích giọng nói!'),
+                duration: Duration(seconds: 2),
+                backgroundColor: Colors.green,
+              ),
+            );
+          } else {
+            throw Exception('Empty response from AI');
+          }
+        } catch (e) {
+          debugPrint('Error parsing AI response: $e');
+          setState(() {
+            _audioAnalysis = {
+              'emotion': 'N/A',
+              'voice_quality': 'N/A',
+              'overview': 'Không thể phân tích audio',
+            };
+          });
+        } finally {
+          setState(() {
+            _isAnalyzingAudio = false;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error analyzing audio: $e');
+      if (mounted) {
+        setState(() {
+          _isAnalyzingAudio = false;
+          _audioAnalysis = {
+            'emotion': 'N/A',
+            'voice_quality': 'N/A',
+            'overview': 'Không thể phân tích audio',
+          };
+        });
       }
     }
   }
 
-  void _deleteRecording() {
+  Future<void> _playRecording() async {
+    if (_voiceRecording != null) {
+      try {
+        if (_isPlaying) {
+          await _audioPlayer.pause();
+        } else {
+          // If audio has completed (position is at the end), restart from beginning
+          // Otherwise, resume from current position
+          if (_totalDuration.inMilliseconds > 0 &&
+              _playbackPosition.inMilliseconds >=
+                  _totalDuration.inMilliseconds - 100) {
+            // Audio completed, restart from beginning
+            await _audioPlayer.stop();
+            setState(() {
+              _playbackPosition = Duration.zero;
+            });
+            await _audioPlayer.play(UrlSource(_voiceRecording!.path));
+          } else {
+            // Resume from current position (audio is paused or stopped but not completed)
+            await _audioPlayer.play(UrlSource(_voiceRecording!.path));
+          }
+        }
+      } catch (e) {
+        debugPrint('Error playing recording: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error playing audio: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  void _startNewRecording() {
+    // Prevent starting new recording while AI analysis is in progress
+    if (_isAnalyzingAudio) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng đợi AI phân tích xong trước khi ghi âm mới'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // Backup current recording
+    _previousVoiceRecording = _voiceRecording;
+    _previousAudioAnalysis = _audioAnalysis;
+    _previousRecordingDuration = _recordingDuration;
+
+    // Switch to recording mode
     setState(() {
-      _hasRecording = false;
+      _hasRecording = false; // Show recording interface
       _recordingDuration = Duration.zero;
       _playbackPosition = Duration.zero;
       _totalDuration = Duration.zero;
-      _audioAnalysis = null;
     });
-    _voiceRecording = null;
     _audioPlayer.stop();
-    _audioRecorder.cancel();
+  }
+
+  Future<void> _cancelRecording() async {
+    try {
+      setState(() {
+        _isRecording = false;
+      });
+      // Stop recording without AI analysis
+      await _audioRecorder.stop();
+      // Don't do AI analysis - just discard the recording
+    } catch (e) {
+      debugPrint('Error canceling recording: $e');
+    }
+  }
+
+  void _cancelNewRecording() {
+    // Don't allow canceling if AI analysis is in progress
+    if (_isAnalyzingAudio) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng đợi AI phân tích xong trước khi hủy'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // Stop the current recording without AI analysis
+    if (_isRecording) {
+      _cancelRecording();
+    }
+
+    // Restore previous recording
+    _voiceRecording = _previousVoiceRecording;
+    _audioAnalysis = _previousAudioAnalysis;
+    _recordingDuration = _previousRecordingDuration;
+
+    setState(() {
+      _hasRecording = _voiceRecording != null;
+      _recordingDuration = _previousRecordingDuration;
+      _isRecording = false; // Ensure recording state is reset
+    });
+
+    // Clear backup
+    _previousVoiceRecording = null;
+    _previousAudioAnalysis = null;
+    _previousRecordingDuration = Duration.zero;
   }
 
   String _formatDuration(Duration duration) {
@@ -1361,7 +1579,25 @@ class _ProfileState extends State<Profile>
   }
 
   Future<void> _submitAudio() async {
-    if (_voiceRecording == null || _audioAnalysis == null) return;
+    if (_voiceRecording == null || _audioAnalysis == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng đợi AI phân tích xong trước khi gửi'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    if (_isAnalyzingAudio) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('AI đang phân tích, vui lòng đợi...'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
 
     setState(() {
       _isUploadingAudio = true;

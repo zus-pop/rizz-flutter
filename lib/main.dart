@@ -46,7 +46,7 @@ class MyApp extends StatelessWidget {
         showPerformanceOverlay: false,
         title: "Rizz",
         theme: Provider.of<AppSettingProvider>(context).themeData,
-        home: const SplashScreen(),
+        home: const BottomTabPage(),
         routes: {
           '/home': (context) => BottomTabPage(),
           '/detail_chat': (context) => const DetailChat(),
