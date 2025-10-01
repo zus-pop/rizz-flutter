@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'dart:io';
-import 'dart:async';
+import 'package:flutter/services.dart';
+import '../../services/simple_chat_service.dart';
 
 class Chat extends StatefulWidget {
   const Chat({super.key});
@@ -10,13 +10,14 @@ class Chat extends StatefulWidget {
 }
 
 class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
-  ServerSocket? server;
-  Socket? clientSocket;
-  String myIP = "Đang lấy IP...";
-  final TextEditingController ipController = TextEditingController();
-  bool isServer = false;
-  bool isConnecting = false;
-  StreamSubscription? _serverSubscription;
+  String? currentRoomId;
+  String? roomCode;
+  final TextEditingController roomCodeController = TextEditingController();
+  bool isCreatingRoom = false;
+  bool isJoiningRoom = false;
+  bool isInRoom = false;
+  bool firestoreEnabled = false;
+  bool checkingFirestore = true;
 
   @override
   bool get wantKeepAlive => true;
@@ -24,238 +25,358 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
   @override
   void initState() {
     super.initState();
-    _getMyIP();
+    _initializeService();
   }
 
   @override
   void dispose() {
-    _serverSubscription?.cancel();
-    ipController.dispose();
+    roomCodeController.dispose();
+    if (currentRoomId != null) {
+      SimpleChatService.leaveChatRoom(currentRoomId!);
+    }
     super.dispose();
   }
 
-  Future<void> _getMyIP() async {
+  Future<void> _initializeService() async {
+    setState(() {
+      checkingFirestore = true;
+    });
+
     try {
-      final interfaces = await NetworkInterface.list(
-        type: InternetAddressType.IPv4,
-        includeLoopback: false,
-      );
+      await SimpleChatService.ensureAuthenticated();
 
-      // Find the best network interface (prefer WiFi over mobile)
-      String? bestIP;
-      for (final interface in interfaces) {
-        for (final addr in interface.addresses) {
-          final ip = addr.address;
-          // Prefer 192.168.x.x or 10.x.x.x networks (common WiFi ranges)
-          if (ip.startsWith('192.168.') || ip.startsWith('10.')) {
-            bestIP = ip;
-            break;
-          } else {
-            bestIP ??= ip;
-          }
-        }
-        if (bestIP != null &&
-            (bestIP.startsWith('192.168.') || bestIP.startsWith('10.'))) {
-          break;
-        }
-      }
+      // Try a simple test to check if Firestore is working
+      await _testFirestoreConnection();
 
-      if (bestIP != null && mounted) {
-        setState(() {
-          myIP = bestIP!;
-        });
-        debugPrint("Detected IP: $myIP"); // Debug log
-      } else if (mounted) {
-        setState(() {
-          myIP = "Không tìm thấy IP";
-        });
-      }
     } catch (e) {
-      debugPrint("Error getting IP: $e"); // Debug log
+      debugPrint("Error initializing service: $e");
       if (mounted) {
         setState(() {
-          myIP = "Lỗi lấy IP: $e";
+          checkingFirestore = false;
+          firestoreEnabled = false;
         });
+
+        if (e.toString().contains('PERMISSION_DENIED') ||
+            e.toString().contains('firestore.googleapis.com') ||
+            e.toString().contains('Cloud Firestore API has not been used') ||
+            e.toString().contains('TimeoutException') ||
+            e.toString().contains('Firestore API not enabled')) {
+          // Don't show snackbar here, we'll show the setup dialog when user tries to use the feature
+          debugPrint("Firestore API not enabled - will show setup dialog when needed");
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("❌ Lỗi khởi tạo dịch vụ: $e")),
+          );
+        }
       }
     }
   }
 
-  Future<void> _startServer() async {
-    if (isConnecting || isServer) return;
+  Future<void> _testFirestoreConnection() async {
+    try {
+      // Try to read from Firestore to test connection
+      await SimpleChatService.testConnection();
+
+      if (mounted) {
+        setState(() {
+          checkingFirestore = false;
+          firestoreEnabled = true;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          checkingFirestore = false;
+          firestoreEnabled = false;
+        });
+      }
+      rethrow;
+    }
+  }
+
+  Future<void> _createChatRoom() async {
+    if (isCreatingRoom) return;
 
     setState(() {
-      isConnecting = true;
+      isCreatingRoom = true;
     });
 
     try {
-      // Close existing server if any
-      await _stopServer();
+      currentRoomId = await SimpleChatService.createChatRoom();
+      final roomInfo = await SimpleChatService.getRoomInfo(currentRoomId!);
 
-      server = await ServerSocket.bind(InternetAddress.anyIPv4, 3000);
-      debugPrint("Server started on ${myIP}:3000"); // Debug log
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("✅ Server đang chạy tại $myIP:3000"),
-            duration: const Duration(seconds: 3),
-          ),
-        );
+      if (mounted && roomInfo != null) {
+        final newRoomCode = roomInfo['room_code'];
+        debugPrint('Room created with code: $newRoomCode');
 
         setState(() {
-          isServer = true;
-          isConnecting = false;
+          roomCode = newRoomCode;
+          isInRoom = true;
+          isCreatingRoom = false;
         });
 
-        // Listen for incoming connections
-        _serverSubscription = server!.listen(
-          (Socket client) {
-            debugPrint(
-              "Client connected from: ${client.remoteAddress.address}:${client.remotePort}",
-            ); // Debug log
-            if (mounted) {
-              Navigator.of(context).pushNamed(
-                '/detail_chat',
-                arguments: {'socket': client, 'isServer': true},
-              );
-            }
-          },
-          onError: (error) {
-            debugPrint("Server error: $error"); // Debug log
-            if (mounted) {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text("❌ Lỗi server: $error")));
-            }
-          },
-          onDone: () {
-            debugPrint("Server closed"); // Debug log
-          },
-        );
-      }
-    } catch (e) {
-      debugPrint("Error starting server: $e"); // Debug log
-      if (mounted) {
-        setState(() {
-          isConnecting = false;
-          isServer = false;
-        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("❌ Lỗi khởi động server: $e"),
+            content: Text("✅ Phòng chat đã tạo! Mã phòng: $newRoomCode\nChia sẻ mã này để người khác tham gia"),
             duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'Copy',
+              onPressed: () async {
+                await Clipboard.setData(ClipboardData(text: newRoomCode));
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("📋 Đã copy mã phòng!"),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                }
+              },
+            ),
           ),
         );
+      } else {
+        throw Exception('Không thể lấy thông tin phòng chat');
+      }
+    } catch (e) {
+      debugPrint("Error creating chat room: $e");
+      if (mounted) {
+        setState(() {
+          isCreatingRoom = false;
+        });
+
+        // Check if it's a Firestore API issue
+        if (e.toString().contains('PERMISSION_DENIED') ||
+            e.toString().contains('firestore.googleapis.com') ||
+            e.toString().contains('Cloud Firestore API has not been used')) {
+          _showFirestoreSetupDialog();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("❌ Lỗi tạo phòng chat: $e")),
+          );
+        }
       }
     }
   }
 
-  Future<void> _stopServer() async {
-    if (server != null) {
-      await server!.close();
-      server = null;
-    }
-    _serverSubscription?.cancel();
-    _serverSubscription = null;
-    if (mounted) {
-      setState(() {
-        isServer = false;
-      });
-    }
-  }
-
-  Future<void> _connectToServer() async {
-    final serverIP = ipController.text.trim();
-    if (serverIP.isEmpty) {
+  Future<void> _joinChatRoom() async {
+    final roomCodeInput = roomCodeController.text.trim().toUpperCase();
+    if (roomCodeInput.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("⚠️ Vui lòng nhập IP server")),
+        const SnackBar(content: Text("⚠️ Vui lòng nhập mã phòng")),
       );
       return;
     }
 
-    // Validate IP format
-    if (!_isValidIP(serverIP)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("⚠️ Định dạng IP không hợp lệ")),
-      );
-      return;
-    }
-
-    if (isConnecting) return;
+    if (isJoiningRoom) return;
 
     setState(() {
-      isConnecting = true;
+      isJoiningRoom = true;
     });
 
     try {
-      debugPrint("Attempting to connect to $serverIP:3000"); // Debug log
-
-      clientSocket = await Socket.connect(
-        serverIP,
-        3000,
-        timeout: const Duration(seconds: 10), // Increased timeout
-      );
-
-      debugPrint("Connected to server successfully"); // Debug log
+      currentRoomId = await SimpleChatService.joinChatRoom(roomCodeInput);
 
       if (mounted) {
         setState(() {
-          isConnecting = false;
+          roomCode = roomCodeInput;
+          isInRoom = true;
+          isJoiningRoom = false;
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("✅ Kết nối thành công đến $serverIP"),
+            content: Text("✅ Đã tham gia phòng chat: $roomCodeInput"),
             duration: const Duration(seconds: 2),
           ),
         );
 
+        // Navigate to chat detail page
         Navigator.of(context).pushNamed(
           '/detail_chat',
-          arguments: {'socket': clientSocket, 'isServer': false},
+          arguments: {
+            'roomId': currentRoomId,
+            'roomCode': roomCode,
+            'isFirebaseChat': false,
+          },
         );
       }
     } catch (e) {
-      debugPrint("Connection failed: $e"); // Debug log
+      debugPrint("Error joining chat room: $e");
       if (mounted) {
         setState(() {
-          isConnecting = false;
+          isJoiningRoom = false;
         });
 
-        String errorMessage = "❌ Lỗi kết nối: ";
-        if (e is SocketException) {
-          if (e.osError?.errorCode == 111) {
-            errorMessage += "Không thể kết nối - Kiểm tra IP và server";
-          } else if (e.osError?.errorCode == 113) {
-            errorMessage += "Không tìm thấy route đến host";
-          } else {
-            errorMessage += "Lỗi socket: ${e.message}";
-          }
-        } else if (e is TimeoutException) {
-          errorMessage += "Hết thời gian chờ - Kiểm tra kết nối mạng";
+        // Check if it's a Firestore API issue
+        if (e.toString().contains('PERMISSION_DENIED') ||
+            e.toString().contains('firestore.googleapis.com') ||
+            e.toString().contains('Cloud Firestore API has not been used')) {
+          _showFirestoreSetupDialog();
         } else {
-          errorMessage += e.toString();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("❌ $e"),
+              duration: const Duration(seconds: 5),
+            ),
+          );
         }
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            duration: const Duration(seconds: 5),
-          ),
-        );
       }
     }
   }
 
-  bool _isValidIP(String ip) {
-    final parts = ip.split('.');
-    if (parts.length != 4) return false;
-
-    for (final part in parts) {
-      final num = int.tryParse(part);
-      if (num == null || num < 0 || num > 255) return false;
+  void _leaveChatRoom() async {
+    if (currentRoomId != null) {
+      await SimpleChatService.leaveChatRoom(currentRoomId!);
     }
-    return true;
+    setState(() {
+      currentRoomId = null;
+      roomCode = null;
+      isInRoom = false;
+    });
+    roomCodeController.clear();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("✅ Đã rời khỏi phòng chat")),
+    );
+  }
+
+  void _openChatRoom() {
+    if (currentRoomId != null && roomCode != null) {
+      Navigator.of(context).pushNamed(
+        '/detail_chat',
+        arguments: {
+          'roomId': currentRoomId,
+          'roomCode': roomCode,
+          'isFirebaseChat': false,
+        },
+      );
+    }
+  }
+
+  void _showFirestoreSetupDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.warning, color: Colors.orange),
+              const SizedBox(width: 8),
+              const Text("Cần Kích Hoạt Firestore"),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "Cloud Firestore API chưa được kích hoạt cho dự án Firebase của bạn.",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+
+              // Automated setup section
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "✨ CÁCH NHANH NHẤT:",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green.shade700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text("1. Chạy file setup_firestore.bat trong thư mục dự án"),
+                    const Text("2. Làm theo hướng dẫn trong script"),
+                    const Text("3. Khởi động lại ứng dụng"),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 16),
+              const Text("Hoặc làm theo cách thủ công:"),
+              const SizedBox(height: 8),
+
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("1. Mở Google Cloud Console"),
+                    const Text("2. Chọn dự án: rizz-7e0b8"),
+                    const Text("3. Tìm 'Cloud Firestore API'"),
+                    const Text("4. Nhấn 'Enable'"),
+                    const Text("5. Tạo Firestore database trong Firebase Console"),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                "Link trực tiếp:",
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+              const SizedBox(height: 4),
+              SelectableText(
+                "https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=rizz-7e0b8",
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.blue.shade700,
+                  fontFamily: 'monospace',
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                await Clipboard.setData(const ClipboardData(
+                  text: "https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=rizz-7e0b8"
+                ));
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("📋 Đã copy link vào clipboard!"),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                }
+              },
+              child: const Text("Copy Link"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Try to test connection again after user potentially fixed the issue
+                _testFirestoreConnection();
+              },
+              child: const Text("Kiểm tra lại"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text("Đóng"),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -263,15 +384,15 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
     super.build(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Chat'),
+        title: const Text('Chat với Mã Phòng'),
         backgroundColor: Colors.blue,
         centerTitle: true,
         actions: [
-          if (isServer)
+          if (isInRoom)
             IconButton(
-              icon: const Icon(Icons.stop),
-              onPressed: _stopServer,
-              tooltip: 'Dừng server',
+              icon: const Icon(Icons.exit_to_app),
+              onPressed: _leaveChatRoom,
+              tooltip: 'Rời phòng chat',
             ),
         ],
       ),
@@ -282,171 +403,330 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
                   children: [
+                    Icon(
+                      Icons.chat,
+                      size: 48,
+                      color: Colors.blue.shade700,
+                    ),
+                    const SizedBox(height: 12),
                     Text(
-                      'IP của bạn: $myIP',
+                      'Chat với Mã Phòng',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: Colors.blue.shade700,
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    if (myIP != "Đang lấy IP..." &&
-                        myIP != "Không tìm thấy IP" &&
-                        !myIP.startsWith("Lỗi"))
-                      GestureDetector(
-                        onTap: () {
-                          ipController.text = myIP;
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            'Nhấn để copy vào ô kết nối',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.blue.shade600,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Tạo phòng và chia sẻ mã\nhoặc nhập mã để tham gia',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.blue.shade600,
                       ),
+                      textAlign: TextAlign.center,
+                    ),
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
 
-              // Server status indicator
-              if (isServer)
+              const SizedBox(height: 32),
+
+              // Firestore Status Indicator
+              if (checkingFirestore || !firestoreEnabled)
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.green.shade100,
-                    borderRadius: BorderRadius.circular(8),
+                    color: checkingFirestore
+                        ? Colors.blue.shade50
+                        : Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: checkingFirestore
+                          ? Colors.blue.shade200
+                          : Colors.red.shade200
+                    ),
                   ),
                   child: Row(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.check_circle, color: Colors.green),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Server đang chạy - Chờ kết nối...',
-                        style: TextStyle(color: Colors.green.shade700),
+                      if (checkingFirestore)
+                        const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      else
+                        Icon(
+                          Icons.warning,
+                          color: Colors.red.shade600,
+                          size: 20,
+                        ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              checkingFirestore
+                                  ? "Đang kiểm tra kết nối Firestore..."
+                                  : "Firestore API chưa được kích hoạt",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: checkingFirestore
+                                    ? Colors.blue.shade700
+                                    : Colors.red.shade700,
+                              ),
+                            ),
+                            if (!checkingFirestore && !firestoreEnabled)
+                              Text(
+                                "Nhấn 'Tạo Phòng Chat' để xem hướng dẫn cài đặt",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.red.shade600,
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
                 ),
 
-              const SizedBox(height: 16),
+              if (checkingFirestore || !firestoreEnabled)
+                const SizedBox(height: 24),
 
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: isConnecting
-                      ? null
-                      : (isServer ? _stopServer : _startServer),
-                  icon: isConnecting
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Icon(isServer ? Icons.stop : Icons.dns),
-                  label: Text(isServer ? 'Dừng Server' : 'Tạo Server'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: isServer ? Colors.red : Colors.blue,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text('HOẶC', style: TextStyle(color: Colors.grey)),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: ipController,
-                      enabled: !isConnecting,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      decoration: const InputDecoration(
-                        hintText: 'Nhập IP server (vd: 192.168.1.100)',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.computer),
-                        helperText: 'Cả hai thiết bị phải cùng mạng WiFi',
-                        helperMaxLines: 2,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  ElevatedButton.icon(
-                    onPressed: isConnecting ? null : _connectToServer,
-                    icon: isConnecting
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.link),
-                    label: const Text('Kết nối'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 16,
-                      ),
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              // Debug info
-              if (myIP != "Đang lấy IP..." && !myIP.startsWith("Lỗi"))
+              // Current room status
+              if (isInRoom && roomCode != null)
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(8),
+                    color: Colors.green.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.green.shade300),
                   ),
                   child: Column(
                     children: [
-                      Text(
-                        'Hướng dẫn:',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey.shade700,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Đang trong phòng:',
+                            style: TextStyle(
+                              color: Colors.green.shade700,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade200,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          roomCode!,
+                          style: TextStyle(
+                            color: Colors.green.shade800,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            letterSpacing: 2,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '1. Đảm bảo cả hai thiết bị cùng mạng WiFi\n'
-                        '2. Một người tạo server, người còn lại kết nối\n'
-                        '3. Kiểm tra tường lửa nếu không kết nối được',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
+                      const SizedBox(height: 12),
+                      ElevatedButton.icon(
+                        onPressed: _openChatRoom,
+                        icon: const Icon(Icons.chat),
+                        label: const Text('Mở Chat'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                         ),
-                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),
                 ),
+
+              if (!isInRoom) ...[
+                // Create room button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: isCreatingRoom ? null : _createChatRoom,
+                    icon: isCreatingRoom
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Icon(Icons.add),
+                    label: Text(isCreatingRoom ? 'Đang tạo phòng...' : 'Tạo Phòng Chat Mới'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                      textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+                const Divider(),
+                const SizedBox(height: 24),
+
+                // Join room section
+                Text(
+                  'Hoặc tham gia phòng có sẵn',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                TextField(
+                  controller: roomCodeController,
+                  enabled: !isJoiningRoom,
+                  textCapitalization: TextCapitalization.characters,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 2,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Nhập mã phòng (VD: ABC123)',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    prefixIcon: const Icon(Icons.meeting_room),
+                    helperText: 'Mã phòng gồm 6 ký tự',
+                    helperStyle: TextStyle(color: Colors.grey.shade600),
+                  ),
+                  onSubmitted: (_) => _joinChatRoom(),
+                ),
+
+                const SizedBox(height: 16),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: isJoiningRoom ? null : _joinChatRoom,
+                    icon: isJoiningRoom
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Icon(Icons.login),
+                    label: Text(isJoiningRoom ? 'Đang tham gia...' : 'Tham Gia Phòng'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 32),
+
+              // Instructions
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: Colors.grey.shade700,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Hướng dẫn sử dụng:',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey.shade700,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildInstructionRow('1', 'Tạo phòng chat mới và nhận mã phòng 6 ký tự'),
+                        const SizedBox(height: 8),
+                        _buildInstructionRow('2', 'Chia sẻ mã phòng với người muốn chat'),
+                        const SizedBox(height: 8),
+                        _buildInstructionRow('3', 'Nhập mã phòng để tham gia và bắt đầu chat'),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildInstructionRow(String number, String text) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 20,
+          height: 20,
+          decoration: BoxDecoration(
+            color: Colors.blue.shade600,
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: Text(
+              number,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade700,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
