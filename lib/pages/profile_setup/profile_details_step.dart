@@ -128,14 +128,14 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Profile details',
+                  'Thông tin hồ sơ',
                   style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
 
                 // First Name
                 Text(
-                  'First name',
+                  'Tên',
                   style: AppTheme.body1.copyWith(
                     fontWeight: FontWeight.w600,
                     color: context.onSurface,
@@ -146,7 +146,7 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                   controller: _firstNameController,
                   focusNode: _firstNameFocusNode,
                   decoration: InputDecoration(
-                    hintText: 'Your First Name',
+                    hintText: 'Tên của bạn',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: context.outline),
@@ -162,7 +162,7 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your first name';
+                      return 'Nhập Tên';
                     }
                     return null;
                   },
@@ -171,7 +171,7 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                 const SizedBox(height: 12),
                 // Last Name
                 Text(
-                  'Last name',
+                  'Họ',
                   style: AppTheme.body1.copyWith(
                     fontWeight: FontWeight.w600,
                     color: context.onSurface,
@@ -182,7 +182,7 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                   controller: _lastNameController,
                   focusNode: _lastNameFocusNode,
                   decoration: InputDecoration(
-                    hintText: 'Your Last Name',
+                    hintText: 'Họ của bạn',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: context.outline),
@@ -208,7 +208,7 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
 
                 // Birthday
                 Text(
-                  'Birthday',
+                  'Ngày sinh',
                   style: AppTheme.body1.copyWith(
                     fontWeight: FontWeight.w600,
                     color: context.onSurface,
@@ -239,7 +239,7 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                         Text(
                           _selectedBirthday != null
                               ? '${_selectedBirthday!.day}/${_selectedBirthday!.month}/${_selectedBirthday!.year}'
-                              : 'Choose birthday date',
+                              : 'Chọn ngày sinh nhật',
                           style: TextStyle(
                             fontSize: 16,
                             color: _selectedBirthday != null
@@ -255,7 +255,7 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
 
                 // Gender
                 Text(
-                  'Gender',
+                  'Giới tính',
                   style: AppTheme.body1.copyWith(
                     fontWeight: FontWeight.w600,
                     color: context.onSurface,
@@ -263,18 +263,23 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                 ),
                 const SizedBox(height: 8),
                 Row(
-                  children: [
-                    Expanded(
+                  children: genderOptions.map((gender) {
+                    final isSelected = _selectedGender == gender.name;
+                    return Expanded(
                       child: GestureDetector(
-                        onTap: () => setState(() => _selectedGender = 'Male'),
+                        onTap: () =>
+                            setState(() => _selectedGender = gender.name),
                         child: Container(
+                          margin: EdgeInsets.only(
+                            right: gender == genderOptions.last ? 0 : 12,
+                          ),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           decoration: BoxDecoration(
-                            color: _selectedGender == 'Male'
+                            color: isSelected
                                 ? context.primary.withValues(alpha: .15)
                                 : context.colors.surface,
                             border: Border.all(
-                              color: _selectedGender == 'Male'
+                              color: isSelected
                                   ? context.primary
                                   : context.outline,
                               width: 2,
@@ -285,18 +290,18 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
-                                Icons.male,
-                                color: _selectedGender == 'Male'
+                                gender.id == 'male' ? Icons.male : Icons.female,
+                                color: isSelected
                                     ? context.primary
                                     : context.onSurface.withValues(alpha: 0.7),
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                'Male',
+                                gender.name,
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
-                                  color: _selectedGender == 'Male'
+                                  color: isSelected
                                       ? context.primary
                                       : context.onSurface.withValues(
                                           alpha: 0.7,
@@ -307,59 +312,14 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => setState(() => _selectedGender = 'Female'),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          decoration: BoxDecoration(
-                            color: _selectedGender == 'Female'
-                                ? context.primary.withValues(alpha: .15)
-                                : context.colors.surface,
-                            border: Border.all(
-                              color: _selectedGender == 'Female'
-                                  ? context.primary
-                                  : context.outline,
-                              width: 2,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.female,
-                                color: _selectedGender == 'Female'
-                                    ? context.primary
-                                    : context.onSurface.withValues(alpha: 0.7),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Female',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: _selectedGender == 'Female'
-                                      ? context.primary
-                                      : context.onSurface.withValues(
-                                          alpha: 0.7,
-                                        ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                    );
+                  }).toList(),
                 ),
                 const SizedBox(height: 30),
 
                 // University
                 Text(
-                  'University',
+                  'Trường Đại Học',
                   style: AppTheme.body1.copyWith(
                     fontWeight: FontWeight.w600,
                     color: context.onSurface,
@@ -370,7 +330,7 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                   isExpanded: true,
                   initialValue: _selectedUniversity,
                   decoration: InputDecoration(
-                    hintText: 'Your University',
+                    hintText: ' Trường Đại Học của bạn',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: context.outline),
@@ -428,12 +388,19 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
                         alpha: 0.5,
                       ),
                     ),
-                    child: const Text(
-                      'Confirm',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          'Tiếp theo',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(Icons.arrow_forward, size: 20),
+                      ],
                     ),
                   ),
                 ),

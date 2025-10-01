@@ -45,7 +45,7 @@ class _WeekendHabitStepState extends State<WeekendHabitStep> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'On weekends, I ...',
+              'Cuối tuần, bạn thường ...',
               style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 40),
@@ -133,7 +133,7 @@ class _WeekendHabitStepState extends State<WeekendHabitStep> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Text(
-                      'Next',
+                      'Tiếp theo',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,

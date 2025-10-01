@@ -45,7 +45,7 @@ class _StudyStyleStepState extends State<StudyStyleStep> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Your study style',
+              'Phong cách học của bạn',
               style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 50),
@@ -150,7 +150,7 @@ class _StudyStyleStepState extends State<StudyStyleStep> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Text(
-                      'Next',
+                      'Tiếp theo',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,

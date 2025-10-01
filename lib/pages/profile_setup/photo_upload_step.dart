@@ -33,7 +33,7 @@ class _PhotoUploadStepState extends State<PhotoUploadStep> {
     if (widget.profileData.photos.length >= maxPhotos) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('You can upload up to $maxPhotos photos'),
+          content: Text('Bạn có thể tải lên tối đa $maxPhotos ảnh'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -69,7 +69,7 @@ class _PhotoUploadStepState extends State<PhotoUploadStep> {
     if (widget.profileData.photos.length >= maxPhotos) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('You can upload up to $maxPhotos photos'),
+          content: Text('Bạn có thể tải lên tối đa $maxPhotos ảnh'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -120,7 +120,7 @@ class _PhotoUploadStepState extends State<PhotoUploadStep> {
             children: [
               ListTile(
                 leading: const Icon(Icons.photo_library),
-                title: const Text('Choose from Gallery'),
+                title: const Text('Chọn từ kho ảnh'),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImage();
@@ -128,7 +128,7 @@ class _PhotoUploadStepState extends State<PhotoUploadStep> {
               ),
               ListTile(
                 leading: const Icon(Icons.photo_camera),
-                title: const Text('Take Photo'),
+                title: const Text('Chụp ảnh'),
                 onTap: () {
                   Navigator.pop(context);
                   _takePhoto();
@@ -153,12 +153,12 @@ class _PhotoUploadStepState extends State<PhotoUploadStep> {
             children: [
               // Header Section
               Text(
-                'Add photos',
+                'Thêm ảnh',
                 style: AppTheme.headline1.copyWith(color: context.onSurface),
               ),
               const SizedBox(height: 8),
               Text(
-                'Upload your best photos to show who you are',
+                'Thêm ảnh vào hồ sơ của bạn',
                 style: TextStyle(
                   fontSize: 16,
                   color: context.onSurface.withValues(alpha: 0.7),
@@ -292,7 +292,7 @@ class _PhotoUploadStepState extends State<PhotoUploadStep> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Add',
+                                'Thêm',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: context.onSurface.withValues(
@@ -311,47 +311,46 @@ class _PhotoUploadStepState extends State<PhotoUploadStep> {
               ),
 
               // Tips Section - More compact
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: context.colors.surfaceContainerHigh,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: context.outline),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.lightbulb_outline,
-                          size: 18,
-                          color: context.primary,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Photo Tips',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: context.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '• Use clear, well-lit photos\n• Show your face clearly in the first photo\n• Include variety in your photos',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: context.primary,
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
+              // Container(
+              //   padding: const EdgeInsets.all(16),
+              //   decoration: BoxDecoration(
+              //     color: context.colors.surfaceContainerHigh,
+              //     borderRadius: BorderRadius.circular(12),
+              //     border: Border.all(color: context.outline),
+              //   ),
+              //   child: Column(
+              //     crossAxisAlignment: CrossAxisAlignment.start,
+              //     children: [
+              //       Row(
+              //         children: [
+              //           Icon(
+              //             Icons.lightbulb_outline,
+              //             size: 18,
+              //             color: context.primary,
+              //           ),
+              //           const SizedBox(width: 8),
+              //           Text(
+              //             'Photo Tips',
+              //             style: TextStyle(
+              //               fontSize: 14,
+              //               fontWeight: FontWeight.w600,
+              //               color: context.primary,
+              //             ),
+              //           ),
+              //         ],
+              //       ),
+              //       const SizedBox(height: 8),
+              //       Text(
+              //         '• Use clear, well-lit photos\n• Show your face clearly in the first photo\n• Include variety in your photos',
+              //         style: TextStyle(
+              //           fontSize: 13,
+              //           color: context.primary,
+              //           height: 1.4,
+              //         ),
+              //       ),
+              //     ],
+              //   ),
+              // ),
               const SizedBox(height: 24),
 
               // Continue button
@@ -369,9 +368,19 @@ class _PhotoUploadStepState extends State<PhotoUploadStep> {
                     elevation: 2,
                     disabledBackgroundColor: context.outline,
                   ),
-                  child: const Text(
-                    'Continue',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        'Next',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(Icons.arrow_forward, size: 20),
+                    ],
                   ),
                 ),
               ),

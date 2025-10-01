@@ -392,7 +392,7 @@ class _DiscoverState extends State<Discover>
 
   void _showFilterModal() {
     final profileProvider = context.read<ProfileProvider>();
-
+    debugPrint("here");
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,

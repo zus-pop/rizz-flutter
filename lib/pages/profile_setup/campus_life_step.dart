@@ -40,17 +40,17 @@ class _CampusLifeStepState extends State<CampusLifeStep> {
     return Scaffold(
       backgroundColor: context.colors.surface,
       body: Padding(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.all(15),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Your campus life',
+              'Cuộc sống trên trường',
               style: AppTheme.headline2.copyWith(color: context.onSurface),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Text(
-              'Give the members',
+              'Cho mọi người biết rõ hơn về bạn trên trường',
               style: AppTheme.body1.copyWith(
                 color: context.onSurface.withValues(alpha: 0.7),
               ),
@@ -122,7 +122,7 @@ class _CampusLifeStepState extends State<CampusLifeStep> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
 
             // Next Button
             SizedBox(
@@ -160,4 +160,3 @@ class _CampusLifeStepState extends State<CampusLifeStep> {
     );
   }
 }
-
