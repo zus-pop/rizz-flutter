@@ -12,7 +12,9 @@ class AuthenticationProvider extends ChangeNotifier {
   String? _accessToken;
   String? _refreshToken;
   String? _pushToken;
+  bool _isRizzPlus = false;
 
+  bool get isRizzPlus => _isRizzPlus;
   String? get pushToken => _pushToken;
   bool get isLoggedIn => _isLoggedIn;
   bool get isLoading => _isLoading;
@@ -25,6 +27,11 @@ class AuthenticationProvider extends ChangeNotifier {
   static const String _userTokenKey = 'user_token';
   final _firebaseService = FirebaseService();
   final _authService = AuthService();
+
+  set isRizzPlus(bool isRizzPlus) {
+    _isRizzPlus = isRizzPlus;
+    notifyListeners();
+  }
 
   // Initialize authentication state from storage
   Future<void> initializeAuth() async {
@@ -150,9 +157,13 @@ class AuthenticationProvider extends ChangeNotifier {
   }
 
   Future<void> updateToken() async {
-    final token = await _firebaseService.requestPushToken();
-    if (token != null) {
-      _pushToken = token;
+    try {
+      final token = await _firebaseService.requestPushToken();
+      if (token != null) {
+        _pushToken = token;
+      }
+    } catch (e) {
+      debugPrint(e.toString());
     }
   }
 

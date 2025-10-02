@@ -4,6 +4,10 @@ import 'package:firebase_ai/firebase_ai.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'dart:async';
+import 'package:provider/provider.dart';
+import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
+
+import '../../providers/authentication_provider.dart';
 
 class DetailChat extends StatefulWidget {
   const DetailChat({super.key});
@@ -232,28 +236,71 @@ Ví dụ:
           onPressed: _returnToMainScreen,
         ),
         actions: [
-          Row(
-            children: [
-              const Text(
-                'AI',
-                style: TextStyle(color: Colors.white, fontSize: 14),
-              ),
-              Switch(
-                value: isAITurnOn,
-                onChanged: (value) {
-                  setState(() {
-                    isAITurnOn = value;
-                    if (!value) {
-                      aiSuggestion = null;
-                      isAISuggestionVisible = false;
-                      isAIThinking = false;
-                    }
-                  });
-                },
-                activeThumbColor: Colors.white,
-                activeTrackColor: Colors.white.withValues(alpha: 0.5),
-              ),
-            ],
+          Consumer<AuthenticationProvider>(
+            builder: (context, authProvider, _) {
+              return Row(
+                children: [
+                  const Text(
+                    'AI',
+                    style: TextStyle(color: Colors.white, fontSize: 14),
+                  ),
+                  Switch(
+                    value: isAITurnOn,
+                    onChanged: authProvider.isRizzPlus
+                        ? (value) {
+                            setState(() {
+                              isAITurnOn = value;
+                              if (!value) {
+                                aiSuggestion = null;
+                                isAISuggestionVisible = false;
+                                isAIThinking = false;
+                              }
+                            });
+                          }
+                        : (value) async {
+                            // Show paywall for free users
+                            final status =
+                                await RevenueCatUI.presentPaywallIfNeeded(
+                                  "premium",
+                                  displayCloseButton: true,
+                                );
+                            if (status == PaywallResult.purchased) {
+                              authProvider.isRizzPlus = true;
+                              setState(() {
+                                isAITurnOn = true;
+                              });
+                            }
+                          },
+                    activeThumbColor: Colors.white,
+                    activeTrackColor: Colors.white.withValues(alpha: 0.5),
+                  ),
+                  if (!authProvider.isRizzPlus)
+                    Container(
+                      margin: const EdgeInsets.only(left: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFfa5eff).withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: const Color(0xFFfa5eff),
+                          width: 1,
+                        ),
+                      ),
+                      child: const Text(
+                        'PLUS',
+                        style: TextStyle(
+                          color: Color(0xFFfa5eff),
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
         ],
       ),
