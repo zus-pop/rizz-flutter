@@ -46,9 +46,12 @@ dependencies:
   path_provider: ^2.1.3
   flutter_secure_storage: ^9.2.2
   firebase_core: ^4.1.1
-  firebase_messaging: ^16.0.1
+  firebase_messaging: ^16.0.2
+  cloud_firestore: ^6.0.2
+  firebase_auth: ^6.1.0
   google_sign_in: ^7.2.0
   path: ^1.9.1
+  lottie: ^3.3.2
   firebase_ai: ^3.3.0
   flutter_chat_ui: ^2.9.0
   flutter_chat_core: ^2.8.0
@@ -99,6 +102,8 @@ flutter:
   assets:
     - assets/images/
     - .env
+    - assets/animations/
+
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
