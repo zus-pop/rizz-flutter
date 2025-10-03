@@ -1,9 +1,8 @@
-import 'dart:convert';
-
 import 'package:firebase_ai/firebase_ai.dart';
 import 'package:flutter/material.dart';
-import 'dart:io';
 import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../services/simple_chat_service.dart';
 
 class DetailChat extends StatefulWidget {
   const DetailChat({super.key});
@@ -13,17 +12,19 @@ class DetailChat extends StatefulWidget {
 }
 
 class _DetailChatState extends State<DetailChat> {
-  Socket? socket;
-  bool isServer = false;
-  final List<String> messages = [];
+  String? roomId;
+  String? roomCode;
+  bool isFirebaseChat = false;
+  final List<Map<String, dynamic>> messages = [];
   final TextEditingController messageController = TextEditingController();
-  StreamSubscription? socketSubscription;
+  StreamSubscription<QuerySnapshot>? messagesSubscription;
   late final GenerativeModel _model;
   late final ChatSession _chatSession;
   bool isAITurnOn = false;
   String? aiSuggestion;
   bool isAISuggestionVisible = false;
   bool isAIThinking = false;
+  String? currentUserId;
 
   String _buildPromt() {
     return '''
@@ -112,6 +113,7 @@ Ví dụ:
     super.initState();
     _initializeAI();
     messageController.addListener(_onMessageChanged);
+    currentUserId = SimpleChatService.getCurrentUserId();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeChat();
     });
@@ -130,66 +132,83 @@ Ví dụ:
     final args = ModalRoute.of(context)?.settings.arguments as Map?;
     if (args != null) {
       setState(() {
-        socket = args['socket'];
-        isServer = args['isServer'] ?? false;
+        roomId = args['roomId'];
+        roomCode = args['roomCode'];
+        isFirebaseChat = args['isFirebaseChat'] ?? false;
       });
-      _listenToSocket();
+
+      if (isFirebaseChat && roomId != null) {
+        _listenToFirebaseMessages();
+      }
     }
   }
 
   @override
   void dispose() {
-    socketSubscription?.cancel();
-    socket?.destroy();
+    messagesSubscription?.cancel();
     messageController.removeListener(_onMessageChanged);
     messageController.dispose();
     super.dispose();
   }
 
-  void _listenToSocket() {
-    if (socket == null) return;
+  void _listenToFirebaseMessages() {
+    if (roomId == null) return;
 
-    socketSubscription = socket!.listen(
-      (data) {
+    messagesSubscription = SimpleChatService.getMessagesStream(roomId!).listen(
+      (QuerySnapshot snapshot) {
         if (mounted) {
-          final message = utf8.decode(data);
+          final newMessages = <Map<String, dynamic>>[];
+
+          for (var doc in snapshot.docs) {
+            final data = doc.data() as Map<String, dynamic>;
+            final timestamp = data['timestamp'] as Timestamp?;
+
+            newMessages.add({
+              'id': doc.id,
+              'text': data['text'] ?? '',
+              'sender_id': data['sender_id'] ?? '',
+              'sender_name': data['sender_name'] ?? 'Anonymous',
+              'timestamp': timestamp?.toDate() ?? DateTime.now(),
+              'type': data['type'] ?? 'text',
+            });
+          }
+
+          // Sort by timestamp (newest first from Firestore, but we want oldest first for display)
+          newMessages.sort((a, b) => a['timestamp'].compareTo(b['timestamp']));
+
           setState(() {
-            messages.add(isServer ? "Client: $message" : "Server: $message");
+            messages.clear();
+            messages.addAll(newMessages);
           });
-          // Get AI suggestion for received message
-          _getAISuggestion(message);
-        }
-      },
-      onDone: () {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("❌ Đối phương đã ngắt kết nối")),
-          );
-          _returnToMainScreen();
+
+          // Get AI suggestion for the latest message from other users
+          if (newMessages.isNotEmpty) {
+            final latestMessage = newMessages.last;
+            if (latestMessage['sender_id'] != currentUserId) {
+              _getAISuggestion(latestMessage['text']);
+            }
+          }
         }
       },
       onError: (error) {
+        debugPrint('Error listening to messages: $error');
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text("❌ Lỗi kết nối: $error")));
-          _returnToMainScreen();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("❌ Lỗi nhận tin nhắn: $error")),
+          );
         }
       },
-      cancelOnError: false,
     );
   }
 
-  void _sendMessage() {
+  void _sendMessage() async {
     String message = messageController.text.trim();
-    if (message.isEmpty || socket == null) return;
+    if (message.isEmpty || roomId == null) return;
 
     try {
-      socket!.write(message);
+      await SimpleChatService.sendMessage(roomId!, message);
       if (mounted) {
         setState(() {
-          messages.add("Tôi: $message");
-          // Clear AI suggestion after sending
           aiSuggestion = null;
           isAISuggestionVisible = false;
         });
@@ -197,9 +216,9 @@ Ví dụ:
       messageController.clear();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("❌ Lỗi gửi tin nhắn: $e")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("❌ Lỗi gửi tin nhắn: $e")),
+        );
       }
     }
   }
@@ -220,12 +239,37 @@ Ví dụ:
     }
   }
 
+  String _formatTimestamp(DateTime timestamp) {
+    final now = DateTime.now();
+    final difference = now.difference(timestamp);
+
+    if (difference.inMinutes < 1) {
+      return 'Vừa xong';
+    } else if (difference.inHours < 1) {
+      return '${difference.inMinutes} phút trước';
+    } else if (difference.inDays < 1) {
+      return '${difference.inHours} giờ trước';
+    } else {
+      return '${timestamp.day}/${timestamp.month} ${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
-        title: Text(isServer ? 'Chat với Client' : 'Chat với Server'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Firebase Chat'),
+            if (roomCode != null)
+              Text(
+                'Phòng: $roomCode',
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+              ),
+          ],
+        ),
         backgroundColor: Colors.blue,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -251,7 +295,7 @@ Ví dụ:
                   });
                 },
                 activeThumbColor: Colors.white,
-                activeTrackColor: Colors.white.withValues(alpha: 0.5),
+                activeTrackColor: Colors.white.withOpacity(0.5),
               ),
             ],
           ),
@@ -260,40 +304,92 @@ Ví dụ:
       body: Column(
         children: [
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(8),
-              itemCount: messages.length,
-              itemBuilder: (context, index) {
-                final message = messages[index];
-                final isMyMessage = message.startsWith('Tôi:');
+            child: messages.isEmpty
+                ? const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey),
+                        SizedBox(height: 16),
+                        Text(
+                          'Chưa có tin nhắn nào\nHãy bắt đầu cuộc trò chuyện!',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.grey, fontSize: 16),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(8),
+                    itemCount: messages.length,
+                    itemBuilder: (context, index) {
+                      final message = messages[index];
+                      final isMyMessage = message['sender_id'] == currentUserId;
+                      final timestamp = message['timestamp'] as DateTime;
 
-                return Align(
-                  alignment: isMyMessage
-                      ? Alignment.centerRight
-                      : Alignment.centerLeft,
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    constraints: BoxConstraints(
-                      maxWidth: MediaQuery.of(context).size.width * 0.7,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isMyMessage ? Colors.blue : Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      message,
-                      style: TextStyle(
-                        color: isMyMessage ? Colors.white : Colors.black87,
-                      ),
-                    ),
+                      return Align(
+                        alignment: isMyMessage
+                            ? Alignment.centerRight
+                            : Alignment.centerLeft,
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(vertical: 4),
+                          child: Column(
+                            crossAxisAlignment: isMyMessage
+                                ? CrossAxisAlignment.end
+                                : CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                constraints: BoxConstraints(
+                                  maxWidth: MediaQuery.of(context).size.width * 0.7,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isMyMessage ? Colors.blue : Colors.grey.shade300,
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (!isMyMessage)
+                                      Padding(
+                                        padding: const EdgeInsets.only(bottom: 4),
+                                        child: Text(
+                                          message['sender_name'],
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                      ),
+                                    Text(
+                                      message['text'],
+                                      style: TextStyle(
+                                        color: isMyMessage ? Colors.white : Colors.black87,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(top: 2, left: 8, right: 8),
+                                child: Text(
+                                  _formatTimestamp(timestamp),
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.grey.shade500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
 
           Container(
@@ -313,16 +409,12 @@ Ví dụ:
                 // AI Thinking/Suggestion
                 if (isAITurnOn && (isAIThinking || aiSuggestion != null))
                   AnimatedOpacity(
-                    opacity: (isAIThinking || isAISuggestionVisible)
-                        ? 1.0
-                        : 0.0,
+                    opacity: (isAIThinking || isAISuggestionVisible) ? 1.0 : 0.0,
                     duration: const Duration(milliseconds: 400),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 500),
                       curve: Curves.elasticOut,
-                      height: (isAIThinking || isAISuggestionVisible)
-                          ? null
-                          : 0,
+                      height: (isAIThinking || isAISuggestionVisible) ? null : 0,
                       child: InkWell(
                         onTap: isAIThinking ? null : _useAISuggestion,
                         child: Container(
@@ -331,7 +423,7 @@ Ví dụ:
                             vertical: 12,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.blue.withValues(alpha: 0.08),
+                            color: Colors.blue.withOpacity(0.08),
                             border: const Border(
                               top: BorderSide(color: Colors.blue, width: 1),
                             ),
@@ -347,12 +439,9 @@ Ví dụ:
                                         height: 20,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                                Colors.blue.withValues(
-                                                  alpha: 0.7,
-                                                ),
-                                              ),
+                                          valueColor: AlwaysStoppedAnimation<Color>(
+                                            Colors.blue.withOpacity(0.7),
+                                          ),
                                         ),
                                       )
                                     : const Icon(
@@ -402,19 +491,10 @@ Ví dụ:
                                 ),
                               ),
                               if (!isAIThinking)
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.close,
-                                    color: Colors.blue,
-                                    size: 16,
-                                  ),
-                                  onPressed: () {
-                                    setState(() {
-                                      isAISuggestionVisible = false;
-                                    });
-                                  },
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
+                                const Icon(
+                                  Icons.touch_app,
+                                  color: Colors.blue,
+                                  size: 16,
                                 ),
                             ],
                           ),
@@ -422,30 +502,36 @@ Ví dụ:
                       ),
                     ),
                   ),
-                // Text Input
+
+                // Message input area
                 Padding(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(8.0),
                   child: Row(
                     children: [
                       Expanded(
                         child: TextField(
                           controller: messageController,
-                          decoration: InputDecoration(
+                          decoration: const InputDecoration(
                             hintText: 'Nhập tin nhắn...',
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(24),
+                              borderRadius: BorderRadius.all(Radius.circular(25)),
                             ),
-                            contentPadding: const EdgeInsets.symmetric(
+                            contentPadding: EdgeInsets.symmetric(
                               horizontal: 16,
                               vertical: 8,
                             ),
                           ),
+                          maxLines: null,
+                          textCapitalization: TextCapitalization.sentences,
                           onSubmitted: (_) => _sendMessage(),
                         ),
                       ),
                       const SizedBox(width: 8),
-                      CircleAvatar(
-                        backgroundColor: Colors.blue,
+                      Container(
+                        decoration: const BoxDecoration(
+                          color: Colors.blue,
+                          shape: BoxShape.circle,
+                        ),
                         child: IconButton(
                           icon: const Icon(Icons.send, color: Colors.white),
                           onPressed: _sendMessage,
