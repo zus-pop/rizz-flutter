@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:rizz_mobile/models/user.dart';
 import 'package:rizz_mobile/services/auth_service.dart';
+import 'package:rizz_mobile/services/firebase_database_service.dart';
 import 'package:rizz_mobile/services/firebase_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:rizz_mobile/services/profile_setup_service.dart';
@@ -8,23 +10,33 @@ class AuthenticationProvider extends ChangeNotifier {
   bool _isLoggedIn = false;
   bool _isLoading = false;
   bool _isProfileSetupComplete = false;
+  String? _userId;
   String? _phoneNumber;
   String? _accessToken;
   String? _refreshToken;
   String? _pushToken;
+  bool _isRizzPlus = false;
 
+  bool get isRizzPlus => _isRizzPlus;
   String? get pushToken => _pushToken;
   bool get isLoggedIn => _isLoggedIn;
   bool get isLoading => _isLoading;
   bool get isProfileSetupComplete => _isProfileSetupComplete;
   String? get phoneNumber => _phoneNumber;
+  String? get userId => _userId;
   String? get accessToken => _accessToken;
   String? get refreshToken => _refreshToken;
   static const String _isLoggedInKey = 'is_logged_in';
   static const String _phoneNumberKey = 'phone_number';
-  static const String _userTokenKey = 'user_token';
+  static const String _userIdKey = 'user_id';
   final _firebaseService = FirebaseService();
   final _authService = AuthService();
+  final _firebaseDatabase = FirebaseDatabaseService();
+
+  set isRizzPlus(bool isRizzPlus) {
+    _isRizzPlus = isRizzPlus;
+    notifyListeners();
+  }
 
   // Initialize authentication state from storage
   Future<void> initializeAuth() async {
@@ -34,10 +46,12 @@ class AuthenticationProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     _isLoggedIn = prefs.getBool(_isLoggedInKey) ?? false;
     _phoneNumber = prefs.getString(_phoneNumberKey);
-    _accessToken = prefs.getString(_userTokenKey);
-    _isProfileSetupComplete =
-        await ProfileSetupService.isProfileSetupComplete();
-
+    _userId = prefs.getString(_userIdKey);
+    if (_userId != null) {
+      final user = await _firebaseDatabase.getUserById(_userId!);
+      _isProfileSetupComplete = user!.isCompleteSetup!;
+    }
+    debugPrint("here");
     _isLoading = false;
     notifyListeners();
   }
@@ -134,7 +148,7 @@ class AuthenticationProvider extends ChangeNotifier {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool(_isLoggedInKey, true);
         await prefs.setString(_phoneNumberKey, phoneNumber);
-        await prefs.setString(_userTokenKey, _accessToken!);
+        // await prefs.setString(_userTokenKey, _accessToken!);
 
         _isLoading = false;
         notifyListeners();
@@ -150,9 +164,13 @@ class AuthenticationProvider extends ChangeNotifier {
   }
 
   Future<void> updateToken() async {
-    final token = await _firebaseService.requestPushToken();
-    if (token != null) {
-      _pushToken = token;
+    try {
+      final token = await _firebaseService.requestPushToken();
+      if (token != null) {
+        _pushToken = token;
+      }
+    } catch (e) {
+      debugPrint(e.toString());
     }
   }
 
@@ -163,18 +181,21 @@ class AuthenticationProvider extends ChangeNotifier {
 
     try {
       // Simulate Google sign in
-      final user = await _authService.signInWithGoogle();
-      debugPrint(user.email);
-
+      final googleUser = await _authService.signInWithGoogle();
+      final result = await _firebaseDatabase.loginWithGoogle(googleUser.email);
+      final userId = result['id'] as String;
+      final user = result['user'] as User;
+      debugPrint('Is user complete setup: ${user.isCompleteSetup}');
       _isLoggedIn = true;
       _phoneNumber = null; // No phone for Google login
-      _accessToken = 'google_token_${DateTime.now().millisecondsSinceEpoch}';
+      // _accessToken = 'google_token_${DateTime.now().millisecondsSinceEpoch}';
 
       // Save to storage
       final prefs = await SharedPreferences.getInstance();
+      // await prefs.setString(_userTokenKey, _accessToken!);
+      await prefs.setString(_userIdKey, userId);
       await prefs.setBool(_isLoggedInKey, true);
-      await prefs.setString(_userTokenKey, _accessToken!);
-
+      _isProfileSetupComplete = user.isCompleteSetup!;
       _isLoading = false;
       notifyListeners();
       return true;
@@ -195,12 +216,10 @@ class AuthenticationProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_isLoggedInKey);
     await prefs.remove(_phoneNumberKey);
-    await prefs.remove(_userTokenKey);
-    // Also reset profile setup when logging out
-    await ProfileSetupService.resetProfileSetup();
+    await prefs.remove(_userIdKey);
+    // await prefs.remove(_userTokenKey);
 
     _isLoggedIn = false;
-    _isProfileSetupComplete = false;
     _phoneNumber = null;
     _accessToken = null;
 

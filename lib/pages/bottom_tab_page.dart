@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
 import 'package:provider/provider.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:rizz_mobile/constant.dart';
 import 'package:rizz_mobile/pages/tabs/chat.dart';
 import 'package:rizz_mobile/pages/tabs/discover.dart';
 import 'package:rizz_mobile/pages/tabs/liked.dart';
 import 'package:rizz_mobile/pages/tabs/profile.dart';
 import 'package:rizz_mobile/providers/authentication_provider.dart';
 import 'package:rizz_mobile/theme/app_theme.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class BottomTabPage extends StatefulWidget {
   const BottomTabPage({super.key});
@@ -31,7 +35,23 @@ class _BottomTabPageState extends State<BottomTabPage> {
   @override
   void initState() {
     context.read<AuthenticationProvider>().updateToken();
+    _checkPremium();
     super.initState();
+  }
+
+  Future<void> _checkPremium() async {
+    try {
+      final userId = context.read<AuthenticationProvider>().userId;
+      debugPrint("yes it had $userId");
+      final customerInfo = await Purchases.getCustomerInfo();
+      final isRizzPlus = customerInfo.entitlements.all[entitlementID]!.isActive;
+      debugPrint('Is user premium: ${isRizzPlus.toString()}');
+      if (mounted) {
+        context.read<AuthenticationProvider>().isRizzPlus = isRizzPlus;
+      }
+    } on PlatformException catch (e) {
+      debugPrint(e.message);
+    }
   }
 
   void _onTabChange(int index) {
@@ -103,10 +123,10 @@ class _BottomTabPageState extends State<BottomTabPage> {
                     tabBackgroundColor: context.primary,
                     color: context.onSurface.withValues(alpha: 0.6),
                     tabs: const [
-                      GButton(icon: Icons.home, text: 'Discover'),
-                      GButton(icon: Icons.favorite, text: 'Liked'),
-                      GButton(icon: Icons.chat, text: 'Chat'),
-                      GButton(icon: Icons.person, text: 'Profile'),
+                      GButton(icon: Icons.home, text: 'Khám phá'),
+                      GButton(icon: Icons.favorite, text: 'Đã thích'),
+                      GButton(icon: Icons.chat, text: 'Tin nhắn'),
+                      GButton(icon: Icons.person, text: 'Hồ sơ'),
                     ],
                     selectedIndex: _selectedIndex,
                     onTabChange: _onTabChange,

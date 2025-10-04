@@ -1,9 +1,14 @@
+import 'dart:io';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:rizz_mobile/firebase_options.dart';
 import 'package:rizz_mobile/pages/bottom_tab_page.dart';
 import 'package:rizz_mobile/pages/details/detail_chat.dart';
@@ -11,10 +16,26 @@ import 'package:rizz_mobile/pages/splash_screen.dart';
 import 'package:rizz_mobile/providers/app_setting_provider.dart';
 import 'package:rizz_mobile/providers/authentication_provider.dart';
 import 'package:rizz_mobile/providers/profile_provider.dart';
+import 'package:rizz_mobile/store_config.dart';
+
+import 'constant.dart';
 import 'package:rizz_mobile/services/simple_chat_service.dart';
 import 'package:rizz_mobile/utils/performance_optimizer.dart';
 
 Future<void> main() async {
+  await dotenv.load(fileName: '.env');
+  if (kIsWeb) {
+    StoreConfig(store: Store.rcBilling, apiKey: webApiKey);
+  } else if (Platform.isIOS || Platform.isMacOS) {
+    StoreConfig(store: Store.appStore, apiKey: appleApiKey);
+  } else if (Platform.isAndroid) {
+    // Run the app passing --dart-define=AMAZON=true
+    const useAmazon = bool.fromEnvironment("amazon");
+    StoreConfig(
+      store: useAmazon ? Store.amazon : Store.playStore,
+      apiKey: useAmazon ? amazonApiKey : googleApiKey,
+    );
+  }
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize Firebase
@@ -54,8 +75,34 @@ Future<void> main() async {
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
   runApp(
-    ChangeNotifierProvider(create: (_) => AppSettingProvider(), child: const MyApp()),
+    ChangeNotifierProvider(
+      create: (_) => AppSettingProvider(),
+      child: const MyApp(),
+    ),
   );
+  await _configureSDK();
+}
+
+Future<void> _configureSDK() async {
+  // Enable debug logs before calling `configure`.
+  await Purchases.setLogLevel(LogLevel.debug);
+
+  /*
+    - appUserID is nil, so an anonymous ID will be generated automatically by the Purchases SDK. Read more about Identifying Users here: https://docs.revenuecat.com/docs/user-ids
+
+    - PurchasesAreCompletedyBy is PurchasesAreCompletedByRevenueCat, so Purchases will automatically handle finishing transactions. Read more about completing purchases here: https://www.revenuecat.com/docs/migrating-to-revenuecat/sdk-or-not/finishing-transactions
+    */
+  PurchasesConfiguration configuration;
+  if (StoreConfig.isForAmazonAppstore()) {
+    configuration = AmazonConfiguration(StoreConfig.instance.apiKey)
+      ..appUserID = null
+      ..purchasesAreCompletedBy = const PurchasesAreCompletedByRevenueCat();
+  } else {
+    configuration = PurchasesConfiguration(StoreConfig.instance.apiKey)
+      ..appUserID = null
+      ..purchasesAreCompletedBy = const PurchasesAreCompletedByRevenueCat();
+  }
+  await Purchases.configure(configuration);
 }
 
 @pragma('vm:entry-point')
@@ -75,16 +122,35 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
         ChangeNotifierProvider(create: (_) => AuthenticationProvider()),
       ],
-      child: MaterialApp(
-        showPerformanceOverlay: false,
-        title: "Rizz",
-        theme: Provider.of<AppSettingProvider>(context).themeData,
-        home: const BottomTabPage(),
-        routes: {
-          '/home': (context) => BottomTabPage(),
-          '/detail_chat': (context) => const DetailChat(),
-        },
-      ),
+      child: const MyAppContent(),
+    );
+  }
+}
+
+class MyAppContent extends StatefulWidget {
+  const MyAppContent({super.key});
+
+  @override
+  State<MyAppContent> createState() => _MyAppContentState();
+}
+
+class _MyAppContentState extends State<MyAppContent> {
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      showPerformanceOverlay: false,
+      title: "Rizz",
+      theme: Provider.of<AppSettingProvider>(context).themeData,
+      home: const SplashScreen(),
+      routes: {
+        '/home': (context) => BottomTabPage(),
+        '/detail_chat': (context) => const DetailChat(),
+      },
     );
   }
 }

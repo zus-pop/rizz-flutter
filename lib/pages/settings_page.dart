@@ -908,10 +908,10 @@ class _SettingsPageState extends State<SettingsPage>
       await authProvider.logout();
 
       // Reset onboarding for demo purposes
-      await OnboardingService.resetOnboarding();
+      // await OnboardingService.resetOnboarding();
 
       // Reset profile setup as well
-      await ProfileSetupService.resetProfileSetup();
+      // await ProfileSetupService.resetProfileSetup();
 
       if (mounted) {
         // Navigate to splash screen to restart the flow

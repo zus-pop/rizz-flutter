@@ -1,9 +1,14 @@
-import 'package:flutter/material.dart';
-import 'package:rizz_mobile/models/profile.dart';
-import 'package:rizz_mobile/theme/app_theme.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:audioplayers/audioplayers.dart';
 import 'dart:math';
+
+import 'package:audioplayers/audioplayers.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
+import 'package:rizz_mobile/models/profile.dart';
+import 'package:rizz_mobile/providers/authentication_provider.dart';
+import 'package:rizz_mobile/theme/app_theme.dart';
+import 'package:rizz_mobile/utils/paywall.dart';
 
 class AnimatedWaveform extends StatefulWidget {
   const AnimatedWaveform({super.key});
@@ -291,577 +296,615 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(32),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            context.primary.withValues(alpha: 0.1),
-            context.primary.withValues(alpha: 0.05),
-            Colors.pink.withValues(alpha: 0.08),
-            Colors.purple.withValues(alpha: 0.06),
-          ],
-        ),
-        border: Border.all(
-          color: context.primary.withValues(alpha: 0.2),
-          width: 2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: context.primary.withValues(alpha: 0.15),
-            spreadRadius: 1,
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+    return Consumer<AuthenticationProvider>(
+      builder: (context, authProvider, child) {
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(32),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                context.primary.withValues(alpha: 0.1),
+                context.primary.withValues(alpha: 0.05),
+                Colors.pink.withValues(alpha: 0.08),
+                Colors.purple.withValues(alpha: 0.06),
+              ],
+            ),
+            border: Border.all(
+              color: context.primary.withValues(alpha: 0.2),
+              width: 2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: context.primary.withValues(alpha: 0.15),
+                spreadRadius: 1,
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+              BoxShadow(
+                color: Colors.pink.withValues(alpha: 0.1),
+                spreadRadius: 0,
+                blurRadius: 15,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-          BoxShadow(
-            color: Colors.pink.withValues(alpha: 0.1),
-            spreadRadius: 0,
-            blurRadius: 15,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(32),
-        child: Stack(
-          children: [
-            Container(
-              width: double.infinity,
-              height: double.infinity,
-              color: context.surface,
-              padding: const EdgeInsets.all(15),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Cute profile header with heart decorations
-                  Stack(
-                    alignment: Alignment.center,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(32),
+            child: Stack(
+              children: [
+                Container(
+                  width: double.infinity,
+                  height: double.infinity,
+                  color: context.surface,
+                  padding: const EdgeInsets.all(15),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Cute background bubble
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 15,
-                          vertical: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          color: context.surface,
-                          borderRadius: BorderRadius.circular(25),
-                          border: Border.all(
-                            color: context.primary.withValues(alpha: 0.3),
-                            width: 2,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // Cute heart icon
-                            Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: Colors.pink.withValues(alpha: 0.2),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.favorite,
-                                color: Colors.pink,
-                                size: 16,
+                      // Cute profile header with heart decorations
+                      Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Cute background bubble
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 15,
+                              vertical: 10,
+                            ),
+                            decoration: BoxDecoration(
+                              color: context.surface,
+                              borderRadius: BorderRadius.circular(25),
+                              border: Border.all(
+                                color: context.primary.withValues(alpha: 0.3),
+                                width: 2,
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '${widget.profile.name}, ${widget.profile.age}',
-                              style: TextStyle(
-                                color: context.primary,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                shadows: [
-                                  Shadow(
-                                    color: context.primary.withValues(
-                                      alpha: 0.3,
-                                    ),
-                                    offset: const Offset(0, 1),
-                                    blurRadius: 3,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Cute heart icon
+                                Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.pink.withValues(alpha: 0.2),
+                                    shape: BoxShape.circle,
                                   ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            // Another cute heart
-                            Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: Colors.pink.withValues(alpha: 0.2),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.favorite,
-                                color: Colors.pink,
-                                size: 16,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Floating sparkles
-                      Positioned(
-                        top: -2,
-                        right: 0,
-                        child: Icon(
-                          Icons.star,
-                          color: Colors.yellow.withValues(alpha: 0.8),
-                          size: 18,
-                        ),
-                      ),
-                      Positioned(
-                        bottom: -2,
-                        left: 0,
-                        child: Icon(
-                          Icons.star,
-                          color: Colors.pink.withValues(alpha: 0.6),
-                          size: 18,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 30),
-
-                  // Cute audio visualization area
-                  Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // Outermost cute ring with rotation
-                      AnimatedBuilder(
-                        animation: _outermostRingAnimation,
-                        builder: (context, child) {
-                          return Transform.rotate(
-                            angle: _outermostRingAnimation.value,
-                            child: Container(
-                              width: 240,
-                              height: 240,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: context.primary.withValues(alpha: 0.1),
-                                  width: 1,
+                                  child: Icon(
+                                    Icons.favorite,
+                                    color: Colors.pink,
+                                    size: 16,
+                                  ),
                                 ),
-                              ),
-                              child: Stack(
-                                children: List.generate(8, (index) {
-                                  final angle = (index * 45) * (pi / 180);
-                                  return Positioned(
-                                    left: 120 + 100 * cos(angle) - 4,
-                                    top: 120 + 100 * sin(angle) - 4,
-                                    child: Container(
-                                      width: 8,
-                                      height: 8,
-                                      decoration: BoxDecoration(
-                                        color: Colors.pink.withValues(
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${widget.profile.name}, ${widget.profile.age}',
+                                  style: TextStyle(
+                                    color: context.primary,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    shadows: [
+                                      Shadow(
+                                        color: context.primary.withValues(
                                           alpha: 0.3,
                                         ),
-                                        shape: BoxShape.circle,
+                                        offset: const Offset(0, 1),
+                                        blurRadius: 3,
                                       ),
-                                    ),
-                                  );
-                                }),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-
-                      // Outer cute ring with rotation
-                      AnimatedBuilder(
-                        animation: _outerRingAnimation,
-                        builder: (context, child) {
-                          return Transform.rotate(
-                            angle: _outerRingAnimation.value,
-                            child: Container(
-                              width: 200,
-                              height: 200,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: context.primary.withValues(alpha: 0.2),
-                                  width: 2,
-                                ),
-                              ),
-                              child: Stack(
-                                children: List.generate(6, (index) {
-                                  final angle = (index * 60) * (pi / 180);
-                                  return Positioned(
-                                    left: 100 + 80 * cos(angle) - 6,
-                                    top: 100 + 80 * sin(angle) - 6,
-                                    child: Icon(
-                                      Icons.star,
-                                      color: Colors.yellow.withValues(
-                                        alpha: 0.6,
-                                      ),
-                                      size: 12,
-                                    ),
-                                  );
-                                }),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-
-                      // Middle cute ring with counter-rotation
-                      AnimatedBuilder(
-                        animation: _middleRingAnimation,
-                        builder: (context, child) {
-                          return Transform.rotate(
-                            angle: _middleRingAnimation.value,
-                            child: Container(
-                              width: 160,
-                              height: 160,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: context.primary.withValues(alpha: 0.3),
-                                  width: 2,
-                                ),
-                              ),
-                              child: Stack(
-                                children: List.generate(6, (index) {
-                                  final angle = (index * 60) * (pi / 180);
-                                  return Positioned(
-                                    left: 80 + 60 * cos(angle) - 6,
-                                    top: 80 + 60 * sin(angle) - 6,
-                                    child: Icon(
-                                      Icons.favorite,
-                                      color: context.primary.withValues(
-                                        alpha: 0.4,
-                                      ),
-                                      size: 12,
-                                    ),
-                                  );
-                                }),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-
-                      // Audio waveform in cute container
-                      Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: context.surface,
-                          border: Border.all(
-                            color: _isPlaying
-                                ? context.primary.withValues(alpha: 0.6)
-                                : context.primary.withValues(alpha: 0.4),
-                            width: _isPlaying ? 3 : 2,
-                          ),
-                          boxShadow: _isPlaying
-                              ? [
-                                  BoxShadow(
-                                    color: context.primary.withValues(
-                                      alpha: 0.3,
-                                    ),
-                                    blurRadius: 20,
-                                    spreadRadius: 2,
+                                    ],
                                   ),
-                                ]
-                              : [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.05),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                        ),
-                        child: Center(
-                          child: _isPlaying
-                              ? AnimatedWaveform()
-                              : Icon(
-                                  Icons.music_note,
-                                  color: context.primary.withValues(alpha: 0.8),
-                                  size: 40,
                                 ),
-                        ),
-                      ),
-
-                      // Floating cute elements when playing
-                      if (_isPlaying) ...[
-                        Positioned(
-                          top: 20,
-                          left: 30,
-                          child: AnimatedOpacity(
-                            opacity: _isPlaying ? 1.0 : 0.0,
-                            duration: const Duration(milliseconds: 500),
-                            child: Icon(
-                              Icons.favorite,
-                              color: Colors.pink.withValues(alpha: 0.6),
-                              size: 16,
+                                const SizedBox(width: 8),
+                                // Another cute heart
+                                Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.pink.withValues(alpha: 0.2),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.favorite,
+                                    color: Colors.pink,
+                                    size: 16,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ),
-                        Positioned(
-                          bottom: 25,
-                          right: 35,
-                          child: AnimatedOpacity(
-                            opacity: _isPlaying ? 1.0 : 0.0,
-                            duration: const Duration(milliseconds: 500),
+
+                          // Floating sparkles
+                          Positioned(
+                            top: -2,
+                            right: 0,
                             child: Icon(
                               Icons.star,
-                              color: Colors.yellow.withValues(alpha: 0.7),
-                              size: 14,
+                              color: Colors.yellow.withValues(alpha: 0.8),
+                              size: 18,
                             ),
                           ),
-                        ),
-                      ],
-                    ],
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  // Cute progress bar container (smaller)
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: context.surface,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: context.primary.withValues(alpha: 0.4),
-                        width: 2,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: context.primary.withValues(alpha: 0.1),
-                          blurRadius: 8,
-                          spreadRadius: 1,
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        // Cute slider with pink thumb
-                        SliderTheme(
-                          data: SliderTheme.of(context).copyWith(
-                            activeTrackColor: context.primary,
-                            inactiveTrackColor: context.onSurface.withValues(
-                              alpha: 0.2,
+                          Positioned(
+                            bottom: -2,
+                            left: 0,
+                            child: Icon(
+                              Icons.star,
+                              color: Colors.pink.withValues(alpha: 0.6),
+                              size: 18,
                             ),
-                            thumbColor: Colors.pink,
-                            overlayColor: Colors.pink.withValues(alpha: 0.3),
-                            trackHeight: 6,
-                            thumbShape: const RoundSliderThumbShape(
-                              enabledThumbRadius: 6,
-                            ),
-                            overlayShape: const RoundSliderOverlayShape(
-                              overlayRadius: 12,
-                            ),
-                          ),
-                          child: Slider(
-                            value: _duration.inSeconds > 0
-                                ? _position.inSeconds.toDouble()
-                                : 0.0,
-                            max: _duration.inSeconds.toDouble() > 0
-                                ? _duration.inSeconds.toDouble()
-                                : 1.0,
-                            onChanged: (value) async {
-                              await _audioPlayer.seek(
-                                Duration(seconds: value.toInt()),
-                              );
-                              setState(() {
-                                _isCompleted = false;
-                              });
-                            },
-                          ),
-                        ),
-
-                        const SizedBox(height: 2),
-
-                        // Cute time indicators (smaller)
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 3,
-                              ),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    context.primary.withValues(alpha: 0.2),
-                                    context.primary.withValues(alpha: 0.1),
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: context.primary.withValues(alpha: 0.3),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.access_time,
-                                    size: 8,
-                                    color: context.primary,
-                                  ),
-                                  const SizedBox(width: 2),
-                                  Text(
-                                    _formatDuration(_position),
-                                    style: TextStyle(
-                                      color: context.primary,
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 3,
-                              ),
-                              decoration: BoxDecoration(
-                                color: context.onSurface.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                _formatDuration(_duration),
-                                style: TextStyle(
-                                  color: context.onSurface.withValues(
-                                    alpha: 0.7,
-                                  ),
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  // Super cute play button
-                  GestureDetector(
-                    onTap: _playPause,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: _isPlaying
-                              ? [Colors.pink, context.primary, Colors.purple]
-                              : [
-                                  context.primary,
-                                  Colors.pink.withValues(alpha: 0.8),
-                                  context.primary.withValues(alpha: 0.9),
-                                ],
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: _isPlaying
-                                ? Colors.pink.withValues(alpha: 0.5)
-                                : context.primary.withValues(alpha: 0.4),
-                            spreadRadius: _isPlaying ? 3 : 1,
-                            blurRadius: _isPlaying ? 30 : 20,
-                            offset: Offset(0, _isPlaying ? 8 : 4),
-                          ),
-                          BoxShadow(
-                            color: Colors.white.withValues(alpha: 0.3),
-                            spreadRadius: 1,
-                            blurRadius: 10,
-                            offset: const Offset(0, 2),
                           ),
                         ],
                       ),
-                      child: _isLoading
-                          ? SizedBox(
-                              width: 32,
-                              height: 32,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 3,
-                              ),
-                            )
-                          : _hasError
-                          ? Icon(Icons.error, color: Colors.white, size: 36)
-                          : AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 300),
-                              transitionBuilder: (child, animation) {
-                                return ScaleTransition(
-                                  scale: animation,
-                                  child: child,
-                                );
-                              },
-                              child: Icon(
-                                _isPlaying
-                                    ? Icons.pause
-                                    : _isCompleted
-                                    ? Icons.replay
-                                    : Icons.play_arrow,
-                                key: ValueKey<String>(
-                                  _isPlaying
-                                      ? 'pause'
-                                      : (_isCompleted ? 'replay' : 'play'),
+
+                      const SizedBox(height: 30),
+
+                      // Cute audio visualization area
+                      Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Outermost cute ring with rotation
+                          AnimatedBuilder(
+                            animation: _outermostRingAnimation,
+                            builder: (context, child) {
+                              return Transform.rotate(
+                                angle: _outermostRingAnimation.value,
+                                child: Container(
+                                  width: 240,
+                                  height: 240,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: context.primary.withValues(
+                                        alpha: 0.1,
+                                      ),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Stack(
+                                    children: List.generate(8, (index) {
+                                      final angle = (index * 45) * (pi / 180);
+                                      return Positioned(
+                                        left: 120 + 100 * cos(angle) - 4,
+                                        top: 120 + 100 * sin(angle) - 4,
+                                        child: Container(
+                                          width: 8,
+                                          height: 8,
+                                          decoration: BoxDecoration(
+                                            color: Colors.pink.withValues(
+                                              alpha: 0.3,
+                                            ),
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
+                                      );
+                                    }),
+                                  ),
                                 ),
-                                color: Colors.white,
-                                size: 42,
+                              );
+                            },
+                          ),
+
+                          // Outer cute ring with rotation
+                          AnimatedBuilder(
+                            animation: _outerRingAnimation,
+                            builder: (context, child) {
+                              return Transform.rotate(
+                                angle: _outerRingAnimation.value,
+                                child: Container(
+                                  width: 200,
+                                  height: 200,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: context.primary.withValues(
+                                        alpha: 0.2,
+                                      ),
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: Stack(
+                                    children: List.generate(6, (index) {
+                                      final angle = (index * 60) * (pi / 180);
+                                      return Positioned(
+                                        left: 100 + 80 * cos(angle) - 6,
+                                        top: 100 + 80 * sin(angle) - 6,
+                                        child: Icon(
+                                          Icons.star,
+                                          color: Colors.yellow.withValues(
+                                            alpha: 0.6,
+                                          ),
+                                          size: 12,
+                                        ),
+                                      );
+                                    }),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+
+                          // Middle cute ring with counter-rotation
+                          AnimatedBuilder(
+                            animation: _middleRingAnimation,
+                            builder: (context, child) {
+                              return Transform.rotate(
+                                angle: _middleRingAnimation.value,
+                                child: Container(
+                                  width: 160,
+                                  height: 160,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: context.primary.withValues(
+                                        alpha: 0.3,
+                                      ),
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: Stack(
+                                    children: List.generate(6, (index) {
+                                      final angle = (index * 60) * (pi / 180);
+                                      return Positioned(
+                                        left: 80 + 60 * cos(angle) - 6,
+                                        top: 80 + 60 * sin(angle) - 6,
+                                        child: Icon(
+                                          Icons.favorite,
+                                          color: context.primary.withValues(
+                                            alpha: 0.4,
+                                          ),
+                                          size: 12,
+                                        ),
+                                      );
+                                    }),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+
+                          // Audio waveform in cute container
+                          Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: context.surface,
+                              border: Border.all(
+                                color: _isPlaying
+                                    ? context.primary.withValues(alpha: 0.6)
+                                    : context.primary.withValues(alpha: 0.4),
+                                width: _isPlaying ? 3 : 2,
+                              ),
+                              boxShadow: _isPlaying
+                                  ? [
+                                      BoxShadow(
+                                        color: context.primary.withValues(
+                                          alpha: 0.3,
+                                        ),
+                                        blurRadius: 20,
+                                        spreadRadius: 2,
+                                      ),
+                                    ]
+                                  : [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.05,
+                                        ),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                            ),
+                            child: Center(
+                              child: _isPlaying
+                                  ? AnimatedWaveform()
+                                  : Icon(
+                                      Icons.music_note,
+                                      color: context.primary.withValues(
+                                        alpha: 0.8,
+                                      ),
+                                      size: 40,
+                                    ),
+                            ),
+                          ),
+
+                          // Floating cute elements when playing
+                          if (_isPlaying) ...[
+                            Positioned(
+                              top: 20,
+                              left: 30,
+                              child: AnimatedOpacity(
+                                opacity: _isPlaying ? 1.0 : 0.0,
+                                duration: const Duration(milliseconds: 500),
+                                child: Icon(
+                                  Icons.favorite,
+                                  color: Colors.pink.withValues(alpha: 0.6),
+                                  size: 16,
+                                ),
                               ),
                             ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+                            Positioned(
+                              bottom: 25,
+                              right: 35,
+                              child: AnimatedOpacity(
+                                opacity: _isPlaying ? 1.0 : 0.0,
+                                duration: const Duration(milliseconds: 500),
+                                child: Icon(
+                                  Icons.star,
+                                  color: Colors.yellow.withValues(alpha: 0.7),
+                                  size: 14,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
 
-            // Cute detail button in top-right
-            Positioned(
-              top: 25,
-              right: 16,
-              child: GestureDetector(
-                onTap: () => _showProfileDetails(context),
-                child: Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: context.surface,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: context.primary.withValues(alpha: 0.3),
-                      width: 2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: context.primary.withValues(alpha: 0.2),
-                        blurRadius: 12,
-                        offset: const Offset(0, 3),
+                      const SizedBox(height: 10),
+
+                      // Cute progress bar container (smaller)
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: context.surface,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: context.primary.withValues(alpha: 0.4),
+                            width: 2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: context.primary.withValues(alpha: 0.1),
+                              blurRadius: 8,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            // Cute slider with pink thumb
+                            SliderTheme(
+                              data: SliderTheme.of(context).copyWith(
+                                activeTrackColor: context.primary,
+                                inactiveTrackColor: context.onSurface
+                                    .withValues(alpha: 0.2),
+                                thumbColor: Colors.pink,
+                                overlayColor: Colors.pink.withValues(
+                                  alpha: 0.3,
+                                ),
+                                trackHeight: 6,
+                                thumbShape: const RoundSliderThumbShape(
+                                  enabledThumbRadius: 6,
+                                ),
+                                overlayShape: const RoundSliderOverlayShape(
+                                  overlayRadius: 12,
+                                ),
+                              ),
+                              child: Slider(
+                                value: _duration.inSeconds > 0
+                                    ? _position.inSeconds.toDouble()
+                                    : 0.0,
+                                max: _duration.inSeconds.toDouble() > 0
+                                    ? _duration.inSeconds.toDouble()
+                                    : 1.0,
+                                onChanged: (value) async {
+                                  await _audioPlayer.seek(
+                                    Duration(seconds: value.toInt()),
+                                  );
+                                  setState(() {
+                                    _isCompleted = false;
+                                  });
+                                },
+                              ),
+                            ),
+
+                            const SizedBox(height: 2),
+
+                            // Cute time indicators (smaller)
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        context.primary.withValues(alpha: 0.2),
+                                        context.primary.withValues(alpha: 0.1),
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: context.primary.withValues(
+                                        alpha: 0.3,
+                                      ),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.access_time,
+                                        size: 8,
+                                        color: context.primary,
+                                      ),
+                                      const SizedBox(width: 2),
+                                      Text(
+                                        _formatDuration(_position),
+                                        style: TextStyle(
+                                          color: context.primary,
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: context.onSurface.withValues(
+                                      alpha: 0.1,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    _formatDuration(_duration),
+                                    style: TextStyle(
+                                      color: context.onSurface.withValues(
+                                        alpha: 0.7,
+                                      ),
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      // Super cute play button
+                      GestureDetector(
+                        onTap: _playPause,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: _isPlaying
+                                  ? [
+                                      Colors.pink,
+                                      context.primary,
+                                      Colors.purple,
+                                    ]
+                                  : [
+                                      context.primary,
+                                      Colors.pink.withValues(alpha: 0.8),
+                                      context.primary.withValues(alpha: 0.9),
+                                    ],
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: _isPlaying
+                                    ? Colors.pink.withValues(alpha: 0.5)
+                                    : context.primary.withValues(alpha: 0.4),
+                                spreadRadius: _isPlaying ? 3 : 1,
+                                blurRadius: _isPlaying ? 30 : 20,
+                                offset: Offset(0, _isPlaying ? 8 : 4),
+                              ),
+                              BoxShadow(
+                                color: Colors.white.withValues(alpha: 0.3),
+                                spreadRadius: 1,
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: _isLoading
+                              ? SizedBox(
+                                  width: 32,
+                                  height: 32,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 3,
+                                  ),
+                                )
+                              : _hasError
+                              ? Icon(Icons.error, color: Colors.white, size: 36)
+                              : AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 300),
+                                  transitionBuilder: (child, animation) {
+                                    return ScaleTransition(
+                                      scale: animation,
+                                      child: child,
+                                    );
+                                  },
+                                  child: Icon(
+                                    _isPlaying
+                                        ? Icons.pause
+                                        : _isCompleted
+                                        ? Icons.replay
+                                        : Icons.play_arrow,
+                                    key: ValueKey<String>(
+                                      _isPlaying
+                                          ? 'pause'
+                                          : (_isCompleted ? 'replay' : 'play'),
+                                    ),
+                                    color: Colors.white,
+                                    size: 42,
+                                  ),
+                                ),
+                        ),
                       ),
                     ],
                   ),
-                  child: Icon(
-                    Icons.visibility,
-                    color: context.primary,
-                    size: 24,
+                ),
+
+                // Cute detail button in top-right
+                Positioned(
+                  top: 25,
+                  right: 16,
+                  child: GestureDetector(
+                    onTap: () async {
+                      if (authProvider.isRizzPlus) {
+                        _showProfileDetails(context);
+                        return;
+                      }
+
+                      final status = await presentPaywallIfNeeded();
+                      if (status == PaywallResult.purchased) {
+                        authProvider.isRizzPlus = true;
+                      } else if (status == PaywallResult.restored) {
+                        debugPrint("Restored");
+                        return;
+                      } else {
+                        debugPrint("No purchased occur");
+                      }
+                    },
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: context.surface,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: context.primary.withValues(alpha: 0.3),
+                          width: 2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: context.primary.withValues(alpha: 0.2),
+                            blurRadius: 12,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.visibility,
+                        color: context.primary,
+                        size: 24,
+                      ),
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 

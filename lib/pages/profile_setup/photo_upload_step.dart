@@ -158,7 +158,7 @@ class _PhotoUploadStepState extends State<PhotoUploadStep> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Thêm ảnh vào hồ sơ của bạn',
+                'Thêm ít nhất 1 ảnh có khuôn mặt của bạn để hoàn tất hồ sơ. Ảnh selfie sẽ được xác minh sau.',
                 style: TextStyle(
                   fontSize: 16,
                   color: context.onSurface.withValues(alpha: 0.7),
@@ -186,6 +186,37 @@ class _PhotoUploadStepState extends State<PhotoUploadStep> {
                       fontWeight: FontWeight.w600,
                       color: context.primary,
                     ),
+                  ),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  margin: const EdgeInsets.symmetric(vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        color: Colors.orange,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Cần ít nhất 1 ảnh có khuôn mặt',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.orange,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
 
@@ -239,7 +270,7 @@ class _PhotoUploadStepState extends State<PhotoUploadStep> {
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
-                                  'Main',
+                                  'Ảnh chính',
                                   style: AppTheme.caption.copyWith(
                                     color: context.colors.onPrimary,
                                     fontWeight: FontWeight.w600,
@@ -357,22 +388,26 @@ class _PhotoUploadStepState extends State<PhotoUploadStep> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _saveAndNext,
+                  onPressed: _hasPhotos ? _saveAndNext : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: context.primary,
-                    foregroundColor: context.colors.onPrimary,
+                    backgroundColor: _hasPhotos
+                        ? context.primary
+                        : context.outline,
+                    foregroundColor: _hasPhotos
+                        ? context.colors.onPrimary
+                        : context.onSurface.withValues(alpha: 0.5),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    elevation: 2,
+                    elevation: _hasPhotos ? 2 : 0,
                     disabledBackgroundColor: context.outline,
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
-                        'Next',
+                      Text(
+                        _hasPhotos ? 'Next' : 'Cần ít nhất 1 ảnh',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,

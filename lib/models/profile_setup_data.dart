@@ -55,7 +55,6 @@ class ProfileSetupData {
   bool get isProfileDetailsComplete {
     return firstName != null &&
         lastName != null &&
-        birthday != null &&
         gender != null &&
         university != null &&
         interestedIn != null &&
@@ -72,7 +71,7 @@ class ProfileSetupData {
   }
 
   bool get isMediaComplete {
-    return photos.isNotEmpty && verificationPhoto != null;
+    return photos.isNotEmpty && voiceRecording != null;
   }
 
   bool get isComplete {
@@ -81,16 +80,13 @@ class ProfileSetupData {
 
   double get completionPercentage {
     int completed = 0;
-    int total = 13; // Total steps
+    int total = 12; // Total steps
 
-    // Profile details (11 fields)
-    if (firstName != null &&
-        lastName != null &&
-        birthday != null &&
-        gender != null &&
-        university != null) {
-      completed++;
-    }
+    // Profile details
+    if (firstName != null) completed++;
+    if (lastName != null) completed++;
+    if (gender != null) completed++;
+    if (university != null) completed++;
     if (interestedIn != null) completed++;
     if (studyStyle != null) completed++;
     if (weekendHabit != null) completed++;
@@ -99,13 +95,12 @@ class ProfileSetupData {
     if (communicationPreference != null) completed++;
     if (dealBreakers.isNotEmpty) completed++;
 
-    // Preferences (2 fields)
+    // Preferences
     if (lookingFor != null) completed++;
     if (interests.isNotEmpty) completed++;
 
     // Media
     if (photos.isNotEmpty) completed++;
-    if (verificationPhoto != null) completed++;
     if (voiceRecording != null) completed++;
 
     return completed / total;

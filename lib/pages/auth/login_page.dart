@@ -90,7 +90,7 @@ class _LoginPageState extends State<LoginPage> {
 
       if (success) {
         // Check if profile setup is complete
-        await authProvider.updateProfileSetupStatus();
+        // await authProvider.updateProfileSetupStatus();
 
         if (mounted) {
           if (authProvider.isProfileSetupComplete) {

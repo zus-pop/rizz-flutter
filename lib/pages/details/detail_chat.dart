@@ -216,9 +216,9 @@ Ví dụ:
       messageController.clear();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("❌ Lỗi gửi tin nhắn: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("❌ Lỗi gửi tin nhắn: $e")));
       }
     }
   }
@@ -266,7 +266,10 @@ Ví dụ:
             if (roomCode != null)
               Text(
                 'Phòng: $roomCode',
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.normal,
+                ),
               ),
           ],
         ),
@@ -309,7 +312,11 @@ Ví dụ:
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey),
+                        Icon(
+                          Icons.chat_bubble_outline,
+                          size: 64,
+                          color: Colors.grey,
+                        ),
                         SizedBox(height: 16),
                         Text(
                           'Chưa có tin nhắn nào\nHãy bắt đầu cuộc trò chuyện!',
@@ -344,10 +351,13 @@ Ví dụ:
                                   vertical: 8,
                                 ),
                                 constraints: BoxConstraints(
-                                  maxWidth: MediaQuery.of(context).size.width * 0.7,
+                                  maxWidth:
+                                      MediaQuery.of(context).size.width * 0.7,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: isMyMessage ? Colors.blue : Colors.grey.shade300,
+                                  color: isMyMessage
+                                      ? Colors.blue
+                                      : Colors.grey.shade300,
                                   borderRadius: BorderRadius.circular(16),
                                 ),
                                 child: Column(
@@ -355,7 +365,9 @@ Ví dụ:
                                   children: [
                                     if (!isMyMessage)
                                       Padding(
-                                        padding: const EdgeInsets.only(bottom: 4),
+                                        padding: const EdgeInsets.only(
+                                          bottom: 4,
+                                        ),
                                         child: Text(
                                           message['sender_name'],
                                           style: TextStyle(
@@ -368,14 +380,20 @@ Ví dụ:
                                     Text(
                                       message['text'],
                                       style: TextStyle(
-                                        color: isMyMessage ? Colors.white : Colors.black87,
+                                        color: isMyMessage
+                                            ? Colors.white
+                                            : Colors.black87,
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
                               Padding(
-                                padding: const EdgeInsets.only(top: 2, left: 8, right: 8),
+                                padding: const EdgeInsets.only(
+                                  top: 2,
+                                  left: 8,
+                                  right: 8,
+                                ),
                                 child: Text(
                                   _formatTimestamp(timestamp),
                                   style: TextStyle(
@@ -409,12 +427,16 @@ Ví dụ:
                 // AI Thinking/Suggestion
                 if (isAITurnOn && (isAIThinking || aiSuggestion != null))
                   AnimatedOpacity(
-                    opacity: (isAIThinking || isAISuggestionVisible) ? 1.0 : 0.0,
+                    opacity: (isAIThinking || isAISuggestionVisible)
+                        ? 1.0
+                        : 0.0,
                     duration: const Duration(milliseconds: 400),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 500),
                       curve: Curves.elasticOut,
-                      height: (isAIThinking || isAISuggestionVisible) ? null : 0,
+                      height: (isAIThinking || isAISuggestionVisible)
+                          ? null
+                          : 0,
                       child: InkWell(
                         onTap: isAIThinking ? null : _useAISuggestion,
                         child: Container(
@@ -439,9 +461,10 @@ Ví dụ:
                                         height: 20,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          valueColor: AlwaysStoppedAnimation<Color>(
-                                            Colors.blue.withOpacity(0.7),
-                                          ),
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                Colors.blue.withOpacity(0.7),
+                                              ),
                                         ),
                                       )
                                     : const Icon(
@@ -514,7 +537,9 @@ Ví dụ:
                           decoration: const InputDecoration(
                             hintText: 'Nhập tin nhắn...',
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(25)),
+                              borderRadius: BorderRadius.all(
+                                Radius.circular(25),
+                              ),
                             ),
                             contentPadding: EdgeInsets.symmetric(
                               horizontal: 16,
