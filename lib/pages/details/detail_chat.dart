@@ -1,15 +1,8 @@
 import 'package:firebase_ai/firebase_ai.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
-<<<<<<< HEAD
-import 'package:provider/provider.dart';
-import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
-
-import '../../providers/authentication_provider.dart';
-=======
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/simple_chat_service.dart';
->>>>>>> 7d07247434836486ce6b2a896b31c777bf350a90
 
 class DetailChat extends StatefulWidget {
   const DetailChat({super.key});
@@ -223,9 +216,9 @@ Ví dụ:
       messageController.clear();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("❌ Lỗi gửi tin nhắn: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("❌ Lỗi gửi tin nhắn: $e")));
       }
     }
   }
@@ -273,7 +266,10 @@ Ví dụ:
             if (roomCode != null)
               Text(
                 'Phòng: $roomCode',
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.normal,
+                ),
               ),
           ],
         ),
@@ -283,73 +279,6 @@ Ví dụ:
           onPressed: _returnToMainScreen,
         ),
         actions: [
-<<<<<<< HEAD
-          Consumer<AuthenticationProvider>(
-            builder: (context, authProvider, _) {
-              return Row(
-                children: [
-                  const Text(
-                    'AI',
-                    style: TextStyle(color: Colors.white, fontSize: 14),
-                  ),
-                  Switch(
-                    value: isAITurnOn,
-                    onChanged: authProvider.isRizzPlus
-                        ? (value) {
-                            setState(() {
-                              isAITurnOn = value;
-                              if (!value) {
-                                aiSuggestion = null;
-                                isAISuggestionVisible = false;
-                                isAIThinking = false;
-                              }
-                            });
-                          }
-                        : (value) async {
-                            // Show paywall for free users
-                            final status =
-                                await RevenueCatUI.presentPaywallIfNeeded(
-                                  "premium",
-                                  displayCloseButton: true,
-                                );
-                            if (status == PaywallResult.purchased) {
-                              authProvider.isRizzPlus = true;
-                              setState(() {
-                                isAITurnOn = true;
-                              });
-                            }
-                          },
-                    activeThumbColor: Colors.white,
-                    activeTrackColor: Colors.white.withValues(alpha: 0.5),
-                  ),
-                  if (!authProvider.isRizzPlus)
-                    Container(
-                      margin: const EdgeInsets.only(left: 4),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFfa5eff).withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: const Color(0xFFfa5eff),
-                          width: 1,
-                        ),
-                      ),
-                      child: const Text(
-                        'PLUS',
-                        style: TextStyle(
-                          color: Color(0xFFfa5eff),
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                ],
-              );
-            },
-=======
           Row(
             children: [
               const Text(
@@ -372,7 +301,6 @@ Ví dụ:
                 activeTrackColor: Colors.white.withOpacity(0.5),
               ),
             ],
->>>>>>> 7d07247434836486ce6b2a896b31c777bf350a90
           ),
         ],
       ),
@@ -384,7 +312,11 @@ Ví dụ:
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey),
+                        Icon(
+                          Icons.chat_bubble_outline,
+                          size: 64,
+                          color: Colors.grey,
+                        ),
                         SizedBox(height: 16),
                         Text(
                           'Chưa có tin nhắn nào\nHãy bắt đầu cuộc trò chuyện!',
@@ -419,10 +351,13 @@ Ví dụ:
                                   vertical: 8,
                                 ),
                                 constraints: BoxConstraints(
-                                  maxWidth: MediaQuery.of(context).size.width * 0.7,
+                                  maxWidth:
+                                      MediaQuery.of(context).size.width * 0.7,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: isMyMessage ? Colors.blue : Colors.grey.shade300,
+                                  color: isMyMessage
+                                      ? Colors.blue
+                                      : Colors.grey.shade300,
                                   borderRadius: BorderRadius.circular(16),
                                 ),
                                 child: Column(
@@ -430,7 +365,9 @@ Ví dụ:
                                   children: [
                                     if (!isMyMessage)
                                       Padding(
-                                        padding: const EdgeInsets.only(bottom: 4),
+                                        padding: const EdgeInsets.only(
+                                          bottom: 4,
+                                        ),
                                         child: Text(
                                           message['sender_name'],
                                           style: TextStyle(
@@ -443,14 +380,20 @@ Ví dụ:
                                     Text(
                                       message['text'],
                                       style: TextStyle(
-                                        color: isMyMessage ? Colors.white : Colors.black87,
+                                        color: isMyMessage
+                                            ? Colors.white
+                                            : Colors.black87,
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
                               Padding(
-                                padding: const EdgeInsets.only(top: 2, left: 8, right: 8),
+                                padding: const EdgeInsets.only(
+                                  top: 2,
+                                  left: 8,
+                                  right: 8,
+                                ),
                                 child: Text(
                                   _formatTimestamp(timestamp),
                                   style: TextStyle(
@@ -484,12 +427,16 @@ Ví dụ:
                 // AI Thinking/Suggestion
                 if (isAITurnOn && (isAIThinking || aiSuggestion != null))
                   AnimatedOpacity(
-                    opacity: (isAIThinking || isAISuggestionVisible) ? 1.0 : 0.0,
+                    opacity: (isAIThinking || isAISuggestionVisible)
+                        ? 1.0
+                        : 0.0,
                     duration: const Duration(milliseconds: 400),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 500),
                       curve: Curves.elasticOut,
-                      height: (isAIThinking || isAISuggestionVisible) ? null : 0,
+                      height: (isAIThinking || isAISuggestionVisible)
+                          ? null
+                          : 0,
                       child: InkWell(
                         onTap: isAIThinking ? null : _useAISuggestion,
                         child: Container(
@@ -514,9 +461,10 @@ Ví dụ:
                                         height: 20,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          valueColor: AlwaysStoppedAnimation<Color>(
-                                            Colors.blue.withOpacity(0.7),
-                                          ),
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                Colors.blue.withOpacity(0.7),
+                                              ),
                                         ),
                                       )
                                     : const Icon(
@@ -589,7 +537,9 @@ Ví dụ:
                           decoration: const InputDecoration(
                             hintText: 'Nhập tin nhắn...',
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(25)),
+                              borderRadius: BorderRadius.all(
+                                Radius.circular(25),
+                              ),
                             ),
                             contentPadding: EdgeInsets.symmetric(
                               horizontal: 16,

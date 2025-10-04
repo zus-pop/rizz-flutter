@@ -29,6 +29,8 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
   bool _hasRecording = false;
   bool _isPlaying = false;
   bool _isAnalyzingAudio = false;
+  bool _isCountingDown = false;
+  int _countdownSeconds = 3;
   Duration _recordingDuration = Duration.zero;
   Duration _playbackPosition = Duration.zero;
   Duration _totalDuration = Duration.zero;
@@ -162,16 +164,52 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
   }
 
   Future<void> _record() async {
-    if (!_isRecording) {
+    if (_isCountingDown) {
+      // Cancel countdown if user taps during countdown
+      setState(() {
+        _isCountingDown = false;
+      });
+      return;
+    }
+
+    if (!_isRecording && !_isCountingDown) {
       final status = await Permission.microphone.request();
 
       if (status == PermissionStatus.granted) {
-        await _startRecording();
+        await _startCountdown();
       } else if (status == PermissionStatus.permanentlyDenied) {
         debugPrint('Permission permanently denied!');
       }
-    } else {
+    } else if (_isRecording) {
       await _stopRecording();
+    }
+  }
+
+  Future<void> _startCountdown() async {
+    setState(() {
+      _isCountingDown = true;
+      _countdownSeconds = 3;
+    });
+
+    // Countdown timer
+    for (int i = 3; i > 0; i--) {
+      await Future.delayed(const Duration(seconds: 1));
+      if (mounted && _isCountingDown) {
+        setState(() {
+          _countdownSeconds = i - 1;
+        });
+      } else {
+        // Countdown was cancelled
+        return;
+      }
+    }
+
+    // Start recording after countdown
+    if (mounted && _isCountingDown) {
+      setState(() {
+        _isCountingDown = false;
+      });
+      await _startRecording();
     }
   }
 
@@ -374,14 +412,14 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
                 children: [
                   // Header Section - More prominent
                   Text(
-                    'Thêm giọng nói của bạn',
+                    'Ghi âm giọng nói của bạn',
                     style: AppTheme.headline1.copyWith(
                       color: context.onSurface,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Ghi âm một đoạn giới thiệu ngắn để mọi người hiểu rõ hơn về cá tính của bạn.\n\nThời lượng tối đa: ${_maxRecordingDurationSeconds}s giây.',
+                    'Ghi âm một đoạn giới thiệu ngắn để AI phân tích giọng nói và mọi người hiểu rõ hơn về cá tính của bạn.\n\nThời lượng tối đa: ${_maxRecordingDurationSeconds}s giây.',
                     style: TextStyle(
                       fontSize: 16,
                       color: context.onSurface.withValues(alpha: 0.7),
@@ -464,47 +502,83 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
                               // Recording Interface
                               Column(
                                 children: [
-                                  // Simple Recording Button - No animation
-                                  GestureDetector(
-                                    onTap: _record,
-                                    child: Container(
-                                      width: 120,
-                                      height: 120,
+                                  // Show countdown or recording button
+                                  if (_isCountingDown) ...[
+                                    // Countdown Display
+                                    Container(
+                                      width: 80,
+                                      height: 80,
                                       decoration: BoxDecoration(
-                                        color: _isRecording
-                                            ? Colors.red
-                                            : context.primary,
+                                        color: Colors.orange,
                                         shape: BoxShape.circle,
                                         boxShadow: [
                                           BoxShadow(
-                                            color:
-                                                (_isRecording
-                                                        ? Colors.red
-                                                        : context.primary)
-                                                    .withValues(alpha: 0.3),
-                                            blurRadius: 15,
-                                            spreadRadius: 3,
+                                            color: Colors.orange.withValues(
+                                              alpha: 0.3,
+                                            ),
+                                            blurRadius: 10,
+                                            spreadRadius: 2,
                                           ),
                                         ],
                                       ),
-                                      child: Icon(
-                                        _isRecording ? Icons.stop : Icons.mic,
-                                        color: context.colors.onPrimary,
-                                        size: 50,
+                                      child: Center(
+                                        child: Text(
+                                          '$_countdownSeconds',
+                                          style: const TextStyle(
+                                            fontSize: 28,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 24),
+                                  ] else ...[
+                                    // Simple Recording Button - No animation
+                                    GestureDetector(
+                                      onTap: _record,
+                                      child: Container(
+                                        width: 80,
+                                        height: 80,
+                                        decoration: BoxDecoration(
+                                          color: _isRecording
+                                              ? Colors.red
+                                              : context.primary,
+                                          shape: BoxShape.circle,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color:
+                                                  (_isRecording
+                                                          ? Colors.red
+                                                          : context.primary)
+                                                      .withValues(alpha: 0.3),
+                                              blurRadius: 10,
+                                              spreadRadius: 2,
+                                            ),
+                                          ],
+                                        ),
+                                        child: Icon(
+                                          _isRecording ? Icons.stop : Icons.mic,
+                                          color: context.colors.onPrimary,
+                                          size: 32,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                  const SizedBox(height: 16),
 
                                   // Recording Status Text - Prominent
                                   Text(
-                                    _isRecording
-                                        ? 'Recording... (${_maxRecordingDurationSeconds - _recordingDuration.inSeconds}s remaining)'
-                                        : 'Tap to start recording (${_maxRecordingDurationSeconds}s max)',
+                                    _isCountingDown
+                                        ? 'Chuẩn bị ghi âm... (Nhấn để hủy)'
+                                        : _isRecording
+                                        ? 'Đang ghi âm... (còn ${_maxRecordingDurationSeconds - _recordingDuration.inSeconds}s)'
+                                        : 'Nhấn để bắt đầu ghi âm (tối đa ${_maxRecordingDurationSeconds}s)',
                                     style: TextStyle(
-                                      fontSize: 18,
+                                      fontSize: 16,
                                       fontWeight: FontWeight.w600,
-                                      color: _isRecording
+                                      color: _isCountingDown
+                                          ? Colors.orange
+                                          : _isRecording
                                           ? Colors.red
                                           : context.onSurface,
                                     ),
@@ -535,12 +609,12 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
                                     Text(
                                       _formatDuration(_recordingDuration),
                                       style: const TextStyle(
-                                        fontSize: 28,
+                                        fontSize: 24,
                                         fontWeight: FontWeight.bold,
                                         color: Colors.red,
                                       ),
                                     ),
-                                    const SizedBox(height: 16),
+                                    const SizedBox(height: 12),
                                     // Simple Recording Indicator
                                     Row(
                                       mainAxisAlignment:
@@ -556,7 +630,7 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
                                         ),
                                         const SizedBox(width: 8),
                                         const Text(
-                                          'Recording...',
+                                          'Đang ghi âm...',
                                           style: TextStyle(
                                             fontSize: 16,
                                             color: Colors.red,
@@ -689,7 +763,7 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
                                             ),
                                             const SizedBox(width: 6),
                                             Text(
-                                              'Recording Duration: ${_formatDuration(_recordingDuration)}',
+                                              'Thời lượng ghi âm: ${_formatDuration(_recordingDuration)}',
                                               style: const TextStyle(
                                                 fontSize: 14,
                                                 fontWeight: FontWeight.w600,
@@ -789,7 +863,7 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
                                                 : Icons.play_arrow,
                                           ),
                                           label: Text(
-                                            _isPlaying ? 'Pause' : 'Play',
+                                            _isPlaying ? 'Tạm dừng' : 'Phát',
                                           ),
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor: context.primary,
@@ -811,7 +885,7 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
                                         child: ElevatedButton.icon(
                                           onPressed: _deleteRecording,
                                           icon: const Icon(Icons.refresh),
-                                          label: const Text('Re-record'),
+                                          label: const Text('Ghi lại'),
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor: context
                                                 .colors
@@ -837,7 +911,7 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
                       ),
                     ),
                   ),
-                  // Bottom Actions - Compact
+                  // Bottom Actions - Comact
                   Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -859,7 +933,7 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
                             elevation: _hasRecording ? 2 : 0,
                           ),
                           child: const Text(
-                            'Complete Setup',
+                            'Hoàn tất thiết lập',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w600,

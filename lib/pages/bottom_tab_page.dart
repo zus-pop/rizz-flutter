@@ -10,6 +10,7 @@ import 'package:rizz_mobile/pages/tabs/liked.dart';
 import 'package:rizz_mobile/pages/tabs/profile.dart';
 import 'package:rizz_mobile/providers/authentication_provider.dart';
 import 'package:rizz_mobile/theme/app_theme.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class BottomTabPage extends StatefulWidget {
   const BottomTabPage({super.key});
@@ -40,6 +41,8 @@ class _BottomTabPageState extends State<BottomTabPage> {
 
   Future<void> _checkPremium() async {
     try {
+      final userId = context.read<AuthenticationProvider>().userId;
+      debugPrint("yes it had $userId");
       final customerInfo = await Purchases.getCustomerInfo();
       final isRizzPlus = customerInfo.entitlements.all[entitlementID]!.isActive;
       debugPrint('Is user premium: ${isRizzPlus.toString()}');

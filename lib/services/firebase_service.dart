@@ -17,7 +17,6 @@ class FirebaseService {
 
   Future<String?> requestPushToken() async {
     await _firebaseMessaging.requestPermission();
-
     final token = await _firebaseMessaging.getToken();
     debugPrint('The device token: [$token]');
 
