@@ -3,7 +3,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:firebase_ai/firebase_ai.dart';
-import 'package:rizz_mobile/models/profile.dart';
+import 'package:rizz_mobile/models/user.dart';
 import 'package:rizz_mobile/theme/app_theme.dart';
 
 // Simple animated typing indicator widget
@@ -97,7 +97,7 @@ class ChatMessage {
 }
 
 class Chatbot extends StatefulWidget {
-  final Profile profile;
+  final User profile;
 
   const Chatbot({super.key, required this.profile});
 
@@ -160,12 +160,16 @@ class _ChatbotState extends State<Chatbot> {
 
   String _buildCharacterPromptVN() {
     final profile = widget.profile;
-    final name = profile.name.isNotEmpty ? profile.name : 'Người dùng';
-    final age = profile.age;
-    final bio = profile.bio;
-    final location = profile.location;
-    final interests = profile.interests.isNotEmpty
-        ? profile.interests.join(', ')
+    final name = profile.firstName != null && profile.lastName != null
+        ? "${profile.firstName} ${profile.lastName}"
+        : 'Người dùng';
+    final age = profile.birthday != null
+        ? DateTime.now().difference(profile.birthday!).inDays ~/ 365
+        : 25;
+    final bio = profile.bio ?? '';
+    final location = profile.university ?? 'Việt Nam';
+    final interests = profile.interests != null && profile.interests!.isNotEmpty
+        ? profile.interests!.join(', ')
         : '';
     return '''
 Bạn không phải là một trợ lý AI, mà bạn sẽ là một con người có tính cách như hồ sơ dưới đây:
@@ -330,10 +334,14 @@ Như một người Việt Nam thực thụ và xưng hô dựa vào đối phư
             CircleAvatar(
               radius: 16,
               backgroundColor: context.primary,
-              backgroundImage: widget.profile.imageUrls.isNotEmpty
-                  ? NetworkImage(widget.profile.imageUrls.first)
+              backgroundImage:
+                  widget.profile.imageUrls != null &&
+                      widget.profile.imageUrls!.isNotEmpty
+                  ? NetworkImage(widget.profile.imageUrls!.first)
                   : null,
-              child: widget.profile.imageUrls.isEmpty
+              child:
+                  widget.profile.imageUrls == null ||
+                      widget.profile.imageUrls!.isEmpty
                   ? Icon(
                       Icons.person,
                       color: context.colors.onPrimary,
@@ -348,17 +356,19 @@ Như một người Việt Nam thực thụ và xưng hô dựa vào đối phư
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    widget.profile.name.isNotEmpty
-                        ? widget.profile.name
+                    widget.profile.firstName != null &&
+                            widget.profile.lastName != null
+                        ? "${widget.profile.firstName} ${widget.profile.lastName}"
                         : 'Character',
                     style: const TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 16,
                     ),
                   ),
-                  if (widget.profile.bio.isNotEmpty)
+                  if (widget.profile.bio != null &&
+                      widget.profile.bio!.isNotEmpty)
                     Text(
-                      widget.profile.bio,
+                      widget.profile.bio!,
                       style: TextStyle(
                         fontSize: 12,
                         color: context.onSurface.withValues(alpha: 0.7),
@@ -545,9 +555,11 @@ Như một người Việt Nam thực thụ và xưng hô dựa vào đối phư
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16),
-                child: widget.profile.imageUrls.isNotEmpty
+                child:
+                    widget.profile.imageUrls != null &&
+                        widget.profile.imageUrls!.isNotEmpty
                     ? Image.network(
-                        widget.profile.imageUrls.first,
+                        widget.profile.imageUrls!.first,
                         width: 32,
                         height: 32,
                         fit: BoxFit.cover,

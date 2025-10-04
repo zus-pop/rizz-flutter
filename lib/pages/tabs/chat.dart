@@ -47,7 +47,6 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
 
       // Try a simple test to check if Firestore is working
       await _testFirestoreConnection();
-
     } catch (e) {
       debugPrint("Error initializing service: $e");
       if (mounted) {
@@ -62,11 +61,13 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
             e.toString().contains('TimeoutException') ||
             e.toString().contains('Firestore API not enabled')) {
           // Don't show snackbar here, we'll show the setup dialog when user tries to use the feature
-          debugPrint("Firestore API not enabled - will show setup dialog when needed");
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("❌ Lỗi khởi tạo dịch vụ: $e")),
+          debugPrint(
+            "Firestore API not enabled - will show setup dialog when needed",
           );
+        } else {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text("❌ Lỗi khởi tạo dịch vụ: $e")));
         }
       }
     }
@@ -117,7 +118,9 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("✅ Phòng chat đã tạo! Mã phòng: $newRoomCode\nChia sẻ mã này để người khác tham gia"),
+            content: Text(
+              "✅ Phòng chat đã tạo! Mã phòng: $newRoomCode\nChia sẻ mã này để người khác tham gia",
+            ),
             duration: const Duration(seconds: 5),
             action: SnackBarAction(
               label: 'Copy',
@@ -151,9 +154,9 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
             e.toString().contains('Cloud Firestore API has not been used')) {
           _showFirestoreSetupDialog();
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("❌ Lỗi tạo phòng chat: $e")),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text("❌ Lỗi tạo phòng chat: $e")));
         }
       }
     }
@@ -235,9 +238,11 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
       isInRoom = false;
     });
     roomCodeController.clear();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("✅ Đã rời khỏi phòng chat")),
-    );
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("✅ Đã rời khỏi phòng chat")));
+    }
   }
 
   void _openChatRoom() {
@@ -294,7 +299,9 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text("1. Chạy file setup_firestore.bat trong thư mục dự án"),
+                    const Text(
+                      "1. Chạy file setup_firestore.bat trong thư mục dự án",
+                    ),
                     const Text("2. Làm theo hướng dẫn trong script"),
                     const Text("3. Khởi động lại ứng dụng"),
                   ],
@@ -319,7 +326,9 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
                     const Text("2. Chọn dự án: rizz-7e0b8"),
                     const Text("3. Tìm 'Cloud Firestore API'"),
                     const Text("4. Nhấn 'Enable'"),
-                    const Text("5. Tạo Firestore database trong Firebase Console"),
+                    const Text(
+                      "5. Tạo Firestore database trong Firebase Console",
+                    ),
                   ],
                 ),
               ),
@@ -345,9 +354,12 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
           actions: [
             TextButton(
               onPressed: () async {
-                await Clipboard.setData(const ClipboardData(
-                  text: "https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=rizz-7e0b8"
-                ));
+                await Clipboard.setData(
+                  const ClipboardData(
+                    text:
+                        "https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=rizz-7e0b8",
+                  ),
+                );
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -410,11 +422,7 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
                 ),
                 child: Column(
                   children: [
-                    Icon(
-                      Icons.chat,
-                      size: 48,
-                      color: Colors.blue.shade700,
-                    ),
+                    Icon(Icons.chat, size: 48, color: Colors.blue.shade700),
                     const SizedBox(height: 12),
                     Text(
                       'Chat với Mã Phòng',
@@ -452,7 +460,7 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
                     border: Border.all(
                       color: checkingFirestore
                           ? Colors.blue.shade200
-                          : Colors.red.shade200
+                          : Colors.red.shade200,
                     ),
                   ),
                   child: Row(
@@ -517,7 +525,11 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                          const Icon(
+                            Icons.check_circle,
+                            color: Colors.green,
+                            size: 20,
+                          ),
                           const SizedBox(width: 8),
                           Text(
                             'Đang trong phòng:',
@@ -530,7 +542,10 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
                       ),
                       const SizedBox(height: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.green.shade200,
                           borderRadius: BorderRadius.circular(8),
@@ -553,7 +568,10 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
                         ),
                       ),
                     ],
@@ -570,15 +588,25 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
                         ? const SizedBox(
                             width: 16,
                             height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
                           )
                         : const Icon(Icons.add),
-                    label: Text(isCreatingRoom ? 'Đang tạo phòng...' : 'Tạo Phòng Chat Mới'),
+                    label: Text(
+                      isCreatingRoom
+                          ? 'Đang tạo phòng...'
+                          : 'Tạo Phòng Chat Mới',
+                    ),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       backgroundColor: Colors.blue,
                       foregroundColor: Colors.white,
-                      textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      textStyle: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -630,15 +658,23 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
                         ? const SizedBox(
                             width: 16,
                             height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
                           )
                         : const Icon(Icons.login),
-                    label: Text(isJoiningRoom ? 'Đang tham gia...' : 'Tham Gia Phòng'),
+                    label: Text(
+                      isJoiningRoom ? 'Đang tham gia...' : 'Tham Gia Phòng',
+                    ),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       backgroundColor: Colors.green,
                       foregroundColor: Colors.white,
-                      textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      textStyle: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -677,11 +713,20 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildInstructionRow('1', 'Tạo phòng chat mới và nhận mã phòng 6 ký tự'),
+                        _buildInstructionRow(
+                          '1',
+                          'Tạo phòng chat mới và nhận mã phòng 6 ký tự',
+                        ),
                         const SizedBox(height: 8),
-                        _buildInstructionRow('2', 'Chia sẻ mã phòng với người muốn chat'),
+                        _buildInstructionRow(
+                          '2',
+                          'Chia sẻ mã phòng với người muốn chat',
+                        ),
                         const SizedBox(height: 8),
-                        _buildInstructionRow('3', 'Nhập mã phòng để tham gia và bắt đầu chat'),
+                        _buildInstructionRow(
+                          '3',
+                          'Nhập mã phòng để tham gia và bắt đầu chat',
+                        ),
                       ],
                     ),
                   ],
@@ -720,10 +765,7 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
         Expanded(
           child: Text(
             text,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade700,
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
           ),
         ),
       ],

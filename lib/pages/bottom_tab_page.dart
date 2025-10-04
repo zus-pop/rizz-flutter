@@ -4,13 +4,13 @@ import 'package:google_nav_bar/google_nav_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:rizz_mobile/constant.dart';
+import 'package:rizz_mobile/pages/auth/login_page.dart';
 import 'package:rizz_mobile/pages/tabs/chat.dart';
 import 'package:rizz_mobile/pages/tabs/discover.dart';
 import 'package:rizz_mobile/pages/tabs/liked.dart';
 import 'package:rizz_mobile/pages/tabs/profile.dart';
 import 'package:rizz_mobile/providers/authentication_provider.dart';
 import 'package:rizz_mobile/theme/app_theme.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class BottomTabPage extends StatefulWidget {
   const BottomTabPage({super.key});
@@ -42,8 +42,16 @@ class _BottomTabPageState extends State<BottomTabPage> {
   Future<void> _checkPremium() async {
     try {
       final userId = context.read<AuthenticationProvider>().userId;
-      debugPrint("yes it had $userId");
-      final customerInfo = await Purchases.getCustomerInfo();
+      if (userId == null) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+        );
+        return;
+      }
+      final result = await Purchases.logIn(userId);
+      final customerInfo = result.customerInfo;
+      debugPrint("yes it is: ${result.created}");
       final isRizzPlus = customerInfo.entitlements.all[entitlementID]!.isActive;
       debugPrint('Is user premium: ${isRizzPlus.toString()}');
       if (mounted) {

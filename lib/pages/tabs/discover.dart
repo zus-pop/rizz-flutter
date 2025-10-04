@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 import 'package:provider/provider.dart';
 import 'package:rizz_mobile/providers/profile_provider.dart';
+import 'package:rizz_mobile/providers/authentication_provider.dart';
 import 'package:rizz_mobile/theme/app_theme.dart';
 import 'package:rizz_mobile/widgets/filter_modal.dart';
 import 'package:rizz_mobile/widgets/swipe_card.dart';
@@ -23,9 +24,16 @@ class _DiscoverState extends State<Discover>
     super.initState();
     // Initialize profiles when widget is created
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ProfileProvider>().initialize();
+      final authProvider = context.read<AuthenticationProvider>();
+      final profileProvider = context.read<ProfileProvider>();
+
+      if (authProvider.userId != null) {
+        profileProvider.setCurrentUserId(authProvider.userId!);
+      }
+
+      profileProvider.initialize();
     });
-    debugPrint("It re-builded");
+    debugPrint("Discover initialized");
   }
 
   @override
@@ -52,9 +60,11 @@ class _DiscoverState extends State<Discover>
         ),
         centerTitle: false,
         actions: [
+          // Single filter button
           IconButton(
             onPressed: _showFilterModal,
-            icon: Icon(Icons.tune, color: context.primary, size: 36),
+            icon: Icon(Icons.tune, color: context.primary, size: 30),
+            tooltip: 'Bộ lọc',
           ),
         ],
       ),
@@ -184,7 +194,7 @@ class _DiscoverState extends State<Discover>
                         if (index >= 0 &&
                             index < profileProvider.profiles.length) {
                           return SwipeCard(
-                            profile: profileProvider.profiles[index],
+                            user: profileProvider.profiles[index],
                           );
                         } else {
                           // Return empty container if index is out of bounds
@@ -311,23 +321,25 @@ class _DiscoverState extends State<Discover>
     );
   }
 
-  bool _onSwipe(
+  Future<bool> _onSwipe(
     int previousIndex,
     int? currentIndex,
     CardSwiperDirection direction,
     ProfileProvider profileProvider,
-  ) {
+  ) async {
     currentIndex = currentIndex ?? 0;
 
     String action = '';
-    String profileId = '';
+    String? profileId;
     switch (direction) {
       case CardSwiperDirection.left:
         action = 'bỏ qua';
         if (previousIndex >= 0 &&
             previousIndex < profileProvider.profiles.length) {
           profileId = profileProvider.profiles[previousIndex].id;
-          profileProvider.passProfile(profileId);
+          if (profileId != null) {
+            profileProvider.passProfile(profileId);
+          }
         }
         break;
       case CardSwiperDirection.right:
@@ -335,7 +347,42 @@ class _DiscoverState extends State<Discover>
         if (previousIndex >= 0 &&
             previousIndex < profileProvider.profiles.length) {
           profileId = profileProvider.profiles[previousIndex].id;
-          profileProvider.likeProfile(profileId);
+          if (profileId != null) {
+            final isMutual = await profileProvider.likeProfile(profileId);
+            // Show match notification if it's mutual
+            if (mounted && isMutual) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      Icon(Icons.favorite, color: Colors.white, size: 24),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          '🎉 It\'s a match with ${profileProvider.profiles[previousIndex].getFullName()}!',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  duration: const Duration(seconds: 4),
+                  backgroundColor: Colors.pink,
+                  action: SnackBarAction(
+                    label: 'View',
+                    textColor: Colors.white,
+                    onPressed: () {
+                      // Navigate to liked tab to see the match
+                      // This would require a tab controller or navigation setup
+                    },
+                  ),
+                ),
+              );
+            }
+          }
         }
         break;
       default:
@@ -349,7 +396,7 @@ class _DiscoverState extends State<Discover>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'You $action ${profileProvider.profiles[previousIndex].name}!',
+            'You $action ${profileProvider.profiles[previousIndex].getFullName()}!',
             style: const TextStyle(color: Colors.white),
           ),
           backgroundColor: direction == CardSwiperDirection.right
@@ -364,7 +411,7 @@ class _DiscoverState extends State<Discover>
 
     if (previousIndex >= 0 && previousIndex < profileProvider.profiles.length) {
       debugPrint(
-        'Card ${profileProvider.profiles[previousIndex].name} was $action. Current index: $currentIndex',
+        'Card ${profileProvider.profiles[previousIndex].getFullName()} was $action. Current index: $currentIndex',
       );
     } else {
       debugPrint(
@@ -402,6 +449,9 @@ class _DiscoverState extends State<Discover>
         initialEmotion: profileProvider.emotionFilter,
         initialVoiceQuality: profileProvider.voiceQualityFilter,
         initialAccent: profileProvider.accentFilter,
+        initialGender: profileProvider.genderFilter,
+        initialUniversity: profileProvider.universityFilter,
+        initialInterests: profileProvider.interestsFilter,
         onApplyFilter:
             (
               newAgeRange,
@@ -409,13 +459,21 @@ class _DiscoverState extends State<Discover>
               newEmotion,
               newVoiceQuality,
               newAccent,
+              newGender,
+              newUniversity,
+              newInterests,
             ) {
+              final authProvider = context.read<AuthenticationProvider>();
               profileProvider.applyFilters(
                 ageRange: newAgeRange,
                 maxDistance: newMaxDistance,
                 emotion: newEmotion,
                 voiceQuality: newVoiceQuality,
                 accent: newAccent,
+                gender: newGender,
+                university: newUniversity,
+                interests: newInterests,
+                isPremium: authProvider.isRizzPlus,
               );
             },
       ),

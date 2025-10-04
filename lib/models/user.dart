@@ -24,6 +24,8 @@ class User {
   final String? voiceQuality; // AI-analyzed voice quality
   final String? accent;
   final bool? isCompleteSetup;
+  final double? distanceKm; // Distance in kilometers
+  final String? id; // Document ID from Firestore
 
   User({
     this.email,
@@ -49,6 +51,8 @@ class User {
     this.voiceQuality,
     this.accent,
     this.isCompleteSetup,
+    this.distanceKm,
+    this.id,
   });
 
   factory User.fromFirestore(
@@ -99,8 +103,9 @@ class User {
     if (weekendHabit != null) data['weekendHabit'] = weekendHabit;
     if (campusLife != null) data['campusLife'] = campusLife;
     if (afterGraduation != null) data['afterGraduation'] = afterGraduation;
-    if (communicationPreference != null)
+    if (communicationPreference != null) {
       data['communicationPreference'] = communicationPreference;
+    }
     if (dealBreakers != null) data['dealBreakers'] = dealBreakers;
     if (imageUrls != null) data['imageUrls'] = imageUrls;
     if (interests != null) data['interests'] = interests;
@@ -110,5 +115,87 @@ class User {
     if (accent != null) data['accent'] = accent;
     if (isCompleteSetup != null) data['isCompleteSetup'] = isCompleteSetup;
     return data;
+  }
+
+  // Get the full name of the user
+  String getFullName() {
+    final fullName = '${firstName ?? ""} ${lastName ?? ""}'.trim();
+    return fullName.isEmpty ? (email?.split('@').first ?? 'User') : fullName;
+  }
+
+  // Calculate age from birthday
+  int getAge() {
+    if (birthday == null) return 0;
+
+    final currentDate = DateTime.now();
+    int age = currentDate.year - birthday!.year;
+    if (currentDate.month < birthday!.month ||
+        (currentDate.month == birthday!.month &&
+            currentDate.day < birthday!.day)) {
+      age--;
+    }
+    return age;
+  }
+
+  // Get a copy of this user with a document ID
+  User copyWithId(String documentId) {
+    return User(
+      id: documentId,
+      email: email,
+      firstName: firstName,
+      lastName: lastName,
+      birthday: birthday,
+      gender: gender,
+      university: university,
+      phone: phone,
+      bio: bio,
+      interestedIn: interestedIn,
+      lookingFor: lookingFor,
+      studyStyle: studyStyle,
+      weekendHabit: weekendHabit,
+      campusLife: campusLife,
+      afterGraduation: afterGraduation,
+      communicationPreference: communicationPreference,
+      dealBreakers: dealBreakers,
+      imageUrls: imageUrls,
+      interests: interests,
+      audioUrl: audioUrl,
+      emotion: emotion,
+      voiceQuality: voiceQuality,
+      accent: accent,
+      isCompleteSetup: isCompleteSetup,
+      distanceKm: distanceKm,
+    );
+  }
+
+  // Get a copy of this user with a distance value
+  User copyWithDistance(double distance) {
+    return User(
+      id: id,
+      email: email,
+      firstName: firstName,
+      lastName: lastName,
+      birthday: birthday,
+      gender: gender,
+      university: university,
+      phone: phone,
+      bio: bio,
+      interestedIn: interestedIn,
+      lookingFor: lookingFor,
+      studyStyle: studyStyle,
+      weekendHabit: weekendHabit,
+      campusLife: campusLife,
+      afterGraduation: afterGraduation,
+      communicationPreference: communicationPreference,
+      dealBreakers: dealBreakers,
+      imageUrls: imageUrls,
+      interests: interests,
+      audioUrl: audioUrl,
+      emotion: emotion,
+      voiceQuality: voiceQuality,
+      accent: accent,
+      isCompleteSetup: isCompleteSetup,
+      distanceKm: distance,
+    );
   }
 }
