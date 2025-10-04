@@ -39,6 +39,7 @@ class FirebaseDatabaseService {
           .add(newUser);
       final docSnap = await ref.get();
       debugPrint('New User: ${docSnap.data()?.email}');
+      await _db.collection('users').doc(docSnap.id).update({'id': docSnap.id});
       return {'user': docSnap.data()!, 'id': docSnap.id};
     }
 
