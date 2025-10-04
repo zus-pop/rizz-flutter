@@ -1,6 +1,8 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:rizz_mobile/models/profile.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:rizz_mobile/models/user.dart';
+import 'package:rizz_mobile/providers/authentication_provider.dart';
 import 'package:rizz_mobile/providers/profile_provider.dart';
 import 'package:rizz_mobile/theme/app_theme.dart';
 import 'package:audioplayers/audioplayers.dart';
@@ -34,188 +36,421 @@ class _LikedState extends State<Liked>
     with AutomaticKeepAliveClientMixin<Liked> {
   @override
   bool get wantKeepAlive => true;
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
     return Scaffold(
       backgroundColor: context.colors.surface,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header with title and notification count
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24.0, 16.0, 24.0, 8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Matches',
-                    style: AppTheme.headline2.copyWith(
-                      color: context.onSurface,
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: context.primary.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Consumer<ProfileProvider>(
-                      builder: (context, provider, child) {
-                        return Text(
-                          '${provider.likedProfiles.length}',
-                          style: AppTheme.body1.copyWith(
-                            color: context.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
+      body: Consumer<AuthenticationProvider>(
+        builder: (context, authProvider, child) {
+          if (authProvider.userId == null) {
+            return const Center(child: Text('Vui lòng đăng nhập'));
+          }
 
-            // Subtitle
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Đây là danh sách những người đã thích bạn\nvà các lượt ghép đôi của bạn.',
-                  style: AppTheme.body2.copyWith(
-                    color: context.onSurface.withValues(alpha: 0.7),
-                    height: 1.4,
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Content with bottom padding to avoid tab bar
-            Expanded(
-              child: Consumer<ProfileProvider>(
-                builder: (context, provider, child) {
-                  final likedProfiles = provider.likedProfiles;
-
-                  if (likedProfiles.isEmpty) {
-                    return _buildEmptyState(context);
-                  }
-
-                  return _buildMatchesList(context, likedProfiles, provider);
-                },
-              ),
-            ),
-          ],
-        ),
+          return _LikedContent(currentUserId: authProvider.userId!);
+        },
       ),
     );
   }
+}
 
-  Widget _buildMatchesList(
-    BuildContext context,
-    List<Profile> profiles,
-    ProfileProvider provider,
-  ) {
-    final todayProfiles = profiles.take(4).toList();
-    final yesterdayProfiles = profiles.skip(4).toList();
+class _LikedContent extends StatefulWidget {
+  final String currentUserId;
 
+  const _LikedContent({required this.currentUserId});
+
+  @override
+  State<_LikedContent> createState() => _LikedContentState();
+}
+
+class _LikedContentState extends State<_LikedContent> {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  Future<List<String>> _filterOutExistingMatches(List<String> userIds) async {
+    if (userIds.isEmpty) return userIds;
+
+    try {
+      // Query matches where current user is involved
+      final matchesSnapshot = await _firestore
+          .collection('matches')
+          .where('users', arrayContains: widget.currentUserId)
+          .get();
+
+      // Extract matched user IDs
+      final matchedUserIds = <String>{};
+      for (final doc in matchesSnapshot.docs) {
+        final data = doc.data();
+        final users = List<String>.from(data['users'] ?? []);
+        matchedUserIds.addAll(users.where((id) => id != widget.currentUserId));
+      }
+
+      // Filter out matched users
+      return userIds.where((id) => !matchedUserIds.contains(id)).toList();
+    } catch (e) {
+      debugPrint('Error filtering matches: $e');
+      // Return original list if there's an error
+      return userIds;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.only(bottom: 100),
       children: [
-        if (todayProfiles.isNotEmpty) ...[
-          _buildDateSection(context, 'Today', todayProfiles, provider),
-          const SizedBox(height: 24),
-        ],
-        if (yesterdayProfiles.isNotEmpty) ...[
-          _buildDateSection(context, 'Yesterday', yesterdayProfiles, provider),
-          const SizedBox(height: 24),
-        ],
+        // People who liked you section
+        StreamBuilder<QuerySnapshot>(
+          stream: _firestore
+              .collectionGroup('likes')
+              .where('targetUserId', isEqualTo: widget.currentUserId)
+              .orderBy('timestamp', descending: true)
+              .snapshots(),
+          builder: (context, likedBySnapshot) {
+            if (likedBySnapshot.connectionState == ConnectionState.waiting) {
+              return const SizedBox(
+                height: 200,
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+
+            if (likedBySnapshot.hasError) {
+              return SizedBox(
+                height: 200,
+                child: Center(
+                  child: Text(
+                    'Lỗi tải dữ liệu',
+                    style: AppTheme.body1.copyWith(color: context.error),
+                  ),
+                ),
+              );
+            }
+
+            final likedByUserIds = <String>{};
+            final likedByDocs = likedBySnapshot.data?.docs ?? [];
+            for (final doc in likedByDocs) {
+              final pathSegments = doc.reference.path.split('/');
+              final likerId = pathSegments[1];
+              if (likerId != widget.currentUserId) {
+                likedByUserIds.add(likerId);
+              }
+            }
+
+            // Filter out users who are already matches
+            return FutureBuilder<List<String>>(
+              future: _filterOutExistingMatches(likedByUserIds.toList()),
+              builder: (context, matchesFilterSnapshot) {
+                if (matchesFilterSnapshot.connectionState ==
+                    ConnectionState.waiting) {
+                  return const SizedBox(
+                    height: 200,
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+
+                final filteredUserIds = matchesFilterSnapshot.data ?? [];
+
+                return _buildSection(
+                  context,
+                  'Những Người Thích Bạn',
+                  'Những người quan tâm đến bạn',
+                  filteredUserIds,
+                  isLikedBy: true,
+                );
+              },
+            );
+          },
+        ),
+
+        const SizedBox(height: 24),
+
+        // People you liked section - COMMENTED OUT
+        /*
+        StreamBuilder<QuerySnapshot>(
+          stream: _firestore
+              .collection('users')
+              .doc(widget.currentUserId)
+              .collection('likes')
+              .orderBy('timestamp', descending: true)
+              .snapshots(),
+          builder: (context, likedSnapshot) {
+            if (likedSnapshot.connectionState == ConnectionState.waiting) {
+              return const SizedBox(
+                height: 200,
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+
+            if (likedSnapshot.hasError) {
+              return SizedBox(
+                height: 200,
+                child: Center(
+                  child: Text(
+                    'Error loading data',
+                    style: AppTheme.body1.copyWith(color: context.error),
+                  ),
+                ),
+              );
+            }
+
+            final likedUserIds = <String>{};
+            final likedDocs = likedSnapshot.data?.docs ?? [];
+            for (final doc in likedDocs) {
+              final data = doc.data() as Map<String, dynamic>;
+              final targetUserId = data['targetUserId'] as String?;
+              if (targetUserId != null &&
+                  targetUserId != widget.currentUserId) {
+                likedUserIds.add(targetUserId);
+              }
+            }
+
+            return _buildSection(
+              context,
+              'People You Like',
+              'People you\'ve shown interest in',
+              likedUserIds.toList(),
+              isLiked: true,
+            );
+          },
+        ),
+        */
+
+        // Bottom padding
+        const SizedBox(height: 100),
       ],
     );
   }
 
-  Widget _buildDateSection(
+  Widget _buildSection(
     BuildContext context,
-    String dateLabel,
-    List<Profile> profiles,
-    ProfileProvider provider,
-  ) {
+    String title,
+    String subtitle,
+    List<String> userIds, {
+    bool isLikedBy = false,
+    bool isLiked = false,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Section header
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24.0, 16.0, 24.0, 8.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: AppTheme.headline4.copyWith(
+                  color: context.onSurface,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: context.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${userIds.length}',
+                  style: AppTheme.body2.copyWith(
+                    color: context.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Section subtitle
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Text(
-            dateLabel,
-            style: AppTheme.body1.copyWith(
-              fontWeight: FontWeight.w600,
-              color: context.onSurface.withValues(alpha: 0.6),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              subtitle,
+              style: AppTheme.body2.copyWith(
+                color: context.onSurface.withValues(alpha: 0.6),
+              ),
             ),
           ),
         ),
+
         const SizedBox(height: 16),
 
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 3 / 5,
-            ),
-            itemCount: profiles.length,
-            itemBuilder: (context, index) {
-              final profile = profiles[index];
-              return _buildMatchCard(context, profile, provider);
-            },
-          ),
+        // Users grid or empty state
+        SizedBox(
+          height: _calculateGridHeight(userIds.length),
+          child: userIds.isEmpty
+              ? _buildSectionEmptyState(context, title)
+              : _buildUsersGrid(
+                  context,
+                  userIds,
+                  isLikedBy: isLikedBy,
+                  isLiked: isLiked,
+                ),
         ),
       ],
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 100),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.favorite_border, size: 64, color: context.outline),
-            const SizedBox(height: 16),
-            Text(
-              'No matches yet',
-              style: AppTheme.headline4.copyWith(
-                color: context.onSurface.withValues(alpha: 0.7),
-              ),
+  double _calculateGridHeight(int itemCount) {
+    if (itemCount == 0) return 200; // Empty state height
+
+    // Grid with 2 columns, aspect ratio 3:5
+    // Each row height = itemWidth * (5/3) + mainAxisSpacing
+    // itemWidth = (screenWidth - padding - crossAxisSpacing) / 2
+    // But for simplicity, let's use approximate calculations
+
+    const int crossAxisCount = 2;
+    const double aspectRatio = 3 / 5; // width:height ratio
+    const double crossAxisSpacing = 12;
+    const double mainAxisSpacing = 12;
+    const double horizontalPadding = 32; // 16 * 2
+
+    // Get screen width (approximate)
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double availableWidth =
+        screenWidth - horizontalPadding - crossAxisSpacing;
+    final double itemWidth = availableWidth / crossAxisCount;
+    final double itemHeight =
+        itemWidth /
+        aspectRatio; // Since aspectRatio = width/height, height = width/aspectRatio
+
+    final int rowCount = (itemCount / crossAxisCount).ceil();
+    final double totalHeight =
+        (rowCount * itemHeight) + ((rowCount - 1) * mainAxisSpacing);
+
+    // Add some padding
+    return totalHeight + 20;
+  }
+
+  Widget _buildSectionEmptyState(BuildContext context, String title) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            title.contains('You Like')
+                ? Icons.favorite_border
+                : Icons.visibility,
+            size: 48,
+            color: context.outline,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            title.contains('You Like')
+                ? 'Chưa gửi lượt thích nào'
+                : 'Chưa nhận được lượt thích nào',
+            style: AppTheme.body1.copyWith(
+              color: context.onSurface.withValues(alpha: 0.7),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'People who like you will appear here',
-              style: AppTheme.body2.copyWith(
-                color: context.onSurface.withValues(alpha: 0.5),
-              ),
-              textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            title.contains('You Like')
+                ? 'Những người bạn thích sẽ xuất hiện ở đây'
+                : 'Những người thích bạn sẽ xuất hiện ở đây',
+            style: AppTheme.body2.copyWith(
+              color: context.onSurface.withValues(alpha: 0.5),
             ),
-          ],
-        ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildMatchCard(
+  Widget _buildUsersGrid(
     BuildContext context,
-    Profile profile,
-    ProfileProvider provider,
-  ) {
+    List<String> userIds, {
+    bool isMatch = false,
+    bool isLikedBy = false,
+    bool isLiked = false,
+  }) {
+    return GridView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      physics: const NeverScrollableScrollPhysics(),
+      shrinkWrap: true,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 3 / 5,
+      ),
+      itemCount: userIds.length,
+      itemBuilder: (context, index) {
+        final userId = userIds[index];
+        return FutureBuilder<DocumentSnapshot>(
+          future: _firestore.collection('users').doc(userId).get(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return _buildLoadingCard();
+            }
+
+            if (!snapshot.hasData || !snapshot.data!.exists) {
+              return _buildErrorCard();
+            }
+
+            final user = User.fromFirestore(
+              snapshot.data! as DocumentSnapshot<Map<String, dynamic>>,
+              null,
+            );
+            final userWithId = user.copyWithId(userId);
+
+            return _buildInteractionCard(
+              context,
+              userWithId,
+              isMatch: isMatch,
+              isLikedBy: isLikedBy,
+              isLiked: isLiked,
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildLoadingCard() {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: context.surface.withValues(alpha: 0.5),
+        border: Border.all(
+          color: context.outline.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: const Center(child: CircularProgressIndicator()),
+    );
+  }
+
+  Widget _buildErrorCard() {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: context.surface.withValues(alpha: 0.5),
+        border: Border.all(
+          color: context.outline.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Center(
+        child: Icon(Icons.error_outline, color: context.error, size: 32),
+      ),
+    );
+  }
+
+  Widget _buildInteractionCard(
+    BuildContext context,
+    User profile, {
+    bool isMatch = false,
+    bool isLikedBy = false,
+    bool isLiked = false,
+  }) {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
@@ -237,13 +472,53 @@ class _LikedState extends State<Liked>
           color: context.surface,
           child: Column(
             children: [
-              // Profile info at top
+              // Header with like indicator
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: context.surface.withValues(alpha: 0.9),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (isLikedBy) ...[
+                      Icon(Icons.visibility, color: context.primary, size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Đã thích bạn',
+                        style: TextStyle(
+                          color: context.primary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ] else if (isLiked) ...[
+                      Icon(
+                        Icons.favorite_border,
+                        color: Colors.orange,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Bạn đã thích',
+                        style: TextStyle(
+                          color: Colors.orange,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+
+              // Profile info
               Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(
                   children: [
                     Text(
-                      profile.name,
+                      profile.getFullName(),
                       style: TextStyle(
                         color: context.primary,
                         fontSize: 18,
@@ -255,7 +530,7 @@ class _LikedState extends State<Liked>
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${profile.age}',
+                      '${profile.getAge()}',
                       style: TextStyle(
                         color: context.onSurface.withValues(alpha: 0.7),
                         fontSize: 14,
@@ -269,8 +544,14 @@ class _LikedState extends State<Liked>
               // Audio player section
               Expanded(child: _LikedAudioPlayer(profile: profile)),
 
-              // Action buttons at bottom
-              _buildActionButtons(context, profile, provider),
+              // Action buttons
+              _buildActionButtons(
+                context,
+                profile,
+                isMatch: isMatch,
+                isLikedBy: isLikedBy,
+                isLiked: isLiked,
+              ),
             ],
           ),
         ),
@@ -280,9 +561,11 @@ class _LikedState extends State<Liked>
 
   Widget _buildActionButtons(
     BuildContext context,
-    Profile profile,
-    ProfileProvider provider,
-  ) {
+    User profile, {
+    bool isMatch = false,
+    bool isLikedBy = false,
+    bool isLiked = false,
+  }) {
     return Container(
       height: 48,
       decoration: BoxDecoration(
@@ -294,21 +577,44 @@ class _LikedState extends State<Liked>
       ),
       child: Row(
         children: [
-          // Pass button (left half)
+          // Left button - different actions based on type
           Expanded(
             child: Material(
               color: Colors.transparent,
               child: InkWell(
                 onTap: () async {
-                  await provider.passLikedProfile(profile.id);
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Passed ${profile.name}'),
-                        duration: const Duration(seconds: 2),
-                        backgroundColor: context.error,
-                      ),
+                  if (profile.id != null) {
+                    final profileProvider = Provider.of<ProfileProvider>(
+                      context,
+                      listen: false,
                     );
+                    if (isLikedBy) {
+                      // For people who liked you, you can pass (remove from their likes subcollection? No, pass means we don't want to see them)
+                      await profileProvider.passProfile(profile.id!);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Đã bỏ qua ${profile.getFullName()}'),
+                            duration: const Duration(seconds: 2),
+                            backgroundColor: context.outline,
+                          ),
+                        );
+                      }
+                    } else if (isLiked) {
+                      // For people you liked, you can unlike (pass)
+                      await profileProvider.passProfile(profile.id!);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Đã bỏ thích ${profile.getFullName()}',
+                            ),
+                            duration: const Duration(seconds: 2),
+                            backgroundColor: context.outline,
+                          ),
+                        );
+                      }
+                    }
                   }
                 },
                 child: Container(
@@ -321,32 +627,105 @@ class _LikedState extends State<Liked>
                       ),
                     ),
                   ),
-                  child: Icon(Icons.close, color: context.error, size: 24),
+                  child: Icon(
+                    isMatch ? Icons.close : Icons.close,
+                    color: context.error,
+                    size: 24,
+                  ),
                 ),
               ),
             ),
           ),
 
-          // Like button (right half)
+          // Right button - like/chat action
           Expanded(
             child: Material(
               color: Colors.transparent,
               child: InkWell(
                 onTap: () async {
-                  await provider.likeProfile(profile.id);
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Liked ${profile.name} again!'),
-                        duration: const Duration(seconds: 2),
-                        backgroundColor: AppTheme.success(context),
-                      ),
+                  if (profile.id != null) {
+                    final profileProvider = Provider.of<ProfileProvider>(
+                      context,
+                      listen: false,
                     );
+                    if (isLikedBy) {
+                      // Like back someone who liked you - this creates a match if mutual
+                      final isMatch = await profileProvider.likeProfile(
+                        profile.id!,
+                      );
+                      if (context.mounted) {
+                        if (isMatch) {
+                          // Special match notification
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Row(
+                                children: [
+                                  Icon(
+                                    Icons.favorite,
+                                    color: Colors.white,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      '🎉 Khớp với ${profile.getFullName()}!',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              duration: const Duration(seconds: 4),
+                              backgroundColor: Colors.pink,
+                              action: SnackBarAction(
+                                label: 'Xem',
+                                textColor: Colors.white,
+                                onPressed: () {
+                                  // Navigate to liked tab to see the match
+                                  // This would require a tab controller or navigation setup
+                                },
+                              ),
+                            ),
+                          );
+                        } else {
+                          // Regular like notification
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Đã thích lại ${profile.getFullName()}!',
+                              ),
+                              duration: const Duration(seconds: 2),
+                              backgroundColor: context.primary,
+                            ),
+                          );
+                        }
+                      }
+                    } else if (isLiked) {
+                      // Already liked, show message
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Bạn đã thích ${profile.getFullName()}',
+                            ),
+                            duration: const Duration(seconds: 2),
+                            backgroundColor: Colors.orange,
+                          ),
+                        );
+                      }
+                    }
                   }
                 },
                 child: SizedBox(
                   height: 48,
-                  child: Icon(Icons.favorite, color: context.primary, size: 24),
+                  child: Icon(
+                    isLikedBy ? Icons.favorite : Icons.favorite,
+                    color: isLiked ? Colors.orange : context.primary,
+                    size: 24,
+                  ),
                 ),
               ),
             ),
@@ -358,7 +737,7 @@ class _LikedState extends State<Liked>
 }
 
 class _LikedAudioPlayer extends StatefulWidget {
-  final Profile profile;
+  final User profile;
 
   const _LikedAudioPlayer({required this.profile});
 

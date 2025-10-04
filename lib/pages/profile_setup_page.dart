@@ -133,6 +133,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
         voiceQuality: _profileData.voiceQuality,
         emotion: _profileData.emotion,
         isCompleteSetup: true,
+        birthday: _profileData.birthday,
       );
 
       // Upload photos
@@ -319,7 +320,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
         // Loading overlay
         if (_isLoading)
           Container(
-            color: Colors.black.withOpacity(0.5),
+            color: Colors.black.withValues(alpha: .5),
             child: Center(
               child: Container(
                 padding: const EdgeInsets.all(32),
@@ -328,7 +329,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
+                      color: Colors.black.withValues(alpha: .2),
                       blurRadius: 10,
                       spreadRadius: 2,
                     ),

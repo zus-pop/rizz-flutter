@@ -12,9 +12,11 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
 import 'package:record/record.dart';
+import 'package:rizz_mobile/models/user.dart';
 import 'package:rizz_mobile/pages/settings_page.dart';
 import 'package:rizz_mobile/providers/authentication_provider.dart';
 import 'package:rizz_mobile/providers/profile_provider.dart';
+import 'package:rizz_mobile/services/firebase_database_service.dart';
 import 'package:rizz_mobile/theme/app_theme.dart';
 
 class Profile extends StatefulWidget {
@@ -35,12 +37,12 @@ class _ProfileState extends State<Profile>
   late AnimationController _gradientAnimationController;
 
   // Audio related variables
-  // Free: 8 seconds, Plus: 15 seconds
+  // Free: 10 seconds, Premium: unlimited
   Duration get maxRecordingDuration {
     final authProvider = context.read<AuthenticationProvider>();
     return authProvider.isRizzPlus
-        ? const Duration(seconds: 15)
-        : const Duration(seconds: 8);
+        ? const Duration(hours: 1) // Unlimited for premium users
+        : const Duration(seconds: 10);
   }
 
   bool _isRecording = false;
@@ -61,6 +63,10 @@ class _ProfileState extends State<Profile>
   Map<String, dynamic>? _previousAudioAnalysis;
   Duration _previousRecordingDuration = Duration.zero;
 
+  // Current user data
+  User? _currentUser;
+  final FirebaseDatabaseService _firebaseDatabase = FirebaseDatabaseService();
+
   @override
   bool get wantKeepAlive => true;
 
@@ -75,6 +81,25 @@ class _ProfileState extends State<Profile>
       vsync: this,
       duration: const Duration(seconds: 8),
     )..repeat(reverse: true);
+
+    // Fetch current user data
+    _fetchCurrentUser();
+  }
+
+  Future<void> _fetchCurrentUser() async {
+    try {
+      final authProvider = context.read<AuthenticationProvider>();
+      if (authProvider.userId != null) {
+        final user = await _firebaseDatabase.getUserById(authProvider.userId!);
+        if (mounted) {
+          setState(() {
+            _currentUser = user;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching current user: $e');
+    }
   }
 
   @override
@@ -327,6 +352,37 @@ class _ProfileState extends State<Profile>
                                               ),
                                         ),
                                       )
+                                    : _currentUser?.imageUrls != null &&
+                                          _currentUser!.imageUrls!.isNotEmpty
+                                    ? ClipOval(
+                                        child: CachedNetworkImage(
+                                          imageUrl:
+                                              _currentUser!.imageUrls!.first,
+                                          fit: BoxFit.cover,
+                                          width: 120,
+                                          height: 120,
+                                          placeholder: (context, url) =>
+                                              Container(
+                                                color: context.primary
+                                                    .withValues(alpha: 0.1),
+                                                child: Icon(
+                                                  Icons.person,
+                                                  size: 60,
+                                                  color: context.primary,
+                                                ),
+                                              ),
+                                          errorWidget: (context, url, error) =>
+                                              Container(
+                                                color: context.primary
+                                                    .withValues(alpha: 0.1),
+                                                child: Icon(
+                                                  Icons.person,
+                                                  size: 60,
+                                                  color: context.primary,
+                                                ),
+                                              ),
+                                        ),
+                                      )
                                     : Container(
                                         decoration: BoxDecoration(
                                           borderRadius: BorderRadius.circular(
@@ -373,7 +429,9 @@ class _ProfileState extends State<Profile>
 
                         // Profile Name
                         Text(
-                          'John Doe, 22',
+                          _currentUser != null
+                              ? '${_currentUser!.getFullName()}, ${_currentUser!.getAge()}'
+                              : 'Loading...',
                           style: AppTheme.headline3.copyWith(
                             color: context.onSurface,
                           ),
@@ -460,7 +518,7 @@ class _ProfileState extends State<Profile>
                                     const SizedBox(height: 16),
                                     _buildPremiumFeature(
                                       Icons.mic,
-                                      'Ghi âm lên đến 15 giây',
+                                      'Ghi âm không giới hạn thời gian',
                                     ),
                                     const SizedBox(height: 8),
                                     _buildPremiumFeature(
@@ -524,7 +582,7 @@ class _ProfileState extends State<Profile>
                                 const SizedBox(height: 12),
                                 _buildUpgradeFeature(
                                   Icons.mic,
-                                  'Ghi âm lên đến 15 giây',
+                                  'Ghi âm không giới hạn thời gian',
                                 ),
                                 const SizedBox(height: 8),
                                 _buildUpgradeFeature(
@@ -649,8 +707,8 @@ class _ProfileState extends State<Profile>
                                     const SizedBox(height: 16),
                                     Text(
                                       _isRecording
-                                          ? 'Đang ghi âm... (${maxRecordingDuration.inSeconds - _recordingDuration.inSeconds}s remaining)'
-                                          : 'Nhấn để ghi âm (tối đa ${maxRecordingDuration.inSeconds}s)',
+                                          ? 'Đang ghi âm... (${_getRemainingTimeText()})'
+                                          : 'Nhấn để ghi âm (${_getMaxRecordingText()})',
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w500,
@@ -662,22 +720,26 @@ class _ProfileState extends State<Profile>
                                     ),
                                     if (_isRecording) ...[
                                       const SizedBox(height: 12),
-                                      SizedBox(
-                                        width: 150,
-                                        child: LinearProgressIndicator(
-                                          value:
-                                              _recordingDuration.inSeconds /
-                                              maxRecordingDuration.inSeconds,
-                                          backgroundColor: Colors.grey
-                                              .withValues(alpha: 0.3),
-                                          valueColor:
-                                              const AlwaysStoppedAnimation<
-                                                Color
-                                              >(Colors.red),
-                                          minHeight: 4,
+                                      if (!context
+                                          .read<AuthenticationProvider>()
+                                          .isRizzPlus) ...[
+                                        SizedBox(
+                                          width: 150,
+                                          child: LinearProgressIndicator(
+                                            value:
+                                                _recordingDuration.inSeconds /
+                                                maxRecordingDuration.inSeconds,
+                                            backgroundColor: Colors.grey
+                                                .withValues(alpha: 0.3),
+                                            valueColor:
+                                                const AlwaysStoppedAnimation<
+                                                  Color
+                                                >(Colors.red),
+                                            minHeight: 4,
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(height: 8),
+                                        const SizedBox(height: 8),
+                                      ],
                                       Text(
                                         _formatDuration(_recordingDuration),
                                         style: const TextStyle(
@@ -1574,7 +1636,10 @@ class _ProfileState extends State<Profile>
           );
         });
 
-        if (_recordingDuration.inSeconds >= maxRecordingDuration.inSeconds) {
+        // Only stop recording automatically for free users
+        final authProvider = context.read<AuthenticationProvider>();
+        if (!authProvider.isRizzPlus &&
+            _recordingDuration.inSeconds >= maxRecordingDuration.inSeconds) {
           _stopRecording();
           return;
         }
@@ -1810,6 +1875,24 @@ class _ProfileState extends State<Profile>
     String minutes = twoDigits(duration.inMinutes);
     String seconds = twoDigits(duration.inSeconds.remainder(60));
     return '$minutes:$seconds';
+  }
+
+  String _getRemainingTimeText() {
+    final authProvider = context.read<AuthenticationProvider>();
+    if (authProvider.isRizzPlus) {
+      return 'không giới hạn';
+    }
+    final remaining =
+        maxRecordingDuration.inSeconds - _recordingDuration.inSeconds;
+    return '${remaining}s remaining';
+  }
+
+  String _getMaxRecordingText() {
+    final authProvider = context.read<AuthenticationProvider>();
+    if (authProvider.isRizzPlus) {
+      return 'không giới hạn thời gian';
+    }
+    return 'tối đa ${maxRecordingDuration.inSeconds}s';
   }
 
   Future<void> _submitAudio() async {

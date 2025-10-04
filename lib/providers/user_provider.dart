@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:rizz_mobile/models/profile.dart';
+import 'package:rizz_mobile/models/user.dart';
 import 'package:rizz_mobile/models/user_settings.dart';
 import 'package:rizz_mobile/providers/authentication_provider.dart';
 
@@ -7,7 +7,7 @@ class UserProvider extends ChangeNotifier {
   final AuthenticationProvider _authProvider;
 
   // State
-  Profile? _userProfile;
+  User? _userProfile;
   UserSettings? _userSettings;
   bool _isLoading = false;
   bool _isUpdating = false;
@@ -19,7 +19,7 @@ class UserProvider extends ChangeNotifier {
   UserProvider(this._authProvider);
 
   // Getters
-  Profile? get userProfile => _userProfile;
+  User? get userProfile => _userProfile;
   UserSettings? get userSettings => _userSettings;
   bool get isLoading => _isLoading;
   bool get isUpdating => _isUpdating;
@@ -29,8 +29,8 @@ class UserProvider extends ChangeNotifier {
   bool get hasSettings => _userSettings != null;
 
   // Profile getters
-  String? get userName => _userProfile?.name;
-  int? get userAge => _userProfile?.age;
+  String? get userName => _userProfile?.getFullName();
+  int? get userAge => _userProfile?.getAge();
   String? get userBio => _userProfile?.bio;
   List<String> get userPhotos => _userProfile?.imageUrls ?? [];
   List<String> get userInterests => _userProfile?.interests ?? [];
@@ -83,16 +83,18 @@ class UserProvider extends ChangeNotifier {
 
       // Simulated API response for development
       await Future.delayed(const Duration(seconds: 1));
-      _userProfile = Profile(
+      _userProfile = User(
         id: 'user_123',
-        name: 'John Doe',
-        age: 25,
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'johndoe@example.com',
+        birthday: DateTime(1997, 5, 15),
         bio: 'Love adventure and good coffee ☕',
         imageUrls: [
           'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500',
           'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500',
         ],
-        location: 'New York, NY',
+        university: 'New York University',
         interests: ['Travel', 'Photography', 'Coffee', 'Hiking'],
         distanceKm: 0, // Distance to self is 0
         audioUrl: null,
@@ -155,7 +157,8 @@ class UserProvider extends ChangeNotifier {
 
   /// Update user profile
   Future<bool> updateProfile({
-    String? name,
+    String? firstName,
+    String? lastName,
     String? bio,
     List<String>? interests,
     List<String>? imageUrls,
@@ -172,12 +175,34 @@ class UserProvider extends ChangeNotifier {
         return false;
       }
 
-      // Create updated profile
-      final updatedProfile = _userProfile!.copyWith(
-        name: name,
-        bio: bio,
-        interests: interests,
-        imageUrls: imageUrls,
+      // Create updated profile with the same properties as the original
+      // but override those that are provided as parameters
+      final updatedProfile = User(
+        id: _userProfile!.id,
+        email: _userProfile!.email,
+        firstName: firstName ?? _userProfile!.firstName,
+        lastName: lastName ?? _userProfile!.lastName,
+        birthday: _userProfile!.birthday,
+        gender: _userProfile!.gender,
+        university: _userProfile!.university,
+        phone: _userProfile!.phone,
+        bio: bio ?? _userProfile!.bio,
+        interestedIn: _userProfile!.interestedIn,
+        lookingFor: _userProfile!.lookingFor,
+        studyStyle: _userProfile!.studyStyle,
+        weekendHabit: _userProfile!.weekendHabit,
+        campusLife: _userProfile!.campusLife,
+        afterGraduation: _userProfile!.afterGraduation,
+        communicationPreference: _userProfile!.communicationPreference,
+        dealBreakers: _userProfile!.dealBreakers,
+        imageUrls: imageUrls ?? _userProfile!.imageUrls,
+        interests: interests ?? _userProfile!.interests,
+        audioUrl: _userProfile!.audioUrl,
+        emotion: _userProfile!.emotion,
+        voiceQuality: _userProfile!.voiceQuality,
+        accent: _userProfile!.accent,
+        isCompleteSetup: _userProfile!.isCompleteSetup,
+        distanceKm: _userProfile!.distanceKm,
       );
 
       // TODO: Replace with actual API call
@@ -296,12 +321,41 @@ class UserProvider extends ChangeNotifier {
 
       // Simulated upload for development
       await Future.delayed(const Duration(seconds: 2));
-      List<String> updatedImages = List.from(_userProfile!.imageUrls);
+      List<String> updatedImages = List.from(_userProfile!.imageUrls ?? []);
       updatedImages.add(
         'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500',
       );
 
-      _userProfile = _userProfile!.copyWith(imageUrls: updatedImages);
+      // Create updated profile with new image list
+      final updatedProfile = User(
+        id: _userProfile!.id,
+        email: _userProfile!.email,
+        firstName: _userProfile!.firstName,
+        lastName: _userProfile!.lastName,
+        birthday: _userProfile!.birthday,
+        gender: _userProfile!.gender,
+        university: _userProfile!.university,
+        phone: _userProfile!.phone,
+        bio: _userProfile!.bio,
+        interestedIn: _userProfile!.interestedIn,
+        lookingFor: _userProfile!.lookingFor,
+        studyStyle: _userProfile!.studyStyle,
+        weekendHabit: _userProfile!.weekendHabit,
+        campusLife: _userProfile!.campusLife,
+        afterGraduation: _userProfile!.afterGraduation,
+        communicationPreference: _userProfile!.communicationPreference,
+        dealBreakers: _userProfile!.dealBreakers,
+        imageUrls: updatedImages,
+        interests: _userProfile!.interests,
+        audioUrl: _userProfile!.audioUrl,
+        emotion: _userProfile!.emotion,
+        voiceQuality: _userProfile!.voiceQuality,
+        accent: _userProfile!.accent,
+        isCompleteSetup: _userProfile!.isCompleteSetup,
+        distanceKm: _userProfile!.distanceKm,
+      );
+
+      _userProfile = updatedProfile;
       notifyListeners();
       return true;
     } catch (e) {
@@ -348,10 +402,39 @@ class UserProvider extends ChangeNotifier {
 
       // Simulated deletion for development
       await Future.delayed(const Duration(seconds: 1));
-      List<String> updatedImages = List.from(_userProfile!.imageUrls);
+      List<String> updatedImages = List.from(_userProfile!.imageUrls ?? []);
       updatedImages.remove(imageUrl);
 
-      _userProfile = _userProfile!.copyWith(imageUrls: updatedImages);
+      // Create updated profile with new image list
+      final updatedProfile = User(
+        id: _userProfile!.id,
+        email: _userProfile!.email,
+        firstName: _userProfile!.firstName,
+        lastName: _userProfile!.lastName,
+        birthday: _userProfile!.birthday,
+        gender: _userProfile!.gender,
+        university: _userProfile!.university,
+        phone: _userProfile!.phone,
+        bio: _userProfile!.bio,
+        interestedIn: _userProfile!.interestedIn,
+        lookingFor: _userProfile!.lookingFor,
+        studyStyle: _userProfile!.studyStyle,
+        weekendHabit: _userProfile!.weekendHabit,
+        campusLife: _userProfile!.campusLife,
+        afterGraduation: _userProfile!.afterGraduation,
+        communicationPreference: _userProfile!.communicationPreference,
+        dealBreakers: _userProfile!.dealBreakers,
+        imageUrls: updatedImages,
+        interests: _userProfile!.interests,
+        audioUrl: _userProfile!.audioUrl,
+        emotion: _userProfile!.emotion,
+        voiceQuality: _userProfile!.voiceQuality,
+        accent: _userProfile!.accent,
+        isCompleteSetup: _userProfile!.isCompleteSetup,
+        distanceKm: _userProfile!.distanceKm,
+      );
+
+      _userProfile = updatedProfile;
       notifyListeners();
       return true;
     } catch (e) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:rizz_mobile/models/user.dart';
 import 'package:rizz_mobile/services/auth_service.dart';
 import 'package:rizz_mobile/services/firebase_database_service.dart';
@@ -197,6 +198,7 @@ class AuthenticationProvider extends ChangeNotifier {
       await prefs.setBool(_isLoggedInKey, true);
       _isProfileSetupComplete = user.isCompleteSetup!;
       _isLoading = false;
+      _userId = userId;
       notifyListeners();
       return true;
     } catch (e) {
@@ -217,6 +219,7 @@ class AuthenticationProvider extends ChangeNotifier {
     await prefs.remove(_isLoggedInKey);
     await prefs.remove(_phoneNumberKey);
     await prefs.remove(_userIdKey);
+    await Purchases.logOut();
     // await prefs.remove(_userTokenKey);
 
     _isLoggedIn = false;

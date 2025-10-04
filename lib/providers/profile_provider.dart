@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
 import 'dart:io';
-import 'package:rizz_mobile/data/sample_profiles.dart';
-import 'package:rizz_mobile/models/profile.dart';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:rizz_mobile/models/user.dart';
 import 'package:rizz_mobile/services/profile_service.dart';
 
 enum LoadingState { idle, loading, loadingMore, success, error }
@@ -10,7 +11,7 @@ class ProfileProvider extends ChangeNotifier {
   final ProfileService _profileService = ProfileService();
 
   // State
-  List<Profile> _profiles = [];
+  List<User> _profiles = [];
   LoadingState _loadingState = LoadingState.idle;
   String? _errorMessage;
 
@@ -20,20 +21,35 @@ class ProfileProvider extends ChangeNotifier {
   bool _isLoadingMore = false;
 
   // Filters
-  RangeValues _ageRange = const RangeValues(18, 65);
+  RangeValues _ageRange = const RangeValues(18, 30);
   double _maxDistance = 100.0;
   String? _emotionFilter;
   String? _voiceQualityFilter;
   String? _accentFilter;
+  String? _genderFilter;
+  String? _universityFilter;
+  List<String>? _interestsFilter;
 
-  // Use sample data flag (for development/testing)
-  bool _useSampleData = true; // Set to false when you have a real API
+  // Filtering state
+  bool _isFilteringEnabled = false;
+  DocumentSnapshot? _lastDocument;
+  bool _currentUserIsPremium = false;
+
+  // Firestore
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  // Current user info
+  String? _currentUserId;
 
   // Liked profiles
-  List<Profile> _likedProfiles = [];
+  final List<User> _likedProfiles = [];
+
+  // Passed users tracking
+  Set<String> _passedUserIds = {};
+  Set<String> _likedUserIds = {};
 
   // Getters
-  List<Profile> get profiles => _profiles;
+  List<User> get profiles => _profiles;
   LoadingState get loadingState => _loadingState;
   String? get errorMessage => _errorMessage;
   bool get hasNextPage => _hasNextPage;
@@ -43,35 +59,78 @@ class ProfileProvider extends ChangeNotifier {
   String? get emotionFilter => _emotionFilter;
   String? get voiceQualityFilter => _voiceQualityFilter;
   String? get accentFilter => _accentFilter;
+  String? get genderFilter => _genderFilter;
+  String? get universityFilter => _universityFilter;
+  List<String>? get interestsFilter => _interestsFilter;
   bool get isLoading => _loadingState == LoadingState.loading;
   bool get hasError => _loadingState == LoadingState.error;
   bool get isEmpty => _profiles.isEmpty;
-  List<Profile> get likedProfiles => _likedProfiles;
+  List<User> get likedProfiles => _likedProfiles;
+  bool get isFilteringEnabled => _isFilteringEnabled;
+  String? get currentUserId => _currentUserId;
+
+  /// Set current user ID
+  void setCurrentUserId(String userId) {
+    _currentUserId = userId;
+    notifyListeners();
+  }
+
+  /// Toggle filtering on/off
+  void toggleFiltering() {
+    _isFilteringEnabled = !_isFilteringEnabled;
+    notifyListeners();
+    // Reload profiles when toggling filters
+    loadProfiles(refresh: true);
+  }
 
   /// Initialize and load first page of profiles
   Future<void> initialize() async {
     if (_profiles.isNotEmpty) return; // Already initialized
 
-    // Initialize with some sample liked profiles for testing
-    if (_useSampleData && _likedProfiles.isEmpty) {
-      _initializeSampleLikedProfiles();
-    }
+    // Load liked and passed user IDs
+    await _loadUserInteractions();
 
     await loadProfiles(refresh: true);
   }
 
-  /// Initialize sample liked profiles for testing
-  void _initializeSampleLikedProfiles() {
-    // Add first 6 sample profiles as liked for demo purposes
-    _likedProfiles = sampleProfiles.take(6).toList();
+  /// Refresh all interaction data (liked, liked-by, matches)
+  Future<void> refreshInteractions() async {
+    await _loadUserInteractions();
     notifyListeners();
+  }
+
+  /// Load user interactions (liked and passed users)
+  Future<void> _loadUserInteractions() async {
+    if (_currentUserId == null) return;
+
+    try {
+      // Load liked users
+      final likedSnapshot = await _firestore
+          .collection('users')
+          .doc(_currentUserId!)
+          .collection('likes')
+          .get();
+
+      _likedUserIds = likedSnapshot.docs.map((doc) => doc.id).toSet();
+
+      // Load passed users
+      final passedSnapshot = await _firestore
+          .collection('users')
+          .doc(_currentUserId!)
+          .collection('passes')
+          .get();
+
+      _passedUserIds = passedSnapshot.docs.map((doc) => doc.id).toSet();
+    } catch (e) {
+      debugPrint('Error loading user interactions: $e');
+    }
   }
 
   /// Load profiles with pagination
   Future<void> loadProfiles({bool refresh = false}) async {
     try {
       if (refresh) {
-        _currentPage = 1;
+        _lastDocument = null;
         _hasNextPage = true;
         _profiles.clear();
         _setLoadingState(LoadingState.loading);
@@ -82,13 +141,8 @@ class ProfileProvider extends ChangeNotifier {
         _setLoadingState(LoadingState.loadingMore);
       }
 
-      if (_useSampleData) {
-        // Use sample data for development
-        await _loadSampleData(refresh);
-      } else {
-        // Use real API
-        await _loadFromAPI(refresh);
-      }
+      // Use Firestore
+      await _loadFromFirestore(refresh);
     } catch (e) {
       debugPrint('Error loading profiles: $e');
       _errorMessage = e.toString();
@@ -98,103 +152,195 @@ class ProfileProvider extends ChangeNotifier {
     }
   }
 
+  /// Load profiles from Firestore
+  Future<void> _loadFromFirestore(bool refresh) async {
+    const int limit = 10;
+
+    try {
+      Query<Map<String, dynamic>> query = _firestore
+          .collection('users')
+          .where('isCompleteSetup', isEqualTo: true);
+
+      // Exclude current user
+      if (_currentUserId != null) {
+        // Note: Firestore doesn't support != operator, so we'll filter client-side
+      }
+
+      // Apply filters only if filtering is enabled
+      if (_isFilteringEnabled) {
+        query = _applyFilters(query, isPremium: _currentUserIsPremium);
+      }
+
+      // Add pagination
+      if (_lastDocument != null) {
+        query = query.startAfterDocument(_lastDocument!);
+      }
+
+      query = query.limit(limit);
+
+      final snapshot = await query.get();
+      final users = <User>[];
+
+      for (final doc in snapshot.docs) {
+        final userId = doc.id;
+
+        // Skip current user and already interacted users
+        if (userId == _currentUserId ||
+            _passedUserIds.contains(userId) ||
+            _likedUserIds.contains(userId)) {
+          continue;
+        }
+
+        final user = User.fromFirestore(
+          doc as DocumentSnapshot<Map<String, dynamic>>,
+          null,
+        );
+
+        // Add the document ID and a placeholder distance
+        // TODO: Calculate real distance based on geolocation
+        final userWithData = user.copyWithId(userId).copyWithDistance(10.0);
+
+        // Apply client-side age filtering if enabled
+        if (_isFilteringEnabled && user.birthday != null) {
+          final age = user.getAge();
+          if (age < _ageRange.start || age > _ageRange.end) {
+            continue;
+          }
+        }
+
+        users.add(userWithData);
+      }
+
+      if (refresh) {
+        _profiles = users;
+      } else {
+        _profiles.addAll(users);
+      }
+
+      _lastDocument = snapshot.docs.isNotEmpty ? snapshot.docs.last : null;
+      _hasNextPage = snapshot.docs.length == limit;
+      _setLoadingState(LoadingState.success);
+
+      debugPrint('Loaded ${users.length} profiles from Firestore');
+      debugPrint('Total profiles: ${_profiles.length}');
+    } catch (e) {
+      debugPrint('Error loading from Firestore: $e');
+      rethrow;
+    }
+  }
+
+  /// Apply filters to Firestore query
+  Query<Map<String, dynamic>> _applyFilters(
+    Query<Map<String, dynamic>> query, {
+    bool isPremium = false,
+  }) {
+    // Premium filters - only apply if user is premium
+    if (isPremium) {
+      // Gender filter
+      if (_genderFilter != null && _genderFilter!.isNotEmpty) {
+        query = query.where('gender', isEqualTo: _genderFilter);
+      }
+
+      // University filter
+      if (_universityFilter != null && _universityFilter!.isNotEmpty) {
+        query = query.where('university', isEqualTo: _universityFilter);
+      }
+
+      // Interests filter (array-contains-any)
+      if (_interestsFilter != null && _interestsFilter!.isNotEmpty) {
+        query = query.where(
+          'interests',
+          arrayContainsAny: _interestsFilter!.take(10).toList(),
+        );
+      }
+    }
+
+    // Free filters - always available
+    // Emotion filter
+    if (_emotionFilter != null && _emotionFilter!.isNotEmpty) {
+      query = query.where('emotion', isEqualTo: _emotionFilter);
+    }
+
+    // Voice quality filter
+    if (_voiceQualityFilter != null && _voiceQualityFilter!.isNotEmpty) {
+      query = query.where('voiceQuality', isEqualTo: _voiceQualityFilter);
+    }
+
+    // Accent filter
+    if (_accentFilter != null && _accentFilter!.isNotEmpty) {
+      query = query.where('accent', isEqualTo: _accentFilter);
+    }
+
+    return query;
+  }
+
   /// Load sample data (for development)
-  Future<void> _loadSampleData(bool refresh) async {
-    // Simulate realistic API delay
-    await _simulateNetworkDelay();
+  // Future<void> _loadSampleData(bool refresh) async {
+  //   // Simulate realistic API delay
+  //   await _simulateNetworkDelay();
 
-    // Filter all sample profiles based on current filters
-    List<Profile> filteredProfiles = sampleProfiles.where((profile) {
-      bool ageMatch =
-          profile.age >= _ageRange.start && profile.age <= _ageRange.end;
-      bool distanceMatch = profile.distanceKm <= _maxDistance;
-      bool emotionMatch =
-          _emotionFilter == null || profile.emotion == _emotionFilter;
-      bool voiceQualityMatch =
-          _voiceQualityFilter == null ||
-          profile.voiceQuality == _voiceQualityFilter;
-      bool accentMatch =
-          _accentFilter == null || profile.accent == _accentFilter;
-      return ageMatch &&
-          distanceMatch &&
-          emotionMatch &&
-          voiceQualityMatch &&
-          accentMatch;
-    }).toList();
+  //   // Filter all sample profiles based on current filters
+  //   List<Profile> filteredProfiles = sampleProfiles.where((profile) {
+  //     bool ageMatch =
+  //         profile.age >= _ageRange.start && profile.age <= _ageRange.end;
+  //     bool distanceMatch = profile.distanceKm <= _maxDistance;
+  //     bool emotionMatch =
+  //         _emotionFilter == null || profile.emotion == _emotionFilter;
+  //     bool voiceQualityMatch =
+  //         _voiceQualityFilter == null ||
+  //         profile.voiceQuality == _voiceQualityFilter;
+  //     bool accentMatch =
+  //         _accentFilter == null || profile.accent == _accentFilter;
+  //     return ageMatch &&
+  //         distanceMatch &&
+  //         emotionMatch &&
+  //         voiceQualityMatch &&
+  //         accentMatch;
+  //   }).toList();
 
-    // Pagination settings
-    const int profilesPerPage = 8; // Smaller page size for better testing
-    int startIndex = (_currentPage - 1) * profilesPerPage;
-    int endIndex = startIndex + profilesPerPage;
+  //   // Pagination settings
+  //   const int profilesPerPage = 8; // Smaller page size for better testing
+  //   int startIndex = (_currentPage - 1) * profilesPerPage;
+  //   int endIndex = startIndex + profilesPerPage;
 
-    // Get the profiles for current page
-    List<Profile> pageProfiles = [];
-    if (startIndex < filteredProfiles.length) {
-      endIndex = endIndex > filteredProfiles.length
-          ? filteredProfiles.length
-          : endIndex;
-      pageProfiles = filteredProfiles.sublist(startIndex, endIndex);
-    }
+  //   // Get the profiles for current page
+  //   List<Profile> pageProfiles = [];
+  //   if (startIndex < filteredProfiles.length) {
+  //     endIndex = endIndex > filteredProfiles.length
+  //         ? filteredProfiles.length
+  //         : endIndex;
+  //     pageProfiles = filteredProfiles.sublist(startIndex, endIndex);
+  //   }
 
-    if (refresh) {
-      _profiles = pageProfiles;
-      _currentPage = 1;
-    } else {
-      _profiles.addAll(pageProfiles);
-    }
+  //   if (refresh) {
+  //     _profiles = pageProfiles;
+  //     _currentPage = 1;
+  //   } else {
+  //     _profiles.addAll(pageProfiles);
+  //   }
 
-    // Update pagination state
-    _hasNextPage = endIndex < filteredProfiles.length;
+  //   // Update pagination state
+  //   _hasNextPage = endIndex < filteredProfiles.length;
 
-    if (!refresh) {
-      _currentPage++;
-    }
+  //   if (!refresh) {
+  //     _currentPage++;
+  //   }
 
-    _setLoadingState(LoadingState.success);
+  //   _setLoadingState(LoadingState.success);
 
-    debugPrint('Loaded page $_currentPage: ${pageProfiles.length} profiles');
-    debugPrint('Total profiles loaded: ${_profiles.length}');
-    debugPrint('Has next page: $_hasNextPage');
-    debugPrint('Filtered profiles available: ${filteredProfiles.length}');
-  }
+  //   debugPrint('Loaded page $_currentPage: ${pageProfiles.length} profiles');
+  //   debugPrint('Total profiles loaded: ${_profiles.length}');
+  //   debugPrint('Has next page: $_hasNextPage');
+  //   debugPrint('Filtered profiles available: ${filteredProfiles.length}');
+  // }
 
-  /// Load from real API
-  Future<void> _loadFromAPI(bool refresh) async {
-    final response = await _profileService.getProfiles(
-      page: _currentPage,
-      limit: 10,
-      ageMin: _ageRange.start.round(),
-      ageMax: _ageRange.end.round(),
-      maxDistance: _maxDistance,
-      emotion: _emotionFilter,
-      voiceQuality: _voiceQualityFilter,
-      accent: _accentFilter,
-    );
-
-    if (refresh) {
-      _profiles = response.profiles;
-    } else {
-      _profiles.addAll(response.profiles);
-    }
-
-    _currentPage = response.currentPage + 1;
-    _hasNextPage = response.hasNextPage;
-    _setLoadingState(LoadingState.success);
-  }
-
-  /// Load more profiles (pagination)
+  // /// Load from real API
+  // /// Load more profiles (pagination)
   Future<void> loadMoreProfiles() async {
     if (_hasNextPage && !_isLoadingMore) {
       debugPrint('Loading more profiles... Current page: $_currentPage');
       await loadProfiles(refresh: false);
     }
-  }
-
-  /// Simulate network delay for more realistic testing
-  Future<void> _simulateNetworkDelay() async {
-    // Random delay between 500ms and 1.5s to simulate real network
-    final delay = 500 + (DateTime.now().millisecondsSinceEpoch % 1000);
-    await Future.delayed(Duration(milliseconds: delay));
   }
 
   /// Refresh profiles (pull to refresh)
@@ -209,18 +355,22 @@ class ProfileProvider extends ChangeNotifier {
     String? emotion,
     String? voiceQuality,
     String? accent,
+    String? gender,
+    String? university,
+    List<String>? interests,
+    bool isPremium = false,
   }) async {
     bool filtersChanged = false;
 
-    if (ageRange != null && ageRange != _ageRange) {
-      _ageRange = ageRange;
-      filtersChanged = true;
-    }
+    // if (ageRange != null && ageRange != _ageRange) {
+    //   _ageRange = ageRange;
+    //   filtersChanged = true;
+    // }
 
-    if (maxDistance != null && maxDistance != _maxDistance) {
-      _maxDistance = maxDistance;
-      filtersChanged = true;
-    }
+    // if (maxDistance != null && maxDistance != _maxDistance) {
+    //   _maxDistance = maxDistance;
+    //   filtersChanged = true;
+    // }
 
     if (emotion != _emotionFilter) {
       _emotionFilter = emotion;
@@ -237,38 +387,118 @@ class ProfileProvider extends ChangeNotifier {
       filtersChanged = true;
     }
 
+    // Only apply premium filters if user is premium
+    if (isPremium) {
+      if (gender != _genderFilter) {
+        _genderFilter = gender;
+        filtersChanged = true;
+      }
+
+      if (university != _universityFilter) {
+        _universityFilter = university;
+        filtersChanged = true;
+      }
+
+      if (interests != _interestsFilter) {
+        _interestsFilter = interests;
+        filtersChanged = true;
+      }
+    } else {
+      // Clear premium filters for non-premium users
+      if (_genderFilter != null) {
+        _genderFilter = null;
+        filtersChanged = true;
+      }
+      if (_universityFilter != null) {
+        _universityFilter = null;
+        filtersChanged = true;
+      }
+      if (_interestsFilter != null && _interestsFilter!.isNotEmpty) {
+        _interestsFilter = null;
+        filtersChanged = true;
+      }
+    }
+
+    // Store premium status for use in _applyFilters
+    _currentUserIsPremium = isPremium;
+
     if (filtersChanged) {
       await loadProfiles(refresh: true);
     }
   }
 
+  /// Clear all filters
+  void clearFilters() {
+    _ageRange = const RangeValues(18, 30);
+    _maxDistance = 100.0;
+    _emotionFilter = null;
+    _voiceQualityFilter = null;
+    _accentFilter = null;
+    _genderFilter = null;
+    _universityFilter = null;
+    _interestsFilter = null;
+
+    loadProfiles(refresh: true);
+  }
+
   /// Like a profile
   Future<bool> likeProfile(String profileId) async {
     try {
-      if (_useSampleData) {
-        // Simulate API call and add to liked profiles
-        await Future.delayed(const Duration(milliseconds: 300));
+      if (_currentUserId == null) return false;
+      // Use Firestore
+      final batch = _firestore.batch();
 
-        // Find and add profile to liked list if not already liked
-        final profile = getProfileById(profileId);
-        if (profile != null && !_likedProfiles.any((p) => p.id == profileId)) {
-          _likedProfiles.add(profile);
-          notifyListeners();
+      // Add like to current user's likes subcollection
+      final likeRef = _firestore
+          .collection('users')
+          .doc(_currentUserId!)
+          .collection('likes')
+          .doc(profileId);
+
+      batch.set(likeRef, {
+        'timestamp': FieldValue.serverTimestamp(),
+        'targetUserId': profileId,
+      });
+
+      // Check if target user also liked current user (potential match)
+      final targetLikeDoc = await _firestore
+          .collection('users')
+          .doc(profileId)
+          .collection('likes')
+          .doc(_currentUserId!)
+          .get();
+
+      bool isMutual = targetLikeDoc.exists;
+
+      if (isMutual) {
+        // It's a match! Create match document in separate collection
+        final sortedUsers = [_currentUserId!, profileId]..sort();
+        final matchId = '${sortedUsers[0]}_${sortedUsers[1]}';
+
+        // Check if match already exists (avoid duplicates)
+        final existingMatch = await _firestore
+            .collection('matches')
+            .doc(matchId)
+            .get();
+
+        if (!existingMatch.exists) {
+          final matchRef = _firestore.collection('matches').doc(matchId);
+          batch.set(matchRef, {
+            'users': sortedUsers,
+            'timestamp': FieldValue.serverTimestamp(),
+            'user1': sortedUsers[0],
+            'user2': sortedUsers[1],
+          });
         }
-        return true;
-      } else {
-        final success = await _profileService.likeProfile(profileId);
-        if (success) {
-          // Add to liked profiles if API call successful
-          final profile = getProfileById(profileId);
-          if (profile != null &&
-              !_likedProfiles.any((p) => p.id == profileId)) {
-            _likedProfiles.add(profile);
-            notifyListeners();
-          }
-        }
-        return success;
       }
+
+      await batch.commit();
+
+      // Add to local tracking
+      _likedUserIds.add(profileId);
+
+      // Return whether this created a mutual match
+      return isMutual;
     } catch (e) {
       debugPrint('Error liking profile: $e');
       return false;
@@ -278,14 +508,54 @@ class ProfileProvider extends ChangeNotifier {
   /// Pass a profile
   Future<bool> passProfile(String profileId) async {
     try {
-      if (_useSampleData) {
-        // Simulate API call
-        await Future.delayed(const Duration(milliseconds: 300));
-        return true;
-      } else {
-        final success = await _profileService.passProfile(profileId);
-        return success;
+      if (_currentUserId == null) return false;
+
+      // Use Firestore
+      final batch = _firestore.batch();
+
+      // Add pass to current user's passes subcollection
+      final passRef = _firestore
+          .collection('users')
+          .doc(_currentUserId!)
+          .collection('passes')
+          .doc(profileId);
+
+      batch.set(passRef, {
+        'timestamp': FieldValue.serverTimestamp(),
+        'targetUserId': profileId,
+      });
+
+      // Remove from likes collection if it exists (in case user previously liked and now passes)
+      final likeRef = _firestore
+          .collection('users')
+          .doc(_currentUserId!)
+          .collection('likes')
+          .doc(profileId);
+
+      // Check if like exists before deleting
+      final likeDoc = await likeRef.get();
+      if (likeDoc.exists) {
+        batch.delete(likeRef);
+
+        // Also remove any match if it exists
+        final sortedUsers = [_currentUserId!, profileId]..sort();
+        final matchId = '${sortedUsers[0]}_${sortedUsers[1]}';
+
+        final matchRef = _firestore.collection('matches').doc(matchId);
+        final matchDoc = await matchRef.get();
+
+        if (matchDoc.exists) {
+          batch.delete(matchRef);
+        }
       }
+
+      await batch.commit();
+
+      // Update local tracking
+      _passedUserIds.add(profileId);
+      _likedUserIds.remove(profileId); // Remove from liked if it was there
+
+      return true;
     } catch (e) {
       debugPrint('Error passing profile: $e');
       return false;
@@ -293,18 +563,12 @@ class ProfileProvider extends ChangeNotifier {
   }
 
   /// Get profile by ID
-  Profile? getProfileById(String id) {
+  User? getProfileById(String id) {
     try {
       return _profiles.firstWhere((profile) => profile.id == id);
     } catch (e) {
       return null;
     }
-  }
-
-  /// Toggle between sample data and API
-  void toggleDataSource() {
-    _useSampleData = !_useSampleData;
-    loadProfiles(refresh: true);
   }
 
   /// Clear all data
@@ -339,18 +603,11 @@ class ProfileProvider extends ChangeNotifier {
   /// Pass a liked profile (remove from liked list)
   Future<bool> passLikedProfile(String profileId) async {
     try {
-      if (_useSampleData) {
-        // Simulate API call
-        await Future.delayed(const Duration(milliseconds: 300));
+      final success = await _profileService.passProfile(profileId);
+      if (success) {
         removeLikedProfile(profileId);
-        return true;
-      } else {
-        final success = await _profileService.passProfile(profileId);
-        if (success) {
-          removeLikedProfile(profileId);
-        }
-        return success;
       }
+      return success;
     } catch (e) {
       debugPrint('Error passing liked profile: $e');
       return false;
@@ -366,24 +623,14 @@ class ProfileProvider extends ChangeNotifier {
     Map<String, dynamic>? additionalData,
   }) async {
     try {
-      if (_useSampleData) {
-        // Simulate upload for development
-        await Future.delayed(const Duration(seconds: 2));
-        return {
-          'success': true,
-          'audio_url': 'https://example.com/sample_audio.wav',
-          'message': 'Voice recording uploaded successfully',
-        };
-      } else {
-        final result = await _profileService.uploadVoiceRecording(
-          audioFile: audioFile,
-          analysis: analysis,
-          userId: userId,
-          additionalHeaders: additionalHeaders,
-          additionalData: additionalData,
-        );
-        return result;
-      }
+      final result = await _profileService.uploadVoiceRecording(
+        audioFile: audioFile,
+        analysis: analysis,
+        userId: userId,
+        additionalHeaders: additionalHeaders,
+        additionalData: additionalData,
+      );
+      return result;
     } catch (e) {
       debugPrint('Error uploading voice recording: $e');
       return null;

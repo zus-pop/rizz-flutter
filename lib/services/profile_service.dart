@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
-import 'package:rizz_mobile/models/profile.dart';
+import 'package:rizz_mobile/models/user.dart';
 
 class ProfileService {
   static const String baseUrl =
@@ -81,7 +81,7 @@ class ProfileService {
   }
 
   /// Get a single profile by ID
-  Future<Profile> getProfile(String profileId) async {
+  Future<User> getProfile(String profileId) async {
     try {
       final uri = Uri.parse('$baseUrl$_profilesEndpoint/$profileId');
 
@@ -97,7 +97,32 @@ class ProfileService {
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body) as Map<String, dynamic>;
-        return Profile.fromJson(jsonData);
+
+        // Create User manually from JSON data
+        final user = User(
+          id: profileId,
+          firstName: jsonData['first_name'] as String?,
+          lastName: jsonData['last_name'] as String?,
+          email: jsonData['email'] as String?,
+          birthday: jsonData['birthday'] != null
+              ? DateTime.parse(jsonData['birthday'] as String)
+              : null,
+          gender: jsonData['gender'] as String?,
+          university: jsonData['university'] as String?,
+          bio: jsonData['bio'] as String?,
+          imageUrls: jsonData['image_urls'] != null
+              ? List<String>.from(jsonData['image_urls'] as List)
+              : null,
+          interests: jsonData['interests'] != null
+              ? List<String>.from(jsonData['interests'] as List)
+              : null,
+          audioUrl: jsonData['audio_url'] as String?,
+          emotion: jsonData['emotion'] as String?,
+          voiceQuality: jsonData['voice_quality'] as String?,
+          accent: jsonData['accent'] as String?,
+        );
+
+        return user;
       } else {
         throw ApiException(
           'Failed to fetch profile: ${response.statusCode}',
@@ -230,7 +255,7 @@ class ProfileService {
 
 /// Response model for paginated profiles
 class ProfileResponse {
-  final List<Profile> profiles;
+  final List<User> profiles;
   final int currentPage;
   final int totalPages;
   final int totalProfiles;
@@ -247,14 +272,43 @@ class ProfileResponse {
   });
 
   factory ProfileResponse.fromJson(Map<String, dynamic> json) {
+    final userProfiles = <User>[];
+    final dataList = json['data'] as List<dynamic>? ?? [];
+
+    for (var i = 0; i < dataList.length; i++) {
+      final profile = dataList[i] as Map<String, dynamic>;
+      final profileId = profile['id'] as String? ?? 'unknown-$i';
+
+      // Create User manually from JSON data
+      final user = User(
+        id: profileId,
+        firstName: profile['first_name'] as String?,
+        lastName: profile['last_name'] as String?,
+        email: profile['email'] as String?,
+        birthday: profile['birthday'] != null
+            ? DateTime.parse(profile['birthday'] as String)
+            : null,
+        gender: profile['gender'] as String?,
+        university: profile['university'] as String?,
+        bio: profile['bio'] as String?,
+        imageUrls: profile['image_urls'] != null
+            ? List<String>.from(profile['image_urls'] as List)
+            : null,
+        interests: profile['interests'] != null
+            ? List<String>.from(profile['interests'] as List)
+            : null,
+        audioUrl: profile['audio_url'] as String?,
+        emotion: profile['emotion'] as String?,
+        voiceQuality: profile['voice_quality'] as String?,
+        accent: profile['accent'] as String?,
+        distanceKm: profile['distance_km'] as double?,
+      );
+
+      userProfiles.add(user);
+    }
+
     return ProfileResponse(
-      profiles:
-          (json['data'] as List<dynamic>?)
-              ?.map(
-                (profile) => Profile.fromJson(profile as Map<String, dynamic>),
-              )
-              .toList() ??
-          [],
+      profiles: userProfiles,
       currentPage: json['current_page'] as int? ?? 1,
       totalPages: json['total_pages'] as int? ?? 1,
       totalProfiles: json['total'] as int? ?? 0,
@@ -265,7 +319,7 @@ class ProfileResponse {
 
   Map<String, dynamic> toJson() {
     return {
-      'data': profiles.map((profile) => profile.toJson()).toList(),
+      'data': profiles.map((profile) => profile.toFirestore()).toList(),
       'current_page': currentPage,
       'total_pages': totalPages,
       'total': totalProfiles,
@@ -285,4 +339,15 @@ class ApiException implements Exception {
   @override
   String toString() =>
       'ApiException: $message${statusCode != null ? ' (Status: $statusCode)' : ''}';
+}
+
+/// Helper class to convert JSON to a DocumentSnapshot-like structure for User.fromFirestore
+class JsonDocumentSnapshot {
+  final String id;
+  final Map<String, dynamic> data;
+
+  JsonDocumentSnapshot(this.id, this.data);
+
+  Map<String, dynamic> get() => data;
+  String getId() => id;
 }

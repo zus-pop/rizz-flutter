@@ -40,7 +40,7 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
   Map<String, dynamic>? _audioAnalysis;
 
   // Max recording duration in seconds - easily changeable
-  static const int _maxRecordingDurationSeconds = 8;
+  static const int _maxRecordingDurationSeconds = 10;
   final List<String> prompts = [
     "Giới thiệu ngắn gọn về bản thân bạn",
     "Bạn thích làm gì vào cuối tuần?",

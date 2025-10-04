@@ -5,7 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
-import 'package:rizz_mobile/models/profile.dart';
+import 'package:rizz_mobile/models/user.dart';
 import 'package:rizz_mobile/providers/authentication_provider.dart';
 import 'package:rizz_mobile/theme/app_theme.dart';
 import 'package:rizz_mobile/utils/paywall.dart';
@@ -76,7 +76,7 @@ class _AnimatedWaveformState extends State<AnimatedWaveform>
                 borderRadius: BorderRadius.circular(4),
                 boxShadow: [
                   BoxShadow(
-                    color: context.primary.withValues(alpha: 0.3),
+                    color: context.surface.withValues(alpha: 0.3),
                     blurRadius: 4,
                     spreadRadius: 1,
                   ),
@@ -90,10 +90,41 @@ class _AnimatedWaveformState extends State<AnimatedWaveform>
   }
 }
 
-class SwipeCard extends StatefulWidget {
-  final Profile profile;
+class StaticWaveform extends StatelessWidget {
+  const StaticWaveform({super.key});
 
-  const SwipeCard({super.key, required this.profile});
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(5, (index) {
+        final heights = [0.4, 0.7, 1.0, 0.8, 0.5];
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 3),
+          width: 8,
+          height: 50 * heights[index],
+          decoration: BoxDecoration(
+            color: context.primary,
+            borderRadius: BorderRadius.circular(4),
+            boxShadow: [
+              BoxShadow(
+                color: context.surface.withValues(alpha: 0.3),
+                blurRadius: 4,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+}
+
+class SwipeCard extends StatefulWidget {
+  final User user;
+
+  /// SwipeCard accepts only User objects
+  const SwipeCard({super.key, required this.user});
 
   @override
   State<SwipeCard> createState() => _SwipeCardState();
@@ -121,7 +152,7 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
     super.initState();
     _audioPlayer = AudioPlayer();
     _setupAudioListeners();
-    if (widget.profile.audioUrl != null) {
+    if (_getAudioUrl() != null) {
       _loadAudio();
     }
 
@@ -206,10 +237,18 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
     });
 
     try {
-      await _audioPlayer.setSource(UrlSource(widget.profile.audioUrl!));
-      setState(() {
-        _isLoading = false;
-      });
+      final audioUrl = _getAudioUrl();
+      if (audioUrl != null) {
+        await _audioPlayer.setSource(UrlSource(audioUrl));
+        setState(() {
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _isLoading = false;
+          _hasError = true;
+        });
+      }
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -218,14 +257,58 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
     }
   }
 
+  // Helper methods to work with User model
+  String? _getAudioUrl() {
+    return widget.user.audioUrl;
+  }
+
+  String _getName() {
+    return widget.user.getFullName();
+  }
+
+  int _getAge() {
+    return widget.user.getAge();
+  }
+
+  String? _getBio() {
+    return widget.user.bio;
+  }
+
+  List<String> _getImageUrls() {
+    return widget.user.imageUrls ?? [];
+  }
+
+  List<String> _getInterests() {
+    return widget.user.interests ?? [];
+  }
+
+  String? _getEmotion() {
+    return widget.user.emotion;
+  }
+
+  String? _getVoiceQuality() {
+    return widget.user.voiceQuality;
+  }
+
+  String? _getUniversity() {
+    return widget.user.university;
+  }
+
+  List<String>? _getDealBreakers() {
+    return widget.user.dealBreakers;
+  }
+
   @override
   void didUpdateWidget(SwipeCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Stop audio when the profile changes (card is being reused for different profile)
-    if (oldWidget.profile.id != widget.profile.id) {
+    // Stop audio when the user changes (card is being reused for different user)
+    final oldId = oldWidget.user.id;
+    final newId = widget.user.id;
+
+    if (oldId != newId) {
       _stopAudioPlayback();
-      // Load audio for the new profile
-      if (widget.profile.audioUrl != null) {
+      // Load audio for the new user
+      if (_getAudioUrl() != null) {
         _loadAudio();
       }
     }
@@ -300,30 +383,30 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
       builder: (context, authProvider, child) {
         return Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(32),
+            borderRadius: BorderRadius.circular(15),
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                context.primary.withValues(alpha: 0.1),
-                context.primary.withValues(alpha: 0.05),
-                Colors.pink.withValues(alpha: 0.08),
-                Colors.purple.withValues(alpha: 0.06),
+                context.primary.withValues(alpha: 0.15),
+                context.primary.withValues(alpha: 0.08),
+                Colors.purple.withValues(alpha: 0.12),
+                Colors.blue.withValues(alpha: 0.10),
               ],
             ),
             border: Border.all(
-              color: context.primary.withValues(alpha: 0.2),
-              width: 2,
+              color: Colors.white.withValues(alpha: 0.3),
+              width: 1.5,
             ),
             boxShadow: [
               BoxShadow(
-                color: context.primary.withValues(alpha: 0.15),
-                spreadRadius: 1,
-                blurRadius: 20,
-                offset: const Offset(0, 8),
+                color: context.primary.withValues(alpha: 0.2),
+                spreadRadius: 0,
+                blurRadius: 25,
+                offset: const Offset(0, 10),
               ),
               BoxShadow(
-                color: Colors.pink.withValues(alpha: 0.1),
+                color: Colors.purple.withValues(alpha: 0.15),
                 spreadRadius: 0,
                 blurRadius: 15,
                 offset: const Offset(0, 4),
@@ -331,110 +414,54 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
             ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(32),
+            borderRadius: BorderRadius.circular(15),
             child: Stack(
               children: [
                 Container(
                   width: double.infinity,
                   height: double.infinity,
                   color: context.surface,
-                  padding: const EdgeInsets.all(15),
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       // Cute profile header with heart decorations
                       Stack(
-                        alignment: Alignment.center,
                         children: [
-                          // Cute background bubble
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 15,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: context.surface,
-                              borderRadius: BorderRadius.circular(25),
-                              border: Border.all(
-                                color: context.primary.withValues(alpha: 0.3),
-                                width: 2,
+                          Align(
+                            alignment: Alignment.topLeft,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 15,
                               ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                // Cute heart icon
-                                Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: Colors.pink.withValues(alpha: 0.2),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    Icons.favorite,
-                                    color: Colors.pink,
-                                    size: 16,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  '${widget.profile.name}, ${widget.profile.age}',
-                                  style: TextStyle(
-                                    color: context.primary,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    shadows: [
-                                      Shadow(
-                                        color: context.primary.withValues(
-                                          alpha: 0.3,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    '${_getName()}${_getAge() != 0 ? ', ${_getAge()}' : ''}',
+                                    style: TextStyle(
+                                      color: context.primary,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                      shadows: [
+                                        Shadow(
+                                          color: context.primary.withValues(
+                                            alpha: 0.3,
+                                          ),
+                                          offset: const Offset(0, 1),
+                                          blurRadius: 3,
                                         ),
-                                        offset: const Offset(0, 1),
-                                        blurRadius: 3,
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 8),
-                                // Another cute heart
-                                Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: Colors.pink.withValues(alpha: 0.2),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    Icons.favorite,
-                                    color: Colors.pink,
-                                    size: 16,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Floating sparkles
-                          Positioned(
-                            top: -2,
-                            right: 0,
-                            child: Icon(
-                              Icons.star,
-                              color: Colors.yellow.withValues(alpha: 0.8),
-                              size: 18,
-                            ),
-                          ),
-                          Positioned(
-                            bottom: -2,
-                            left: 0,
-                            child: Icon(
-                              Icons.star,
-                              color: Colors.pink.withValues(alpha: 0.6),
-                              size: 18,
+                                ],
+                              ),
                             ),
                           ),
                         ],
                       ),
 
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 80),
 
                       // Cute audio visualization area
                       Stack(
@@ -560,49 +587,51 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
                             },
                           ),
 
-                          // Audio waveform in cute container
-                          Container(
-                            width: 120,
-                            height: 120,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: context.surface,
-                              border: Border.all(
-                                color: _isPlaying
-                                    ? context.primary.withValues(alpha: 0.6)
-                                    : context.primary.withValues(alpha: 0.4),
-                                width: _isPlaying ? 3 : 2,
+                          // Audio waveform in cute container - now interactive
+                          GestureDetector(
+                            onTap: _playPause,
+                            child: Container(
+                              width: 120,
+                              height: 120,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: context.surface,
+                                border: Border.all(
+                                  color: context.primary.withValues(alpha: 0.4),
+                                  width: 2,
+                                ),
                               ),
-                              boxShadow: _isPlaying
-                                  ? [
-                                      BoxShadow(
-                                        color: context.primary.withValues(
-                                          alpha: 0.3,
+                              child: Center(
+                                child: _isLoading
+                                    ? SizedBox(
+                                        width: 50,
+                                        height: 50,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 3,
                                         ),
-                                        blurRadius: 20,
-                                        spreadRadius: 2,
-                                      ),
-                                    ]
-                                  : [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.05,
+                                      )
+                                    : _hasError
+                                    ? Icon(
+                                        Icons.error,
+                                        color: Colors.white,
+                                        size: 48,
+                                      )
+                                    : AnimatedSwitcher(
+                                        duration: const Duration(
+                                          milliseconds: 300,
                                         ),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 2),
+                                        transitionBuilder: (child, animation) {
+                                          return ScaleTransition(
+                                            scale: animation,
+                                            child: child,
+                                          );
+                                        },
+                                        child: _isPlaying
+                                            ? AnimatedWaveform()
+                                            : StaticWaveform(),
                                       ),
-                                    ],
-                            ),
-                            child: Center(
-                              child: _isPlaying
-                                  ? AnimatedWaveform()
-                                  : Icon(
-                                      Icons.music_note,
-                                      color: context.primary.withValues(
-                                        alpha: 0.8,
-                                      ),
-                                      size: 40,
-                                    ),
+                              ),
                             ),
                           ),
 
@@ -640,44 +669,59 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
 
                       const SizedBox(height: 10),
 
-                      // Cute progress bar container (smaller)
-                      Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 16),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: context.surface,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: context.primary.withValues(alpha: 0.4),
-                            width: 2,
+                      // Voice quality and emotion badges
+                      if (_getVoiceQuality() != null || _getEmotion() != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 10.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              if (_getVoiceQuality() != null)
+                                _buildBadge(
+                                  context,
+                                  _getVoiceQuality()!,
+                                  Colors.purple,
+                                  Icons.mic,
+                                ),
+                              const SizedBox(width: 8),
+                              if (_getEmotion() != null)
+                                _buildBadge(
+                                  context,
+                                  _getEmotion()!,
+                                  Colors.orange,
+                                  Icons.sentiment_satisfied_alt,
+                                ),
+                            ],
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: context.primary.withValues(alpha: 0.1),
-                              blurRadius: 8,
-                              spreadRadius: 1,
-                            ),
-                          ],
                         ),
+
+                      // Simplified, subtle audio progress bar
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
                         child: Column(
                           children: [
-                            // Cute slider with pink thumb
+                            // Subtle slider with minimal design
                             SliderTheme(
                               data: SliderTheme.of(context).copyWith(
-                                activeTrackColor: context.primary,
-                                inactiveTrackColor: context.onSurface
-                                    .withValues(alpha: 0.2),
-                                thumbColor: Colors.pink,
-                                overlayColor: Colors.pink.withValues(
-                                  alpha: 0.3,
+                                activeTrackColor: context.primary.withValues(
+                                  alpha: 0.7,
                                 ),
-                                trackHeight: 6,
+                                inactiveTrackColor: context.onSurface
+                                    .withValues(alpha: 0.1),
+                                thumbColor: context.primary,
+                                overlayColor: context.primary.withValues(
+                                  alpha: 0.15,
+                                ),
+                                trackHeight: 2,
                                 thumbShape: const RoundSliderThumbShape(
-                                  enabledThumbRadius: 6,
+                                  enabledThumbRadius: 5,
+                                  disabledThumbRadius: 3,
                                 ),
                                 overlayShape: const RoundSliderOverlayShape(
                                   overlayRadius: 12,
                                 ),
+                                activeTickMarkColor: Colors.transparent,
+                                inactiveTickMarkColor: Colors.transparent,
                               ),
                               child: Slider(
                                 value: _duration.inSeconds > 0
@@ -699,71 +743,28 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
 
                             const SizedBox(height: 2),
 
-                            // Cute time indicators (smaller)
+                            // Simplified time indicators
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 3,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                      colors: [
-                                        context.primary.withValues(alpha: 0.2),
-                                        context.primary.withValues(alpha: 0.1),
-                                      ],
+                                Text(
+                                  _formatDuration(_position),
+                                  style: TextStyle(
+                                    color: context.primary.withValues(
+                                      alpha: 0.8,
                                     ),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: context.primary.withValues(
-                                        alpha: 0.3,
-                                      ),
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.access_time,
-                                        size: 8,
-                                        color: context.primary,
-                                      ),
-                                      const SizedBox(width: 2),
-                                      Text(
-                                        _formatDuration(_position),
-                                        style: TextStyle(
-                                          color: context.primary,
-                                          fontSize: 9,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ],
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 3,
-                                  ),
-                                  decoration: BoxDecoration(
+                                Text(
+                                  _formatDuration(_duration),
+                                  style: TextStyle(
                                     color: context.onSurface.withValues(
-                                      alpha: 0.1,
+                                      alpha: 0.5,
                                     ),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    _formatDuration(_duration),
-                                    style: TextStyle(
-                                      color: context.onSurface.withValues(
-                                        alpha: 0.7,
-                                      ),
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               ],
@@ -772,90 +773,13 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      // Super cute play button
-                      GestureDetector(
-                        onTap: _playPause,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 180),
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: _isPlaying
-                                  ? [
-                                      Colors.pink,
-                                      context.primary,
-                                      Colors.purple,
-                                    ]
-                                  : [
-                                      context.primary,
-                                      Colors.pink.withValues(alpha: 0.8),
-                                      context.primary.withValues(alpha: 0.9),
-                                    ],
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: _isPlaying
-                                    ? Colors.pink.withValues(alpha: 0.5)
-                                    : context.primary.withValues(alpha: 0.4),
-                                spreadRadius: _isPlaying ? 3 : 1,
-                                blurRadius: _isPlaying ? 30 : 20,
-                                offset: Offset(0, _isPlaying ? 8 : 4),
-                              ),
-                              BoxShadow(
-                                color: Colors.white.withValues(alpha: 0.3),
-                                spreadRadius: 1,
-                                blurRadius: 10,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: _isLoading
-                              ? SizedBox(
-                                  width: 32,
-                                  height: 32,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 3,
-                                  ),
-                                )
-                              : _hasError
-                              ? Icon(Icons.error, color: Colors.white, size: 36)
-                              : AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 300),
-                                  transitionBuilder: (child, animation) {
-                                    return ScaleTransition(
-                                      scale: animation,
-                                      child: child,
-                                    );
-                                  },
-                                  child: Icon(
-                                    _isPlaying
-                                        ? Icons.pause
-                                        : _isCompleted
-                                        ? Icons.replay
-                                        : Icons.play_arrow,
-                                    key: ValueKey<String>(
-                                      _isPlaying
-                                          ? 'pause'
-                                          : (_isCompleted ? 'replay' : 'play'),
-                                    ),
-                                    color: Colors.white,
-                                    size: 42,
-                                  ),
-                                ),
-                        ),
-                      ),
                     ],
                   ),
                 ),
 
                 // Cute detail button in top-right
                 Positioned(
-                  top: 25,
+                  top: 40,
                   right: 16,
                   child: GestureDetector(
                     onTap: () async {
@@ -908,6 +832,92 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
     );
   }
 
+  // No longer needed as User model has getAge method
+
+  Widget _buildBadge(
+    BuildContext context,
+    String text,
+    Color color,
+    IconData icon,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [color.withValues(alpha: .7), color.withValues(alpha: .4)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: .3),
+            blurRadius: 8,
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: Colors.white, size: 14),
+          const SizedBox(width: 5),
+          Text(
+            text,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailItem(BuildContext context, String title, String content) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: context.primary.withValues(alpha: .1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Icon(
+                  Icons.check_circle_outline,
+                  color: context.primary,
+                  size: 14,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  color: context.primary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.only(left: 26.0, top: 4.0),
+            child: Text(
+              content,
+              style: TextStyle(color: context.onSurface, fontSize: 14),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showProfileDetails(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -956,12 +966,12 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Horizontal image gallery
-                        if (widget.profile.imageUrls.isNotEmpty)
+                        if (_getImageUrls().isNotEmpty)
                           Container(
                             height: 250,
                             margin: const EdgeInsets.symmetric(vertical: 8),
                             child: PageView.builder(
-                              itemCount: widget.profile.imageUrls.length,
+                              itemCount: _getImageUrls().length,
                               itemBuilder: (context, index) {
                                 return Container(
                                   margin: const EdgeInsets.symmetric(
@@ -973,7 +983,7 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(12),
                                     child: CachedNetworkImage(
-                                      imageUrl: widget.profile.imageUrls[index],
+                                      imageUrl: _getImageUrls()[index],
                                       fit: BoxFit.cover,
                                       placeholder: (context, url) =>
                                           CircularProgressIndicator(),
@@ -1006,7 +1016,7 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
                             children: [
                               // Profile details
                               Text(
-                                '${widget.profile.name}, ${widget.profile.age}',
+                                '${_getName()}, ${_getAge()}',
                                 style: AppTheme.headline1.copyWith(
                                   color: context.onSurface,
                                 ),
@@ -1017,13 +1027,13 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
                               Row(
                                 children: [
                                   Icon(
-                                    Icons.location_on,
+                                    Icons.school,
                                     size: 20,
                                     color: context.primary,
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
-                                    widget.profile.location,
+                                    _getUniversity() ?? "University not set",
                                     style: AppTheme.body1.copyWith(
                                       color: context.onSurface,
                                     ),
@@ -1043,7 +1053,7 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
                               const SizedBox(height: 8),
 
                               Text(
-                                widget.profile.bio,
+                                _getBio() ?? "No bio provided",
                                 style: AppTheme.body1.copyWith(
                                   color: context.onSurface,
                                 ),
@@ -1063,9 +1073,7 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
                               Wrap(
                                 spacing: 12,
                                 runSpacing: 8,
-                                children: widget.profile.interests.map((
-                                  interest,
-                                ) {
+                                children: _getInterests().map((interest) {
                                   return Container(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 16,
@@ -1092,6 +1100,105 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
                                   );
                                 }).toList(),
                               ),
+
+                              const SizedBox(height: 20),
+
+                              // Additional user details
+                              Text(
+                                'More about me',
+                                style: AppTheme.headline4.copyWith(
+                                  color: context.primary,
+                                ),
+                              ),
+
+                              const SizedBox(height: 12),
+
+                              // Study style
+                              if (widget.user.studyStyle != null)
+                                _buildDetailItem(
+                                  context,
+                                  'Study style',
+                                  widget.user.studyStyle!,
+                                ),
+
+                              // Weekend habits
+                              if (widget.user.weekendHabit != null)
+                                _buildDetailItem(
+                                  context,
+                                  'Weekend habits',
+                                  widget.user.weekendHabit!,
+                                ),
+
+                              // Campus life
+                              if (widget.user.campusLife != null)
+                                _buildDetailItem(
+                                  context,
+                                  'Campus life',
+                                  widget.user.campusLife!,
+                                ),
+
+                              // After graduation
+                              if (widget.user.afterGraduation != null)
+                                _buildDetailItem(
+                                  context,
+                                  'After graduation',
+                                  widget.user.afterGraduation!,
+                                ),
+
+                              // Communication preference
+                              if (widget.user.communicationPreference != null)
+                                _buildDetailItem(
+                                  context,
+                                  'Communication',
+                                  widget.user.communicationPreference!,
+                                ),
+
+                              const SizedBox(height: 20),
+
+                              // Deal breakers
+                              if ((_getDealBreakers() ?? []).isNotEmpty) ...[
+                                Text(
+                                  'Deal breakers',
+                                  style: AppTheme.headline4.copyWith(
+                                    color: Colors.redAccent,
+                                  ),
+                                ),
+
+                                const SizedBox(height: 12),
+
+                                Wrap(
+                                  spacing: 12,
+                                  runSpacing: 8,
+                                  children: (_getDealBreakers() ?? []).map((
+                                    dealBreaker,
+                                  ) {
+                                    return Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 8,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.redAccent.withValues(
+                                          alpha: 0.1,
+                                        ),
+                                        borderRadius: BorderRadius.circular(25),
+                                        border: Border.all(
+                                          color: Colors.redAccent.withValues(
+                                            alpha: 0.3,
+                                          ),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        dealBreaker,
+                                        style: AppTheme.body2.copyWith(
+                                          color: Colors.redAccent,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ],
 
                               const SizedBox(
                                 height: 100,

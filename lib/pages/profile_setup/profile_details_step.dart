@@ -87,10 +87,12 @@ class _ProfileDetailsStepState extends State<ProfileDetailsStep> {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _selectedBirthday ?? DateTime(2000),
-      firstDate: DateTime(1950),
+      firstDate: DateTime.now().subtract(
+        const Duration(days: 365 * 30),
+      ), // 30 years old maximum
       lastDate: DateTime.now().subtract(
         const Duration(days: 365 * 18),
-      ), // 18+ only
+      ), // 18 years old minimum
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(

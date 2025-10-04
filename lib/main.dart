@@ -2,11 +2,10 @@ import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:rizz_mobile/firebase_options.dart';
@@ -16,11 +15,11 @@ import 'package:rizz_mobile/pages/splash_screen.dart';
 import 'package:rizz_mobile/providers/app_setting_provider.dart';
 import 'package:rizz_mobile/providers/authentication_provider.dart';
 import 'package:rizz_mobile/providers/profile_provider.dart';
+import 'package:rizz_mobile/services/simple_chat_service.dart';
 import 'package:rizz_mobile/store_config.dart';
+import 'package:rizz_mobile/utils/performance_optimizer.dart';
 
 import 'constant.dart';
-import 'package:rizz_mobile/services/simple_chat_service.dart';
-import 'package:rizz_mobile/utils/performance_optimizer.dart';
 
 Future<void> main() async {
   await dotenv.load(fileName: '.env');
