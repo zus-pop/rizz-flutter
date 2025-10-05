@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart' as auth;
+import 'package:provider/provider.dart';
 import '../../services/match_chat_service.dart';
-import '../../models/user.dart' as app_user;
+import '../../providers/authentication_provider.dart';
 
 class Chat extends StatefulWidget {
   const Chat({super.key});
@@ -12,51 +12,21 @@ class Chat extends StatefulWidget {
 }
 
 class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
-  String? currentUserId;
-  bool isLoading = true;
-
   @override
   bool get wantKeepAlive => true;
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeUser();
-  }
-
-  Future<void> _initializeUser() async {
-    try {
-      // Get current user ID from Firebase Auth
-      final currentUser = auth.FirebaseAuth.instance.currentUser;
-      if (currentUser != null) {
-        setState(() {
-          currentUserId = currentUser.uid;
-          isLoading = false;
-        });
-      } else {
-        setState(() {
-          isLoading = false;
-        });
-      }
-    } catch (e) {
-      debugPrint('Error initializing user: $e');
-      setState(() {
-        isLoading = false;
-      });
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
 
-    if (isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
+    // Lấy currentUserId từ AuthenticationProvider giống như profile.dart
+    final authProvider = context.watch<AuthenticationProvider>();
+    final currentUserId = authProvider.userId;
+
+    // Log để debug
+    debugPrint('═══════════════════════════════════════');
+    debugPrint('Chat Tab - Current User ID: $currentUserId');
+    debugPrint('═══════════════════════════════════════');
 
     if (currentUserId == null) {
       return Scaffold(
@@ -88,32 +58,123 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
         centerTitle: true,
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: MatchChatService.getUserMatchesStream(currentUserId!),
+        stream: MatchChatService.getUserMatchesStream(currentUserId),
         builder: (context, snapshot) {
+          // Log chi tiết về snapshot
+          debugPrint('─────────────────────────────────────');
+          debugPrint('StreamBuilder State:');
+          debugPrint('- ConnectionState: ${snapshot.connectionState}');
+          debugPrint('- HasData: ${snapshot.hasData}');
+          debugPrint('- HasError: ${snapshot.hasError}');
           if (snapshot.hasError) {
+            debugPrint('- Error: ${snapshot.error}');
+            debugPrint('- Error Type: ${snapshot.error.runtimeType}');
+          }
+          if (snapshot.hasData) {
+            debugPrint('- Docs Count: ${snapshot.data!.docs.length}');
+            for (var doc in snapshot.data!.docs) {
+              debugPrint('  * Match ID: ${doc.id}');
+              debugPrint('  * Data: ${doc.data()}');
+            }
+          }
+          debugPrint('─────────────────────────────────────');
+
+          if (snapshot.hasError) {
+            final error = snapshot.error.toString();
+            final isMissingIndex = error.contains('index') ||
+                                   error.contains('FAILED_PRECONDITION');
+
             return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline, size: 64, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Lỗi: ${snapshot.error}',
-                    style: const TextStyle(color: Colors.red),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      isMissingIndex ? Icons.warning : Icons.error_outline,
+                      size: 64,
+                      color: isMissingIndex ? Colors.orange : Colors.red,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      isMissingIndex
+                          ? 'Cần tạo Firestore Index'
+                          : 'Lỗi kết nối',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: isMissingIndex ? Colors.orange : Colors.red,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      isMissingIndex
+                          ? 'Vui lòng tạo Firestore Index trong Firebase Console'
+                          : 'Không thể tải danh sách tin nhắn',
+                      style: const TextStyle(fontSize: 14),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    if (isMissingIndex)
+                      const Text(
+                        'Xem terminal để lấy link tạo index',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontStyle: FontStyle.italic,
+                          color: Colors.grey,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    const SizedBox(height: 16),
+                    // Show detailed error
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: SelectableText(
+                        'Chi tiết lỗi:\n$error',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        setState(() {});
+                      },
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Thử lại'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.pink,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           }
 
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
-              child: CircularProgressIndicator(),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Đang tải danh sách tin nhắn...'),
+                ],
+              ),
             );
           }
 
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            debugPrint('⚠️ No matches found for user: $currentUserId');
+
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -140,12 +201,22 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
                       color: Colors.grey[500],
                     ),
                   ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'User ID: $currentUserId',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.grey[400],
+                      fontFamily: 'monospace',
+                    ),
+                  ),
                 ],
               ),
             );
           }
 
           final matches = snapshot.data!.docs;
+          debugPrint('✅ Displaying ${matches.length} matches');
 
           return ListView.separated(
             itemCount: matches.length,
@@ -155,10 +226,12 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
               final matchData = matchDoc.data() as Map<String, dynamic>;
               final matchId = matchDoc.id;
 
+              debugPrint('Building match item #$index: $matchId');
+
               // Get the other user ID
               final otherUserId = MatchChatService.getOtherUserId(
                 matchId,
-                currentUserId!,
+                currentUserId,
               );
 
               return _buildMatchItem(
@@ -166,6 +239,7 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
                 matchId,
                 otherUserId,
                 matchData,
+                currentUserId,
               );
             },
           );
@@ -179,6 +253,7 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
     String matchId,
     String otherUserId,
     Map<String, dynamic> matchData,
+    String currentUserId,
   ) {
     return FutureBuilder<DocumentSnapshot>(
       future: FirebaseFirestore.instance
@@ -204,7 +279,7 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
         final lastMessageAt = matchData['lastMessageAt'] as Timestamp?;
 
         return FutureBuilder<int>(
-          future: MatchChatService.getUnreadMessageCount(matchId, currentUserId!),
+          future: MatchChatService.getUnreadMessageCount(matchId, currentUserId),
           builder: (context, unreadSnapshot) {
             final unreadCount = unreadSnapshot.data ?? 0;
 

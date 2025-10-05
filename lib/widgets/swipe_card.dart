@@ -189,45 +189,65 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
   }
 
   void _setupAudioListeners() async {
-    await _audioPlayer.setReleaseMode(ReleaseMode.stop);
-    _audioPlayer.onDurationChanged.listen((duration) {
-      if (mounted) {
-        setState(() {
-          _duration = duration;
-        });
-      }
-    });
+    try {
+      await _audioPlayer.setReleaseMode(ReleaseMode.stop);
 
-    _audioPlayer.onPositionChanged.listen((position) {
-      if (mounted) {
-        setState(() {
-          _position = position;
-        });
-      }
-    });
-
-    _audioPlayer.onPlayerStateChanged.listen((state) {
-      if (mounted) {
-        setState(() {
-          _isPlaying = state == PlayerState.playing;
-          _isCompleted = state == PlayerState.completed;
-          if (state == PlayerState.completed) {
-            _isPlaying = false;
-          }
-        });
-
-        // Control rotation animations
-        if (state == PlayerState.playing) {
-          _outerRingController.repeat();
-          _middleRingController.repeat();
-          _outermostRingController.repeat();
-        } else {
-          _outerRingController.stop();
-          _middleRingController.stop();
-          _outermostRingController.stop();
+      _audioPlayer.onDurationChanged.listen((duration) {
+        if (mounted) {
+          setState(() {
+            _duration = duration;
+          });
         }
+      });
+
+      _audioPlayer.onPositionChanged.listen((position) {
+        if (mounted) {
+          setState(() {
+            _position = position;
+          });
+        }
+      });
+
+      _audioPlayer.onPlayerStateChanged.listen((state) {
+        if (mounted) {
+          setState(() {
+            _isPlaying = state == PlayerState.playing;
+            _isCompleted = state == PlayerState.completed;
+            if (state == PlayerState.completed) {
+              _isPlaying = false;
+            }
+          });
+
+          // Control rotation animations
+          if (state == PlayerState.playing) {
+            _outerRingController.repeat();
+            _middleRingController.repeat();
+            _outermostRingController.repeat();
+          } else {
+            _outerRingController.stop();
+            _middleRingController.stop();
+            _outermostRingController.stop();
+          }
+        }
+      });
+
+      // Listen for player errors
+      _audioPlayer.onPlayerComplete.listen((_) {
+        if (mounted) {
+          setState(() {
+            _isPlaying = false;
+            _isCompleted = true;
+          });
+        }
+      });
+    } catch (e) {
+      debugPrint('Error setting up audio listeners: $e');
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+        });
       }
-    });
+    }
   }
 
   Future<void> _loadAudio() async {

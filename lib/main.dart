@@ -12,7 +12,7 @@ import 'package:rizz_mobile/firebase_options.dart';
 import 'package:rizz_mobile/pages/bottom_tab_page.dart';
 import 'package:rizz_mobile/pages/auth/login_page.dart';
 import 'package:rizz_mobile/pages/details/detail_chat.dart';
-import 'package:rizz_mobile/pages/match_chat_detail_page.dart';
+import 'package:rizz_mobile/pages/details/match_chat_detail_page.dart';
 import 'package:rizz_mobile/pages/splash_screen.dart';
 import 'package:rizz_mobile/providers/app_setting_provider.dart';
 import 'package:rizz_mobile/providers/authentication_provider.dart';

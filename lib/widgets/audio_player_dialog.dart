@@ -34,36 +34,47 @@ class _AudioPlayerDialogState extends State<AudioPlayerDialog> {
     _loadAudio();
   }
 
-  void _setupAudioListeners() {
-    _audioPlayer.onDurationChanged.listen((duration) {
-      if (mounted) {
-        setState(() {
-          _duration = duration;
-        });
-      }
-    });
+  void _setupAudioListeners() async {
+    try {
+      await _audioPlayer.setReleaseMode(ReleaseMode.stop);
 
-    _audioPlayer.onPositionChanged.listen((position) {
-      if (mounted) {
-        setState(() {
-          _position = position;
-        });
-      }
-    });
+      _audioPlayer.onDurationChanged.listen((duration) {
+        if (mounted) {
+          setState(() {
+            _duration = duration;
+          });
+        }
+      });
 
-    _audioPlayer.onPlayerStateChanged.listen((state) {
-      debugPrint('Audio player state changed: $state');
+      _audioPlayer.onPositionChanged.listen((position) {
+        if (mounted) {
+          setState(() {
+            _position = position;
+          });
+        }
+      });
+
+      _audioPlayer.onPlayerStateChanged.listen((state) {
+        debugPrint('Audio player state changed: $state');
+        if (mounted) {
+          setState(() {
+            _isPlaying = state == PlayerState.playing;
+            _isCompleted = state == PlayerState.completed;
+            if (state == PlayerState.completed) {
+              _isPlaying = false;
+              debugPrint('Audio completed - setting _isCompleted to true');
+            }
+          });
+        }
+      });
+    } catch (e) {
+      debugPrint('Error setting up audio listeners: $e');
       if (mounted) {
         setState(() {
-          _isPlaying = state == PlayerState.playing;
-          _isCompleted = state == PlayerState.completed;
-          if (state == PlayerState.completed) {
-            _isPlaying = false;
-            debugPrint('Audio completed - setting _isCompleted to true');
-          }
+          _hasError = true;
         });
       }
-    });
+    }
   }
 
   Future<void> _loadAudio() async {
@@ -73,6 +84,11 @@ class _AudioPlayerDialogState extends State<AudioPlayerDialog> {
     });
 
     try {
+      // Validate URL before loading
+      if (widget.audioUrl.isEmpty || !Uri.parse(widget.audioUrl).isAbsolute) {
+        throw Exception('Invalid audio URL');
+      }
+
       await _audioPlayer.setSource(UrlSource(widget.audioUrl));
       setState(() {
         _isLoading = false;
@@ -83,6 +99,16 @@ class _AudioPlayerDialogState extends State<AudioPlayerDialog> {
         _hasError = true;
       });
       debugPrint('Error loading audio: $e');
+
+      // Show error message to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Không thể tải audio. Vui lòng thử lại.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 

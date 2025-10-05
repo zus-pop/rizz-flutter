@@ -214,11 +214,24 @@ class MatchChatService {
   ///
   /// [userId] - The user ID
   static Stream<QuerySnapshot> getUserMatchesStream(String userId) {
-    return _firestore
-        .collection('matches')
-        .where('users', arrayContains: userId)
-        .orderBy('lastMessageAt', descending: true)
-        .snapshots();
+    debugPrint('🔍 MatchChatService.getUserMatchesStream()');
+    debugPrint('   User ID: $userId');
+    debugPrint('   Query: matches.where("users", arrayContains: "$userId")');
+
+    try {
+      // Query without orderBy to get all matches, including those without lastMessageAt
+      // We'll sort in the client side if needed
+      final stream = _firestore
+          .collection('matches')
+          .where('users', arrayContains: userId)
+          .snapshots();
+
+      debugPrint('   ✅ Stream created successfully (without orderBy for compatibility)');
+      return stream;
+    } catch (e) {
+      debugPrint('   ❌ Error creating stream: $e');
+      rethrow;
+    }
   }
 
   /// Delete a message
@@ -331,4 +344,3 @@ class MatchChatService {
     return users[0] == currentUserId ? users[1] : users[0];
   }
 }
-
