@@ -3,11 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'dart:math';
 
 class SimpleChatService {
-  // Use custom database named "rizz" instead of default
-  static final FirebaseFirestore _firestore = FirebaseFirestore.instanceFor(
-    app: FirebaseFirestore.instance.app,
-    databaseId: 'rizz',
-  );
+  // Use default Firestore database
+  static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static String? _currentUserId;
   static String? _currentUserName;
 

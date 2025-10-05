@@ -35,7 +35,7 @@ class ProfileProvider extends ChangeNotifier {
   DocumentSnapshot? _lastDocument;
   bool _currentUserIsPremium = false;
 
-  // Firestore
+  // Firestore - Use default database
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Current user info
