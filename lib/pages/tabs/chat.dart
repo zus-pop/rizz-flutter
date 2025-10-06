@@ -273,10 +273,34 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
         }
 
         final userData = userSnapshot.data!.data() as Map<String, dynamic>?;
-        final userName = userData?['name'] ?? 'Người dùng';
-        final userAvatar = userData?['avatar'] ?? userData?['profilePictureUrl'];
+
+        // Build full name from firstName and lastName
+        final firstName = userData?['firstName'] as String? ?? '';
+        final lastName = userData?['lastName'] as String? ?? '';
+        final email = userData?['email'] as String?;
+
+        String userName = '$firstName $lastName'.trim();
+        if (userName.isEmpty) {
+          // Fallback to email username if name is not available
+          userName = email?.split('@').first ?? 'Người dùng';
+        }
+
+        // Get avatar from imageUrls array (first image)
+        final imageUrls = userData?['imageUrls'] as List<dynamic>?;
+        final userAvatar = (imageUrls != null && imageUrls.isNotEmpty)
+            ? imageUrls[0] as String?
+            : null;
+
         final lastMessage = matchData['lastMessage'] as String?;
         final lastMessageAt = matchData['lastMessageAt'] as Timestamp?;
+
+        // Debug log
+        debugPrint('👤 Match #$matchId:');
+        debugPrint('   - Other User ID: $otherUserId');
+        debugPrint('   - FirstName: $firstName');
+        debugPrint('   - LastName: $lastName');
+        debugPrint('   - Display Name: $userName');
+        debugPrint('   - Avatar: $userAvatar');
 
         return FutureBuilder<int>(
           future: MatchChatService.getUnreadMessageCount(matchId, currentUserId),

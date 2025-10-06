@@ -392,6 +392,7 @@ class _LikedContentState extends State<_LikedContent> {
             }
 
             if (!snapshot.hasData || !snapshot.data!.exists) {
+              debugPrint('❌ User not found: $userId');
               return _buildErrorCard();
             }
 
@@ -400,6 +401,13 @@ class _LikedContentState extends State<_LikedContent> {
               null,
             );
             final userWithId = user.copyWithId(userId);
+
+            // Debug: Print user info
+            debugPrint('✅ User loaded: ${userWithId.getFullName()} (ID: $userId)');
+            debugPrint('   FirstName: ${userWithId.firstName}');
+            debugPrint('   LastName: ${userWithId.lastName}');
+            debugPrint('   Age: ${userWithId.getAge()}');
+            debugPrint('   University: ${userWithId.university}');
 
             return _buildInteractionCard(
               context,
@@ -517,26 +525,68 @@ class _LikedContentState extends State<_LikedContent> {
                 padding: const EdgeInsets.all(12),
                 child: Column(
                   children: [
+                    // Name - Make it more prominent
                     Text(
                       profile.getFullName(),
                       style: TextStyle(
-                        color: context.primary,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                        color: context.onSurface,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.5,
                       ),
                       textAlign: TextAlign.center,
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${profile.getAge()}',
-                      style: TextStyle(
-                        color: context.onSurface.withValues(alpha: 0.7),
-                        fontSize: 14,
-                      ),
-                      textAlign: TextAlign.center,
+                    const SizedBox(height: 6),
+                    // Age with icon
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.cake_outlined,
+                          size: 14,
+                          color: context.onSurface.withValues(alpha: 0.6),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${profile.getAge()} tuổi',
+                          style: TextStyle(
+                            color: context.onSurface.withValues(alpha: 0.7),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
+                    // University (if available)
+                    if (profile.university != null && profile.university!.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.school_outlined,
+                            size: 12,
+                            color: context.primary.withValues(alpha: 0.7),
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              profile.university!,
+                              style: TextStyle(
+                                color: context.primary.withValues(alpha: 0.8),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
