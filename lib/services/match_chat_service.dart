@@ -44,10 +44,30 @@ class MatchChatService {
     String? senderName,
   }) async {
     try {
+      debugPrint('');
+      debugPrint('🔷🔷🔷 MatchChatService.sendMessage() 🔷🔷🔷');
+      debugPrint('📥 Input Parameters:');
+      debugPrint('   - matchId: $matchId');
+      debugPrint('   - senderId: $senderId');
+      debugPrint('   - message: $message');
+      debugPrint('   - senderName: $senderName');
+      debugPrint('');
+
       final batch = _firestore.batch();
 
       // Add message to messages collection
       final messageRef = _firestore.collection('messages').doc();
+
+      debugPrint('📝 Creating message document:');
+      debugPrint('   - Collection: messages');
+      debugPrint('   - Document ID: ${messageRef.id}');
+      debugPrint('   - Message data: {');
+      debugPrint('       matchId: $matchId,');
+      debugPrint('       senderId: $senderId,');
+      debugPrint('       text: $message,');
+      debugPrint('       type: text,');
+      debugPrint('       isRead: false');
+      debugPrint('     }');
 
       batch.set(messageRef, {
         'matchId': matchId,
@@ -59,8 +79,20 @@ class MatchChatService {
         'isRead': false,
       });
 
+      debugPrint('✅ Message batch.set() added');
+
       // Update match document with last message info
       final matchRef = _firestore.collection('matches').doc(matchId);
+
+      debugPrint('');
+      debugPrint('📝 Updating match document:');
+      debugPrint('   - Collection: matches');
+      debugPrint('   - Document ID: $matchId');
+      debugPrint('   - Update data: {');
+      debugPrint('       lastMessage: ${message.substring(0, message.length > 50 ? 50 : message.length)}...,');
+      debugPrint('       lastMessageBy: $senderId');
+      debugPrint('     }');
+
       batch.update(matchRef, {
         'lastMessage': message.length > 100
             ? '${message.substring(0, 100)}...'
@@ -69,13 +101,29 @@ class MatchChatService {
         'lastMessageBy': senderId,
       });
 
+      debugPrint('✅ Match batch.update() added');
+      debugPrint('');
+      debugPrint('🔄 Committing batch to Firestore...');
+
       await batch.commit();
+
+      debugPrint('✅✅✅ BATCH COMMITTED SUCCESSFULLY! ✅✅✅');
+      debugPrint('🔷🔷🔷🔷🔷🔷🔷🔷🔷🔷🔷🔷🔷🔷🔷🔷🔷🔷🔷🔷');
+      debugPrint('');
 
       if (kDebugMode) {
         print('Message sent in match: $matchId');
       }
-    } catch (e) {
-      debugPrint('Error sending message: $e');
+    } catch (e, stackTrace) {
+      debugPrint('');
+      debugPrint('❌❌❌ ERROR IN sendMessage() ❌❌❌');
+      debugPrint('Error Type: ${e.runtimeType}');
+      debugPrint('Error Message: $e');
+      debugPrint('Stack Trace:');
+      debugPrint('$stackTrace');
+      debugPrint('❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌');
+      debugPrint('');
+
       rethrow;
     }
   }

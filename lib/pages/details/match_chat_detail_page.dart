@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as auth;
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../services/match_chat_service.dart';
 
 class MatchChatDetailPage extends StatefulWidget {
@@ -47,19 +48,51 @@ class _MatchChatDetailPageState extends State<MatchChatDetailPage> {
 
   Future<void> _sendMessage(String matchId, String otherUserName) async {
     final message = _messageController.text.trim();
-    if (message.isEmpty || _isSending || currentUserId == null) return;
+
+    // Debug: Log input values
+    debugPrint('═══════════════════════════════════════');
+    debugPrint('📤 SENDING MESSAGE');
+    debugPrint('═══════════════════════════════════════');
+    debugPrint('Match ID: $matchId');
+    debugPrint('Current User ID: $currentUserId');
+    debugPrint('Message: $message');
+    debugPrint('Message Length: ${message.length}');
+    debugPrint('Is Empty: ${message.isEmpty}');
+    debugPrint('Is Sending: $_isSending');
+
+    if (message.isEmpty || _isSending || currentUserId == null) {
+      debugPrint('❌ BLOCKED: message.isEmpty=$message.isEmpty, _isSending=$_isSending, currentUserId=$currentUserId');
+      debugPrint('═══════════════════════════════════════');
+
+      // Show error to user
+      if (currentUserId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('⚠️ Chưa đăng nhập!')),
+        );
+      } else if (message.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('⚠️ Vui lòng nhập tin nhắn!')),
+        );
+      }
+      return;
+    }
 
     setState(() {
       _isSending = true;
     });
 
     try {
+      debugPrint('🔄 Calling MatchChatService.sendMessage...');
+
       await MatchChatService.sendMessage(
         matchId: matchId,
         senderId: currentUserId!,
         message: message,
-        senderName: null, // Will be fetched from user profile if needed
+        senderName: null,
       );
+
+      debugPrint('✅ Message sent successfully!');
+      debugPrint('═══════════════════════════════════════');
 
       _messageController.clear();
 
@@ -73,10 +106,30 @@ class _MatchChatDetailPageState extends State<MatchChatDetailPage> {
           );
         }
       });
-    } catch (e) {
+
+      // Show success message
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi gửi tin nhắn: $e')),
+          const SnackBar(
+            content: Text('✅ Đã gửi tin nhắn'),
+            duration: Duration(seconds: 1),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ ERROR SENDING MESSAGE');
+      debugPrint('Error: $e');
+      debugPrint('StackTrace: $stackTrace');
+      debugPrint('═══════════════════════════════════════');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Lỗi gửi tin nhắn: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
         );
       }
     } finally {
@@ -111,22 +164,7 @@ class _MatchChatDetailPageState extends State<MatchChatDetailPage> {
         backgroundColor: Colors.pink,
         title: Row(
           children: [
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: Colors.white,
-              backgroundImage: otherUserAvatar != null
-                  ? NetworkImage(otherUserAvatar)
-                  : null,
-              child: otherUserAvatar == null
-                  ? Text(
-                      otherUserName[0].toUpperCase(),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.pink,
-                      ),
-                    )
-                  : null,
-            ),
+            _buildAvatarWidget(otherUserName, otherUserAvatar, radius: 18),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -454,5 +492,65 @@ class _MatchChatDetailPageState extends State<MatchChatDetailPage> {
       },
     );
   }
-}
 
+  /// Build avatar widget with CachedNetworkImage for error handling
+  Widget _buildAvatarWidget(String userName, String? avatarUrl, {double radius = 20}) {
+    final firstLetter = userName.isNotEmpty ? userName[0].toUpperCase() : '?';
+    final colorIndex = userName.hashCode.abs() % Colors.primaries.length;
+    final backgroundColor = Colors.primaries[colorIndex].shade300;
+
+    if (avatarUrl == null || avatarUrl.isEmpty) {
+      // No avatar - show letter
+      return CircleAvatar(
+        radius: radius,
+        backgroundColor: backgroundColor,
+        child: Text(
+          firstLetter,
+          style: TextStyle(
+            fontSize: radius * 0.8,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+      );
+    }
+
+    // Has avatar URL - use CachedNetworkImage with error handling
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: backgroundColor,
+      child: ClipOval(
+        child: CachedNetworkImage(
+          imageUrl: avatarUrl,
+          width: radius * 2,
+          height: radius * 2,
+          fit: BoxFit.cover,
+          placeholder: (context, url) => Center(
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+            ),
+          ),
+          errorWidget: (context, url, error) {
+            debugPrint('⚠️ Avatar load failed: $error');
+            return Container(
+              width: radius * 2,
+              height: radius * 2,
+              color: backgroundColor,
+              child: Center(
+                child: Text(
+                  firstLetter,
+                  style: TextStyle(
+                    fontSize: radius * 0.8,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../services/match_chat_service.dart';
 import '../../providers/authentication_provider.dart';
 
@@ -310,23 +311,7 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
             return ListTile(
               leading: Stack(
                 children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: Colors.grey[300],
-                    backgroundImage: userAvatar != null
-                        ? NetworkImage(userAvatar)
-                        : null,
-                    child: userAvatar == null
-                        ? Text(
-                            userName[0].toUpperCase(),
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          )
-                        : null,
-                  ),
+                  _buildAvatar(userName, userAvatar),
                   if (unreadCount > 0)
                     Positioned(
                       right: 0,
@@ -399,6 +384,72 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
           },
         );
       },
+    );
+  }
+
+  /// Build avatar with error handling
+  Widget _buildAvatar(String userName, String? avatarUrl) {
+    // Get first letter for fallback
+    final firstLetter = userName.isNotEmpty ? userName[0].toUpperCase() : '?';
+
+    // Generate a color based on userName for consistency
+    final colorIndex = userName.hashCode.abs() % Colors.primaries.length;
+    final backgroundColor = Colors.primaries[colorIndex].shade300;
+
+    if (avatarUrl == null || avatarUrl.isEmpty) {
+      // No avatar URL - show letter
+      return CircleAvatar(
+        radius: 28,
+        backgroundColor: backgroundColor,
+        child: Text(
+          firstLetter,
+          style: const TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+      );
+    }
+
+    // Has avatar URL - try to load with error handling
+    return CircleAvatar(
+      radius: 28,
+      backgroundColor: backgroundColor,
+      child: ClipOval(
+        child: CachedNetworkImage(
+          imageUrl: avatarUrl,
+          width: 56,
+          height: 56,
+          fit: BoxFit.cover,
+          placeholder: (context, url) => Center(
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+            ),
+          ),
+          errorWidget: (context, url, error) {
+            // Image failed to load - show letter fallback
+            debugPrint('⚠️ Avatar load failed: $error');
+            debugPrint('   URL: $avatarUrl');
+            return Container(
+              width: 56,
+              height: 56,
+              color: backgroundColor,
+              child: Center(
+                child: Text(
+                  firstLetter,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 
