@@ -3,7 +3,6 @@ import 'dart:isolate';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/painting.dart';
-import 'package:rizz_mobile/services/simple_chat_service.dart';
 
 class PerformanceOptimizer {
   static Timer? _cacheCleanupTimer;
@@ -72,8 +71,8 @@ class PerformanceOptimizer {
   // Clean up various caches
   static void _cleanupCaches() {
     try {
-      // Clean SimpleChatService cache
-      SimpleChatService.clearExpiredCache();
+      // Note: Chat service cache cleanup removed as SimpleChatService is deprecated
+      // MatchChatService handles its own cache cleanup internally
 
       // Force garbage collection in debug mode
       if (kDebugMode) {

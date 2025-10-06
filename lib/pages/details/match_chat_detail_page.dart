@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart' as auth;
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:provider/provider.dart';
 import '../../services/match_chat_service.dart';
+import '../../providers/authentication_provider.dart';
 
 class MatchChatDetailPage extends StatefulWidget {
   const MatchChatDetailPage({super.key});
@@ -14,14 +15,7 @@ class MatchChatDetailPage extends StatefulWidget {
 class _MatchChatDetailPageState extends State<MatchChatDetailPage> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  String? currentUserId;
   bool _isSending = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeUser();
-  }
 
   @override
   void dispose() {
@@ -30,23 +24,7 @@ class _MatchChatDetailPageState extends State<MatchChatDetailPage> {
     super.dispose();
   }
 
-  Future<void> _initializeUser() async {
-    final user = auth.FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      setState(() {
-        currentUserId = user.uid;
-      });
-
-      // Mark messages as read when opening the chat
-      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-      if (args != null) {
-        final matchId = args['matchId'] as String;
-        await MatchChatService.markMessagesAsRead(matchId, user.uid);
-      }
-    }
-  }
-
-  Future<void> _sendMessage(String matchId, String otherUserName) async {
+  Future<void> _sendMessage(String matchId, String otherUserName, String? currentUserId) async {
     final message = _messageController.text.trim();
 
     // Debug: Log input values
@@ -61,18 +39,26 @@ class _MatchChatDetailPageState extends State<MatchChatDetailPage> {
     debugPrint('Is Sending: $_isSending');
 
     if (message.isEmpty || _isSending || currentUserId == null) {
-      debugPrint('❌ BLOCKED: message.isEmpty=$message.isEmpty, _isSending=$_isSending, currentUserId=$currentUserId');
+      debugPrint('❌ BLOCKED: message.isEmpty=${message.isEmpty}, _isSending=$_isSending, currentUserId=$currentUserId');
       debugPrint('═══════════════════════════════════════');
 
       // Show error to user
       if (currentUserId == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('⚠️ Chưa đăng nhập!')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('⚠️ Chưa đăng nhập! Vui lòng đăng nhập lại.'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
       } else if (message.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('⚠️ Vui lòng nhập tin nhắn!')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('⚠️ Vui lòng nhập tin nhắn!')),
+          );
+        }
       }
       return;
     }
@@ -86,7 +72,7 @@ class _MatchChatDetailPageState extends State<MatchChatDetailPage> {
 
       await MatchChatService.sendMessage(
         matchId: matchId,
-        senderId: currentUserId!,
+        senderId: currentUserId,
         message: message,
         senderName: null,
       );
@@ -133,14 +119,23 @@ class _MatchChatDetailPageState extends State<MatchChatDetailPage> {
         );
       }
     } finally {
-      setState(() {
-        _isSending = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isSending = false;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Lấy currentUserId từ AuthenticationProvider giống như chat.dart
+    final authProvider = context.watch<AuthenticationProvider>();
+    final currentUserId = authProvider.userId;
+
+    // Log để debug
+    debugPrint('🔑 MatchChatDetail - Current User ID: $currentUserId');
+
     final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
     if (args == null) {
@@ -158,6 +153,13 @@ class _MatchChatDetailPageState extends State<MatchChatDetailPage> {
     final otherUserId = args['otherUserId'] as String;
     final otherUserName = args['otherUserName'] as String;
     final otherUserAvatar = args['otherUserAvatar'] as String?;
+
+    // Mark messages as read when user ID is available
+    if (currentUserId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        MatchChatService.markMessagesAsRead(matchId, currentUserId);
+      });
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -310,7 +312,7 @@ class _MatchChatDetailPageState extends State<MatchChatDetailPage> {
                       ),
                       maxLines: null,
                       textCapitalization: TextCapitalization.sentences,
-                      onSubmitted: (_) => _sendMessage(matchId, otherUserName),
+                      onSubmitted: (_) => _sendMessage(matchId, otherUserName, currentUserId),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -321,7 +323,7 @@ class _MatchChatDetailPageState extends State<MatchChatDetailPage> {
                       borderRadius: BorderRadius.circular(24),
                       onTap: _isSending
                           ? null
-                          : () => _sendMessage(matchId, otherUserName),
+                          : () => _sendMessage(matchId, otherUserName, currentUserId),
                       child: Container(
                         width: 48,
                         height: 48,

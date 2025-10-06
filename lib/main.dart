@@ -11,13 +11,12 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:rizz_mobile/firebase_options.dart';
 import 'package:rizz_mobile/pages/bottom_tab_page.dart';
 import 'package:rizz_mobile/pages/auth/login_page.dart';
-import 'package:rizz_mobile/pages/details/detail_chat.dart';
 import 'package:rizz_mobile/pages/details/match_chat_detail_page.dart';
 import 'package:rizz_mobile/pages/splash_screen.dart';
 import 'package:rizz_mobile/providers/app_setting_provider.dart';
 import 'package:rizz_mobile/providers/authentication_provider.dart';
 import 'package:rizz_mobile/providers/profile_provider.dart';
-import 'package:rizz_mobile/services/simple_chat_service.dart';
+import 'package:rizz_mobile/services/match_chat_service.dart';
 import 'package:rizz_mobile/store_config.dart';
 import 'package:rizz_mobile/utils/performance_optimizer.dart';
 
@@ -42,8 +41,8 @@ Future<void> main() async {
   // Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Initialize optimized Firestore settings
-  await SimpleChatService.initializeFirestore();
+  // Initialize optimized Firestore settings for match chat
+  await MatchChatService.initializeFirestore();
 
   // Initialize performance optimizer
   PerformanceOptimizer.initialize();
@@ -150,7 +149,6 @@ class _MyAppContentState extends State<MyAppContent> {
       home: const LoginPage(),
       routes: {
         '/home': (context) => BottomTabPage(),
-        '/detail_chat': (context) => const DetailChat(),
         '/match_chat_detail': (context) => const MatchChatDetailPage(),
       },
     );
