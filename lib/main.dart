@@ -10,7 +10,6 @@ import 'package:provider/provider.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:rizz_mobile/firebase_options.dart';
 import 'package:rizz_mobile/pages/bottom_tab_page.dart';
-import 'package:rizz_mobile/pages/auth/login_page.dart';
 import 'package:rizz_mobile/pages/details/match_chat_detail_page.dart';
 import 'package:rizz_mobile/pages/splash_screen.dart';
 import 'package:rizz_mobile/providers/app_setting_provider.dart';
@@ -55,32 +54,23 @@ Future<void> main() async {
     ),
   );
 
-  // Reduce Firebase messaging verbosity in production
-  if (!kDebugMode) {
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage remoteMessage) {
-      // Handle message silently in production
-    });
-    FirebaseMessaging.onMessage.listen((RemoteMessage remoteMessage) {
-      // Handle message silently in production
-    });
-  } else {
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage remoteMessage) {
-      debugPrint('[On App Message]: ${remoteMessage.notification?.title}');
-    });
-    FirebaseMessaging.onMessage.listen((RemoteMessage remoteMessage) {
-      debugPrint('[Message]: ${remoteMessage.notification?.title}');
-    });
-  }
+  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage remoteMessage) {
+    debugPrint('[On App Message]: ${remoteMessage.notification?.title}');
+    if (remoteMessage.data['type'] == 'chat') {}
+  });
+  FirebaseMessaging.onMessage.listen((RemoteMessage remoteMessage) {
+    debugPrint('[Message]: ${remoteMessage.notification?.title}');
+  });
 
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
+  await _configureSDK();
   runApp(
     ChangeNotifierProvider(
       create: (_) => AppSettingProvider(),
       child: const MyApp(),
     ),
   );
-  await _configureSDK();
 }
 
 Future<void> _configureSDK() async {
@@ -146,7 +136,7 @@ class _MyAppContentState extends State<MyAppContent> {
       showPerformanceOverlay: false,
       title: "Rizz",
       theme: Provider.of<AppSettingProvider>(context).themeData,
-      home: const LoginPage(),
+      home: const SplashScreen(),
       routes: {
         '/home': (context) => BottomTabPage(),
         '/match_chat_detail': (context) => const MatchChatDetailPage(),

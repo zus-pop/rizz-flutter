@@ -141,6 +141,9 @@ class _FilterModalState extends State<FilterModal> {
 
     _model = FirebaseAI.vertexAI().generativeModel(
       model: 'gemini-2.5-flash',
+      systemInstruction: Content.text(
+        'Bỏ qua những field không thể phân tích, đừng cố đưa nó vào response',
+      ),
       generationConfig: GenerationConfig(
         responseMimeType: 'application/json',
         responseSchema: jsonSchema,
