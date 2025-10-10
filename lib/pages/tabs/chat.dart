@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import '../../services/simple_chat_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../services/match_chat_service.dart';
+import '../../providers/authentication_provider.dart';
 
 class Chat extends StatefulWidget {
   const Chat({super.key});
@@ -10,765 +13,459 @@ class Chat extends StatefulWidget {
 }
 
 class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
-  String? currentRoomId;
-  String? roomCode;
-  final TextEditingController roomCodeController = TextEditingController();
-  bool isCreatingRoom = false;
-  bool isJoiningRoom = false;
-  bool isInRoom = false;
-  bool firestoreEnabled = false;
-  bool checkingFirestore = true;
-
   @override
   bool get wantKeepAlive => true;
 
   @override
-  void initState() {
-    super.initState();
-    _initializeService();
-  }
+  Widget build(BuildContext context) {
+    super.build(context);
 
-  @override
-  void dispose() {
-    roomCodeController.dispose();
-    if (currentRoomId != null) {
-      SimpleChatService.leaveChatRoom(currentRoomId!);
-    }
-    super.dispose();
-  }
+    // Lấy currentUserId từ AuthenticationProvider giống như profile.dart
+    final authProvider = context.watch<AuthenticationProvider>();
+    final currentUserId = authProvider.userId;
 
-  Future<void> _initializeService() async {
-    setState(() {
-      checkingFirestore = true;
-    });
+    // Log để debug
+    debugPrint('═══════════════════════════════════════');
+    debugPrint('Chat Tab - Current User ID: $currentUserId');
+    debugPrint('═══════════════════════════════════════');
 
-    try {
-      await SimpleChatService.ensureAuthenticated();
-
-      // Try a simple test to check if Firestore is working
-      await _testFirestoreConnection();
-    } catch (e) {
-      debugPrint("Error initializing service: $e");
-      if (mounted) {
-        setState(() {
-          checkingFirestore = false;
-          firestoreEnabled = false;
-        });
-
-        if (e.toString().contains('PERMISSION_DENIED') ||
-            e.toString().contains('firestore.googleapis.com') ||
-            e.toString().contains('Cloud Firestore API has not been used') ||
-            e.toString().contains('TimeoutException') ||
-            e.toString().contains('Firestore API not enabled')) {
-          // Don't show snackbar here, we'll show the setup dialog when user tries to use the feature
-          debugPrint(
-            "Firestore API not enabled - will show setup dialog when needed",
-          );
-        } else {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text("❌ Lỗi khởi tạo dịch vụ: $e")));
-        }
-      }
-    }
-  }
-
-  Future<void> _testFirestoreConnection() async {
-    try {
-      // Try to read from Firestore to test connection
-      await SimpleChatService.testConnection();
-
-      if (mounted) {
-        setState(() {
-          checkingFirestore = false;
-          firestoreEnabled = true;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          checkingFirestore = false;
-          firestoreEnabled = false;
-        });
-      }
-      rethrow;
-    }
-  }
-
-  Future<void> _createChatRoom() async {
-    if (isCreatingRoom) return;
-
-    setState(() {
-      isCreatingRoom = true;
-    });
-
-    try {
-      currentRoomId = await SimpleChatService.createChatRoom();
-      final roomInfo = await SimpleChatService.getRoomInfo(currentRoomId!);
-
-      if (mounted && roomInfo != null) {
-        final newRoomCode = roomInfo['room_code'];
-        debugPrint('Room created with code: $newRoomCode');
-
-        setState(() {
-          roomCode = newRoomCode;
-          isInRoom = true;
-          isCreatingRoom = false;
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              "✅ Phòng chat đã tạo! Mã phòng: $newRoomCode\nChia sẻ mã này để người khác tham gia",
-            ),
-            duration: const Duration(seconds: 5),
-            action: SnackBarAction(
-              label: 'Copy',
-              onPressed: () async {
-                await Clipboard.setData(ClipboardData(text: newRoomCode));
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("📋 Đã copy mã phòng!"),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                }
-              },
-            ),
-          ),
-        );
-      } else {
-        throw Exception('Không thể lấy thông tin phòng chat');
-      }
-    } catch (e) {
-      debugPrint("Error creating chat room: $e");
-      if (mounted) {
-        setState(() {
-          isCreatingRoom = false;
-        });
-
-        // Check if it's a Firestore API issue
-        if (e.toString().contains('PERMISSION_DENIED') ||
-            e.toString().contains('firestore.googleapis.com') ||
-            e.toString().contains('Cloud Firestore API has not been used')) {
-          _showFirestoreSetupDialog();
-        } else {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text("❌ Lỗi tạo phòng chat: $e")));
-        }
-      }
-    }
-  }
-
-  Future<void> _joinChatRoom() async {
-    final roomCodeInput = roomCodeController.text.trim().toUpperCase();
-    if (roomCodeInput.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("⚠️ Vui lòng nhập mã phòng")),
-      );
-      return;
-    }
-
-    if (isJoiningRoom) return;
-
-    setState(() {
-      isJoiningRoom = true;
-    });
-
-    try {
-      currentRoomId = await SimpleChatService.joinChatRoom(roomCodeInput);
-
-      if (mounted) {
-        setState(() {
-          roomCode = roomCodeInput;
-          isInRoom = true;
-          isJoiningRoom = false;
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("✅ Đã tham gia phòng chat: $roomCodeInput"),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-
-        // Navigate to chat detail page
-        Navigator.of(context).pushNamed(
-          '/detail_chat',
-          arguments: {
-            'roomId': currentRoomId,
-            'roomCode': roomCode,
-            'isFirebaseChat': false,
-          },
-        );
-      }
-    } catch (e) {
-      debugPrint("Error joining chat room: $e");
-      if (mounted) {
-        setState(() {
-          isJoiningRoom = false;
-        });
-
-        // Check if it's a Firestore API issue
-        if (e.toString().contains('PERMISSION_DENIED') ||
-            e.toString().contains('firestore.googleapis.com') ||
-            e.toString().contains('Cloud Firestore API has not been used')) {
-          _showFirestoreSetupDialog();
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text("❌ $e"),
-              duration: const Duration(seconds: 5),
-            ),
-          );
-        }
-      }
-    }
-  }
-
-  void _leaveChatRoom() async {
-    if (currentRoomId != null) {
-      await SimpleChatService.leaveChatRoom(currentRoomId!);
-    }
-    setState(() {
-      currentRoomId = null;
-      roomCode = null;
-      isInRoom = false;
-    });
-    roomCodeController.clear();
-    if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("✅ Đã rời khỏi phòng chat")));
-    }
-  }
-
-  void _openChatRoom() {
-    if (currentRoomId != null && roomCode != null) {
-      Navigator.of(context).pushNamed(
-        '/detail_chat',
-        arguments: {
-          'roomId': currentRoomId,
-          'roomCode': roomCode,
-          'isFirebaseChat': false,
-        },
-      );
-    }
-  }
-
-  void _showFirestoreSetupDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Row(
+    if (currentUserId == null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Tin Nhắn'),
+          backgroundColor: Colors.pink,
+          centerTitle: true,
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.warning, color: Colors.orange),
-              const SizedBox(width: 8),
-              const Text("Cần Kích Hoạt Firestore"),
+              Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey),
+              const SizedBox(height: 16),
+              Text(
+                'Vui lòng đăng nhập để xem tin nhắn',
+                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+              ),
             ],
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                "Cloud Firestore API chưa được kích hoạt cho dự án Firebase của bạn.",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
+        ),
+      );
+    }
 
-              // Automated setup section
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.green.shade200),
-                ),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Tin Nhắn'),
+        backgroundColor: Colors.pink,
+        centerTitle: true,
+      ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: MatchChatService.getUserMatchesStream(currentUserId),
+        builder: (context, snapshot) {
+          // Log chi tiết về snapshot
+          debugPrint('─────────────────────────────────────');
+          debugPrint('StreamBuilder State:');
+          debugPrint('- ConnectionState: ${snapshot.connectionState}');
+          debugPrint('- HasData: ${snapshot.hasData}');
+          debugPrint('- HasError: ${snapshot.hasError}');
+          if (snapshot.hasError) {
+            debugPrint('- Error: ${snapshot.error}');
+            debugPrint('- Error Type: ${snapshot.error.runtimeType}');
+          }
+          if (snapshot.hasData) {
+            debugPrint('- Docs Count: ${snapshot.data!.docs.length}');
+            for (var doc in snapshot.data!.docs) {
+              debugPrint('  * Match ID: ${doc.id}');
+              debugPrint('  * Data: ${doc.data()}');
+            }
+          }
+          debugPrint('─────────────────────────────────────');
+
+          if (snapshot.hasError) {
+            final error = snapshot.error.toString();
+            final isMissingIndex = error.contains('index') ||
+                                   error.contains('FAILED_PRECONDITION');
+
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    Icon(
+                      isMissingIndex ? Icons.warning : Icons.error_outline,
+                      size: 64,
+                      color: isMissingIndex ? Colors.orange : Colors.red,
+                    ),
+                    const SizedBox(height: 16),
                     Text(
-                      "✨ CÁCH NHANH NHẤT:",
+                      isMissingIndex
+                          ? 'Cần tạo Firestore Index'
+                          : 'Lỗi kết nối',
                       style: TextStyle(
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.green.shade700,
+                        color: isMissingIndex ? Colors.orange : Colors.red,
                       ),
                     ),
+                    const SizedBox(height: 12),
+                    Text(
+                      isMissingIndex
+                          ? 'Vui lòng tạo Firestore Index trong Firebase Console'
+                          : 'Không thể tải danh sách tin nhắn',
+                      style: const TextStyle(fontSize: 14),
+                      textAlign: TextAlign.center,
+                    ),
                     const SizedBox(height: 8),
-                    const Text(
-                      "1. Chạy file setup_firestore.bat trong thư mục dự án",
+                    if (isMissingIndex)
+                      const Text(
+                        'Xem terminal để lấy link tạo index',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontStyle: FontStyle.italic,
+                          color: Colors.grey,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    const SizedBox(height: 16),
+                    // Show detailed error
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: SelectableText(
+                        'Chi tiết lỗi:\n$error',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
                     ),
-                    const Text("2. Làm theo hướng dẫn trong script"),
-                    const Text("3. Khởi động lại ứng dụng"),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        setState(() {});
+                      },
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Thử lại'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.pink,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
                   ],
                 ),
               ),
+            );
+          }
 
-              const SizedBox(height: 16),
-              const Text("Hoặc làm theo cách thủ công:"),
-              const SizedBox(height: 8),
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Đang tải danh sách tin nhắn...'),
+                ],
+              ),
+            );
+          }
 
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue.shade200),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text("1. Mở Google Cloud Console"),
-                    const Text("2. Chọn dự án: rizz-7e0b8"),
-                    const Text("3. Tìm 'Cloud Firestore API'"),
-                    const Text("4. Nhấn 'Enable'"),
-                    const Text(
-                      "5. Tạo Firestore database trong Firebase Console",
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                "Link trực tiếp:",
-                style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey.shade700,
-                ),
-              ),
-              const SizedBox(height: 4),
-              SelectableText(
-                "https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=rizz-7e0b8",
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.blue.shade700,
-                  fontFamily: 'monospace',
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () async {
-                await Clipboard.setData(
-                  const ClipboardData(
-                    text:
-                        "https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=rizz-7e0b8",
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            debugPrint('⚠️ No matches found for user: $currentUserId');
+
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.chat_bubble_outline,
+                    size: 64,
+                    color: Colors.grey[400],
                   ),
-                );
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("📋 Đã copy link vào clipboard!"),
-                      duration: Duration(seconds: 2),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Chưa có tin nhắn nào',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey[600],
                     ),
-                  );
-                }
-              },
-              child: const Text("Copy Link"),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Hãy match với ai đó để bắt đầu chat!',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[500],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'User ID: $currentUserId',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.grey[400],
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          final matches = snapshot.data!.docs;
+          debugPrint('✅ Displaying ${matches.length} matches');
+
+          return ListView.separated(
+            itemCount: matches.length,
+            separatorBuilder: (context, index) => const Divider(height: 1),
+            itemBuilder: (context, index) {
+              final matchDoc = matches[index];
+              final matchData = matchDoc.data() as Map<String, dynamic>;
+              final matchId = matchDoc.id;
+
+              debugPrint('Building match item #$index: $matchId');
+
+              // Get the other user ID
+              final otherUserId = MatchChatService.getOtherUserId(
+                matchId,
+                currentUserId,
+              );
+
+              return _buildMatchItem(
+                context,
+                matchId,
+                otherUserId,
+                matchData,
+                currentUserId,
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildMatchItem(
+    BuildContext context,
+    String matchId,
+    String otherUserId,
+    Map<String, dynamic> matchData,
+    String currentUserId,
+  ) {
+    return FutureBuilder<DocumentSnapshot>(
+      future: FirebaseFirestore.instance
+          .collection('users')
+          .doc(otherUserId)
+          .get(),
+      builder: (context, userSnapshot) {
+        if (!userSnapshot.hasData) {
+          return ListTile(
+            leading: CircleAvatar(
+              backgroundColor: Colors.grey[300],
+              child: const Icon(Icons.person, color: Colors.white),
             ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                // Try to test connection again after user potentially fixed the issue
-                _testFirestoreConnection();
+            title: const Text('Đang tải...'),
+            subtitle: const Text(''),
+          );
+        }
+
+        final userData = userSnapshot.data!.data() as Map<String, dynamic>?;
+
+        // Build full name from firstName and lastName
+        final firstName = userData?['firstName'] as String? ?? '';
+        final lastName = userData?['lastName'] as String? ?? '';
+        final email = userData?['email'] as String?;
+
+        String userName = '$firstName $lastName'.trim();
+        if (userName.isEmpty) {
+          // Fallback to email username if name is not available
+          userName = email?.split('@').first ?? 'Người dùng';
+        }
+
+        // Get avatar from imageUrls array (first image)
+        final imageUrls = userData?['imageUrls'] as List<dynamic>?;
+        final userAvatar = (imageUrls != null && imageUrls.isNotEmpty)
+            ? imageUrls[0] as String?
+            : null;
+
+        final lastMessage = matchData['lastMessage'] as String?;
+        final lastMessageAt = matchData['lastMessageAt'] as Timestamp?;
+
+        // Debug log
+        debugPrint('👤 Match #$matchId:');
+        debugPrint('   - Other User ID: $otherUserId');
+        debugPrint('   - FirstName: $firstName');
+        debugPrint('   - LastName: $lastName');
+        debugPrint('   - Display Name: $userName');
+        debugPrint('   - Avatar: $userAvatar');
+
+        return FutureBuilder<int>(
+          future: MatchChatService.getUnreadMessageCount(matchId, currentUserId),
+          builder: (context, unreadSnapshot) {
+            final unreadCount = unreadSnapshot.data ?? 0;
+
+            return ListTile(
+              leading: Stack(
+                children: [
+                  _buildAvatar(userName, userAvatar),
+                  if (unreadCount > 0)
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 20,
+                          minHeight: 20,
+                        ),
+                        child: Text(
+                          unreadCount > 9 ? '9+' : '$unreadCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              title: Text(
+                userName,
+                style: TextStyle(
+                  fontWeight: unreadCount > 0 ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+              subtitle: Text(
+                lastMessage ?? 'Chưa có tin nhắn',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: unreadCount > 0 ? Colors.black87 : Colors.grey[600],
+                  fontWeight: unreadCount > 0 ? FontWeight.w500 : FontWeight.normal,
+                ),
+              ),
+              trailing: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (lastMessageAt != null)
+                    Text(
+                      _formatTimestamp(lastMessageAt),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: unreadCount > 0 ? Colors.pink : Colors.grey[600],
+                        fontWeight: unreadCount > 0 ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                ],
+              ),
+              onTap: () {
+                Navigator.of(context).pushNamed(
+                  '/match_chat_detail',
+                  arguments: {
+                    'matchId': matchId,
+                    'otherUserId': otherUserId,
+                    'otherUserName': userName,
+                    'otherUserAvatar': userAvatar,
+                  },
+                );
               },
-              child: const Text("Kiểm tra lại"),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text("Đóng"),
-            ),
-          ],
+            );
+          },
         );
       },
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    super.build(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Chat với Mã Phòng'),
-        backgroundColor: Colors.blue,
-        centerTitle: true,
-        actions: [
-          if (isInRoom)
-            IconButton(
-              icon: const Icon(Icons.exit_to_app),
-              onPressed: _leaveChatRoom,
-              tooltip: 'Rời phòng chat',
-            ),
-        ],
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: [
-                    Icon(Icons.chat, size: 48, color: Colors.blue.shade700),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Chat với Mã Phòng',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue.shade700,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Tạo phòng và chia sẻ mã\nhoặc nhập mã để tham gia',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.blue.shade600,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
+  /// Build avatar with error handling
+  Widget _buildAvatar(String userName, String? avatarUrl) {
+    // Get first letter for fallback
+    final firstLetter = userName.isNotEmpty ? userName[0].toUpperCase() : '?';
 
-              const SizedBox(height: 32),
+    // Generate a color based on userName for consistency
+    final colorIndex = userName.hashCode.abs() % Colors.primaries.length;
+    final backgroundColor = Colors.primaries[colorIndex].shade300;
 
-              // Firestore Status Indicator
-              if (checkingFirestore || !firestoreEnabled)
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: checkingFirestore
-                        ? Colors.blue.shade50
-                        : Colors.red.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: checkingFirestore
-                          ? Colors.blue.shade200
-                          : Colors.red.shade200,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      if (checkingFirestore)
-                        const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      else
-                        Icon(
-                          Icons.warning,
-                          color: Colors.red.shade600,
-                          size: 20,
-                        ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              checkingFirestore
-                                  ? "Đang kiểm tra kết nối Firestore..."
-                                  : "Firestore API chưa được kích hoạt",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: checkingFirestore
-                                    ? Colors.blue.shade700
-                                    : Colors.red.shade700,
-                              ),
-                            ),
-                            if (!checkingFirestore && !firestoreEnabled)
-                              Text(
-                                "Nhấn 'Tạo Phòng Chat' để xem hướng dẫn cài đặt",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.red.shade600,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-              if (checkingFirestore || !firestoreEnabled)
-                const SizedBox(height: 24),
-
-              // Current room status
-              if (isInRoom && roomCode != null)
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade100,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.green.shade300),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.check_circle,
-                            color: Colors.green,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Đang trong phòng:',
-                            style: TextStyle(
-                              color: Colors.green.shade700,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.green.shade200,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          roomCode!,
-                          style: TextStyle(
-                            color: Colors.green.shade800,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                            letterSpacing: 2,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      ElevatedButton.icon(
-                        onPressed: _openChatRoom,
-                        icon: const Icon(Icons.chat),
-                        label: const Text('Mở Chat'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 12,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-              if (!isInRoom) ...[
-                // Create room button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: isCreatingRoom ? null : _createChatRoom,
-                    icon: isCreatingRoom
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Icon(Icons.add),
-                    label: Text(
-                      isCreatingRoom
-                          ? 'Đang tạo phòng...'
-                          : 'Tạo Phòng Chat Mới',
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                      textStyle: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-                const Divider(),
-                const SizedBox(height: 24),
-
-                // Join room section
-                Text(
-                  'Hoặc tham gia phòng có sẵn',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey.shade700,
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                TextField(
-                  controller: roomCodeController,
-                  enabled: !isJoiningRoom,
-                  textCapitalization: TextCapitalization.characters,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 2,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: 'Nhập mã phòng (VD: ABC123)',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    prefixIcon: const Icon(Icons.meeting_room),
-                    helperText: 'Mã phòng gồm 6 ký tự',
-                    helperStyle: TextStyle(color: Colors.grey.shade600),
-                  ),
-                  onSubmitted: (_) => _joinChatRoom(),
-                ),
-
-                const SizedBox(height: 16),
-
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: isJoiningRoom ? null : _joinChatRoom,
-                    icon: isJoiningRoom
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Icon(Icons.login),
-                    label: Text(
-                      isJoiningRoom ? 'Đang tham gia...' : 'Tham Gia Phòng',
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      textStyle: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-
-              const SizedBox(height: 32),
-
-              // Instructions
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.info_outline,
-                          color: Colors.grey.shade700,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Hướng dẫn sử dụng:',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey.shade700,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildInstructionRow(
-                          '1',
-                          'Tạo phòng chat mới và nhận mã phòng 6 ký tự',
-                        ),
-                        const SizedBox(height: 8),
-                        _buildInstructionRow(
-                          '2',
-                          'Chia sẻ mã phòng với người muốn chat',
-                        ),
-                        const SizedBox(height: 8),
-                        _buildInstructionRow(
-                          '3',
-                          'Nhập mã phòng để tham gia và bắt đầu chat',
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
+    if (avatarUrl == null || avatarUrl.isEmpty) {
+      // No avatar URL - show letter
+      return CircleAvatar(
+        radius: 28,
+        backgroundColor: backgroundColor,
+        child: Text(
+          firstLetter,
+          style: const TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
+        ),
+      );
+    }
+
+    // Has avatar URL - try to load with error handling
+    return CircleAvatar(
+      radius: 28,
+      backgroundColor: backgroundColor,
+      child: ClipOval(
+        child: CachedNetworkImage(
+          imageUrl: avatarUrl,
+          width: 56,
+          height: 56,
+          fit: BoxFit.cover,
+          placeholder: (context, url) => Center(
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+            ),
+          ),
+          errorWidget: (context, url, error) {
+            // Image failed to load - show letter fallback
+            debugPrint('⚠️ Avatar load failed: $error');
+            debugPrint('   URL: $avatarUrl');
+            return Container(
+              width: 56,
+              height: 56,
+              color: backgroundColor,
+              child: Center(
+                child: Text(
+                  firstLetter,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _buildInstructionRow(String number, String text) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 20,
-          height: 20,
-          decoration: BoxDecoration(
-            color: Colors.blue.shade600,
-            shape: BoxShape.circle,
-          ),
-          child: Center(
-            child: Text(
-              number,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            text,
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
-          ),
-        ),
-      ],
-    );
+  String _formatTimestamp(Timestamp timestamp) {
+    final now = DateTime.now();
+    final date = timestamp.toDate();
+    final difference = now.difference(date);
+
+    if (difference.inDays == 0) {
+      return '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    } else if (difference.inDays == 1) {
+      return 'Hôm qua';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays} ngày trước';
+    } else {
+      return '${date.day}/${date.month}';
+    }
   }
 }
