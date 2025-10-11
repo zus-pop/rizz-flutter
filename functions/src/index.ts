@@ -5,7 +5,10 @@ admin.initializeApp();
 const db = admin.firestore();
 
 export const messageNotification = onDocumentCreated(
-  "/messages/{sku}",
+  {
+    document: "/messages/{sku}",
+    region: "asia-southeast1",
+  },
   (event) => {
     const data = event.data?.data();
     if (!data) return;
@@ -36,6 +39,7 @@ export const messageNotification = onDocumentCreated(
               tokens: pushTokens,
               notification: {
                 title: `Message from ${senderId}`,
+                body: message,
               },
             };
             if (message) {
@@ -43,7 +47,6 @@ export const messageNotification = onDocumentCreated(
                 matchId: matchId,
                 type: "chat",
               };
-              multicastMessage.notification!.body = message;
             }
             return getMessaging()
               .sendEachForMulticast(multicastMessage)

@@ -225,7 +225,9 @@ class _ProfileState extends State<Profile>
                                       ),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Colors.black.withOpacity(0.2),
+                                          color: Colors.black.withValues(
+                                            alpha: .2,
+                                          ),
                                           blurRadius: 4,
                                           offset: const Offset(0, 2),
                                         ),
@@ -537,7 +539,7 @@ class _ProfileState extends State<Profile>
                                             ),
                                           ),
                                           child: const Icon(
-                                            Icons.workspace_premium,
+                                            Icons.diamond,
                                             color: Colors.white,
                                             size: 28,
                                           ),
@@ -569,7 +571,7 @@ class _ProfileState extends State<Profile>
                                                   ),
                                             ),
                                             Text(
-                                              '💎 Trải nghiệm VIP cao cấp',
+                                              '💎 Trải nghiệm Plus',
                                               style: TextStyle(
                                                 color: Colors.white.withValues(
                                                   alpha: 0.9,
@@ -584,7 +586,7 @@ class _ProfileState extends State<Profile>
                                     ),
                                     const SizedBox(height: 16),
                                     Text(
-                                      'Mở khóa các tính năng cao cấp:',
+                                      'Mở khóa các tính năng Plus:',
                                       style: AppTheme.body2.copyWith(
                                         color: Colors.white,
                                         fontWeight: FontWeight.w600,
@@ -608,7 +610,7 @@ class _ProfileState extends State<Profile>
                                     const SizedBox(height: 10),
                                     _buildUpgradeFeature(
                                       Icons.priority_high,
-                                      'Ưu tiên hiển thị hồ sơ',
+                                      'Lọc hồ sơ nâng cao',
                                     ),
                                     const SizedBox(height: 18),
                                     SizedBox(

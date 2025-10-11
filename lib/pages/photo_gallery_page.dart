@@ -140,16 +140,6 @@ class _PhotoGalleryPageState extends State<PhotoGalleryPage> {
     });
   }
 
-  Future<bool> _onWillPop() async {
-    if (_hasChanges) {
-      final shouldSave = await _showSaveDialog();
-      if (shouldSave) {
-        await _updateFirestore();
-      }
-    }
-    return true;
-  }
-
   Future<bool> _showSaveDialog() async {
     final result = await showDialog<bool>(
       context: context,
@@ -219,8 +209,20 @@ class _PhotoGalleryPageState extends State<PhotoGalleryPage> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: _onWillPop,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+
+        final navigator = Navigator.of(context);
+        if (_hasChanges) {
+          final shouldSave = await _showSaveDialog();
+          if (shouldSave) {
+            await _updateFirestore();
+          }
+        }
+        navigator.pop();
+      },
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Quản lý ảnh'),

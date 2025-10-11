@@ -89,7 +89,9 @@ class MatchChatService {
       debugPrint('   - Collection: matches');
       debugPrint('   - Document ID: $matchId');
       debugPrint('   - Update data: {');
-      debugPrint('       lastMessage: ${message.substring(0, message.length > 50 ? 50 : message.length)}...,');
+      debugPrint(
+        '       lastMessage: ${message.substring(0, message.length > 50 ? 50 : message.length)}...,',
+      );
       debugPrint('       lastMessageBy: $senderId');
       debugPrint('     }');
 
@@ -203,10 +205,7 @@ class MatchChatService {
   ///
   /// [matchId] - The match ID
   /// [userId] - The user ID who is reading the messages
-  static Future<void> markMessagesAsRead(
-    String matchId,
-    String userId,
-  ) async {
+  static Future<void> markMessagesAsRead(String matchId, String userId) async {
     try {
       // Get unread messages sent by the other user
       final unreadMessages = await _firestore
@@ -274,7 +273,9 @@ class MatchChatService {
           .where('users', arrayContains: userId)
           .snapshots();
 
-      debugPrint('   ✅ Stream created successfully (without orderBy for compatibility)');
+      debugPrint(
+        '   ✅ Stream created successfully (without orderBy for compatibility)',
+      );
       return stream;
     } catch (e) {
       debugPrint('   ❌ Error creating stream: $e');
@@ -352,7 +353,7 @@ class MatchChatService {
     }
 
     if (kDebugMode && expiredKeys.isNotEmpty) {
-      print('Cleared ${expiredKeys.length} expired cache entries');
+      debugPrint('Cleared ${expiredKeys.length} expired cache entries');
     }
   }
 

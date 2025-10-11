@@ -278,12 +278,15 @@ class _VoiceRecordingPageState extends State<VoiceRecordingPage>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            context.primary.withOpacity(0.1),
-            context.primary.withOpacity(0.05),
+            context.primary.withValues(alpha: .1),
+            context.primary.withValues(alpha: .05),
           ],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: context.primary.withOpacity(0.2), width: 1),
+        border: Border.all(
+          color: context.primary.withValues(alpha: .2),
+          width: 1,
+        ),
       ),
       child: Column(
         children: [
@@ -298,7 +301,7 @@ class _VoiceRecordingPageState extends State<VoiceRecordingPage>
           Text(
             'AI sẽ phân tích và đưa ra nhận xét về giọng nói của bạn',
             style: AppTheme.body2.copyWith(
-              color: context.onSurface.withOpacity(0.7),
+              color: context.onSurface.withValues(alpha: .7),
             ),
             textAlign: TextAlign.center,
           ),
@@ -332,13 +335,13 @@ class _VoiceRecordingPageState extends State<VoiceRecordingPage>
                         : LinearGradient(
                             colors: [
                               context.primary,
-                              context.primary.withOpacity(0.8),
+                              context.primary.withValues(alpha: .8),
                             ],
                           ),
                     boxShadow: [
                       BoxShadow(
                         color: (_isRecording ? Colors.red : context.primary)
-                            .withOpacity(0.3),
+                            .withValues(alpha: .3),
                         blurRadius: 20,
                         spreadRadius: 5,
                       ),
@@ -379,7 +382,7 @@ class _VoiceRecordingPageState extends State<VoiceRecordingPage>
             fontWeight: FontWeight.bold,
             color: _isRecording
                 ? Colors.red
-                : context.onSurface.withOpacity(0.7),
+                : context.onSurface.withValues(alpha: .7),
           ),
         ),
 
@@ -391,7 +394,7 @@ class _VoiceRecordingPageState extends State<VoiceRecordingPage>
             width: 200,
             height: 8,
             decoration: BoxDecoration(
-              color: Colors.grey.withOpacity(0.2),
+              color: Colors.grey.withValues(alpha: .2),
               borderRadius: BorderRadius.circular(4),
             ),
             child: FractionallySizedBox(
@@ -418,9 +421,12 @@ class _VoiceRecordingPageState extends State<VoiceRecordingPage>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.1),
+            color: Colors.green.withValues(alpha: .1),
             borderRadius: BorderRadius.circular(25),
-            border: Border.all(color: Colors.green.withOpacity(0.3), width: 1),
+            border: Border.all(
+              color: Colors.green.withValues(alpha: .3),
+              width: 1,
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -445,7 +451,7 @@ class _VoiceRecordingPageState extends State<VoiceRecordingPage>
           height: 100,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: context.colors.surfaceContainerHighest.withOpacity(0.3),
+            color: context.colors.surfaceContainerHighest.withValues(alpha: .3),
             borderRadius: BorderRadius.circular(16),
           ),
           child: AnimatedBuilder(
@@ -478,7 +484,7 @@ class _VoiceRecordingPageState extends State<VoiceRecordingPage>
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: context.primary.withOpacity(0.3),
+                    color: context.primary.withValues(alpha: .3),
                     blurRadius: 12,
                     spreadRadius: 2,
                   ),
@@ -523,14 +529,14 @@ class _VoiceRecordingPageState extends State<VoiceRecordingPage>
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: context.onSurface.withOpacity(0.7),
+                color: context.onSurface.withValues(alpha: .7),
               ),
             ),
             Text(
               ' / ',
               style: TextStyle(
                 fontSize: 16,
-                color: context.onSurface.withOpacity(0.5),
+                color: context.onSurface.withValues(alpha: .5),
               ),
             ),
             Text(
@@ -538,7 +544,7 @@ class _VoiceRecordingPageState extends State<VoiceRecordingPage>
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: context.onSurface.withOpacity(0.7),
+                color: context.onSurface.withValues(alpha: .7),
               ),
             ),
           ],
@@ -600,12 +606,15 @@ class _VoiceRecordingPageState extends State<VoiceRecordingPage>
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  Colors.blue.withOpacity(0.1),
-                  Colors.purple.withOpacity(0.1),
+                  Colors.blue.withValues(alpha: .1),
+                  Colors.purple.withValues(alpha: .1),
                 ],
               ),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.blue.withOpacity(0.3), width: 1),
+              border: Border.all(
+                color: Colors.blue.withValues(alpha: .3),
+                width: 1,
+              ),
             ),
             child: Column(
               children: [
@@ -626,7 +635,9 @@ class _VoiceRecordingPageState extends State<VoiceRecordingPage>
                 const SizedBox(height: 8),
                 Text(
                   'Vui lòng đợi trong giây lát',
-                  style: TextStyle(color: context.onSurface.withOpacity(0.7)),
+                  style: TextStyle(
+                    color: context.onSurface.withValues(alpha: .7),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 const SizedBox(
@@ -654,12 +665,15 @@ class _VoiceRecordingPageState extends State<VoiceRecordingPage>
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                Colors.purple.withOpacity(0.1),
-                Colors.pink.withOpacity(0.1),
+                Colors.purple.withValues(alpha: .1),
+                Colors.pink.withValues(alpha: .1),
               ],
             ),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.purple.withOpacity(0.3), width: 1),
+            border: Border.all(
+              color: Colors.purple.withValues(alpha: .3),
+              width: 1,
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -717,10 +731,10 @@ class _VoiceRecordingPageState extends State<VoiceRecordingPage>
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.purple.withOpacity(0.05),
+                  color: Colors.purple.withValues(alpha: .05),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: Colors.purple.withOpacity(0.2),
+                    color: Colors.purple.withValues(alpha: .2),
                     width: 1,
                   ),
                 ),
@@ -764,9 +778,9 @@ class _VoiceRecordingPageState extends State<VoiceRecordingPage>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: .1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3), width: 1),
+        border: Border.all(color: color.withValues(alpha: .3), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1179,7 +1193,7 @@ class AudioWaveformPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = isPlaying ? color : color.withOpacity(0.3)
+      ..color = isPlaying ? color : color.withValues(alpha: .3)
       ..strokeWidth = 3
       ..strokeCap = StrokeCap.round;
 

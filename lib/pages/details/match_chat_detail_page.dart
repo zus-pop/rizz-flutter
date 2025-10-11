@@ -24,7 +24,11 @@ class _MatchChatDetailPageState extends State<MatchChatDetailPage> {
     super.dispose();
   }
 
-  Future<void> _sendMessage(String matchId, String otherUserName, String? currentUserId) async {
+  Future<void> _sendMessage(
+    String matchId,
+    String otherUserName,
+    String? currentUserId,
+  ) async {
     final message = _messageController.text.trim();
 
     // Debug: Log input values
@@ -39,7 +43,9 @@ class _MatchChatDetailPageState extends State<MatchChatDetailPage> {
     debugPrint('Is Sending: $_isSending');
 
     if (message.isEmpty || _isSending || currentUserId == null) {
-      debugPrint('❌ BLOCKED: message.isEmpty=${message.isEmpty}, _isSending=$_isSending, currentUserId=$currentUserId');
+      debugPrint(
+        '❌ BLOCKED: message.isEmpty=${message.isEmpty}, _isSending=$_isSending, currentUserId=$currentUserId',
+      );
       debugPrint('═══════════════════════════════════════');
 
       // Show error to user
@@ -136,13 +142,12 @@ class _MatchChatDetailPageState extends State<MatchChatDetailPage> {
     // Log để debug
     debugPrint('🔑 MatchChatDetail - Current User ID: $currentUserId');
 
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
     if (args == null) {
       return Scaffold(
-        appBar: AppBar(
-          title: const Text('Tin nhắn'),
-        ),
+        appBar: AppBar(title: const Text('Tin nhắn')),
         body: const Center(
           child: Text('Không tìm thấy thông tin cuộc trò chuyện'),
         ),
@@ -207,15 +212,11 @@ class _MatchChatDetailPageState extends State<MatchChatDetailPage> {
               stream: MatchChatService.getMessagesStream(matchId),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
-                  return Center(
-                    child: Text('Lỗi: ${snapshot.error}'),
-                  );
+                  return Center(child: Text('Lỗi: ${snapshot.error}'));
                 }
 
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
+                  return const Center(child: CircularProgressIndicator());
                 }
 
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
@@ -258,7 +259,8 @@ class _MatchChatDetailPageState extends State<MatchChatDetailPage> {
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final messageDoc = messages[index];
-                    final messageData = messageDoc.data() as Map<String, dynamic>;
+                    final messageData =
+                        messageDoc.data() as Map<String, dynamic>;
                     final senderId = messageData['senderId'] as String;
                     final text = messageData['text'] as String;
                     final timestamp = messageData['timestamp'] as Timestamp?;
@@ -284,7 +286,7 @@ class _MatchChatDetailPageState extends State<MatchChatDetailPage> {
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: .05),
                   blurRadius: 4,
                   offset: const Offset(0, -2),
                 ),
@@ -312,7 +314,8 @@ class _MatchChatDetailPageState extends State<MatchChatDetailPage> {
                       ),
                       maxLines: null,
                       textCapitalization: TextCapitalization.sentences,
-                      onSubmitted: (_) => _sendMessage(matchId, otherUserName, currentUserId),
+                      onSubmitted: (_) =>
+                          _sendMessage(matchId, otherUserName, currentUserId),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -323,7 +326,11 @@ class _MatchChatDetailPageState extends State<MatchChatDetailPage> {
                       borderRadius: BorderRadius.circular(24),
                       onTap: _isSending
                           ? null
-                          : () => _sendMessage(matchId, otherUserName, currentUserId),
+                          : () => _sendMessage(
+                              matchId,
+                              otherUserName,
+                              currentUserId,
+                            ),
                       child: Container(
                         width: 48,
                         height: 48,
@@ -337,10 +344,7 @@ class _MatchChatDetailPageState extends State<MatchChatDetailPage> {
                                   color: Colors.white,
                                 ),
                               )
-                            : const Icon(
-                                Icons.send,
-                                color: Colors.white,
-                              ),
+                            : const Icon(Icons.send, color: Colors.white),
                       ),
                     ),
                   ),
@@ -364,14 +368,18 @@ class _MatchChatDetailPageState extends State<MatchChatDetailPage> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
-        mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isMe
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isMe && showAvatar) ...[
             CircleAvatar(
               radius: 16,
               backgroundColor: Colors.grey[300],
-              backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+              backgroundImage: avatarUrl != null
+                  ? NetworkImage(avatarUrl)
+                  : null,
               child: avatarUrl == null && userName != null
                   ? Text(
                       userName[0].toUpperCase(),
@@ -388,8 +396,9 @@ class _MatchChatDetailPageState extends State<MatchChatDetailPage> {
 
           Flexible(
             child: Column(
-              crossAxisAlignment:
-                  isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              crossAxisAlignment: isMe
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -418,10 +427,7 @@ class _MatchChatDetailPageState extends State<MatchChatDetailPage> {
                     padding: const EdgeInsets.only(top: 4, left: 12, right: 12),
                     child: Text(
                       _formatMessageTime(timestamp),
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                     ),
                   ),
               ],
@@ -473,16 +479,14 @@ class _MatchChatDetailPageState extends State<MatchChatDetailPage> {
                   if (mounted) {
                     Navigator.of(context).pop(); // Go back to chat list
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Đã hủy kết nối'),
-                      ),
+                      const SnackBar(content: Text('Đã hủy kết nối')),
                     );
                   }
                 } catch (e) {
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Lỗi: $e')),
-                    );
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
                   }
                 }
               },
@@ -496,7 +500,11 @@ class _MatchChatDetailPageState extends State<MatchChatDetailPage> {
   }
 
   /// Build avatar widget with CachedNetworkImage for error handling
-  Widget _buildAvatarWidget(String userName, String? avatarUrl, {double radius = 20}) {
+  Widget _buildAvatarWidget(
+    String userName,
+    String? avatarUrl, {
+    double radius = 20,
+  }) {
     final firstLetter = userName.isNotEmpty ? userName[0].toUpperCase() : '?';
     final colorIndex = userName.hashCode.abs() % Colors.primaries.length;
     final backgroundColor = Colors.primaries[colorIndex].shade300;

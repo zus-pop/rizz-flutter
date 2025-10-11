@@ -69,8 +69,9 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
   }
 
   void _previousStep() {
-    if (_isLoading || _currentStep <= 0)
+    if (_isLoading || _currentStep <= 0) {
       return; // Don't allow going back if loading or at first step
+    }
 
     setState(() {
       _currentStep--;
@@ -260,6 +261,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
   @override
   Widget build(BuildContext context) {
     final steps = [
+      VoiceRecordingStep(profileData: _profileData, onNext: _nextStep),
       ProfileDetailsStep(profileData: _profileData, onNext: _nextStep),
       GenderInterestStep(profileData: _profileData, onNext: _nextStep),
       LookingForStep(profileData: _profileData, onNext: _nextStep),
@@ -271,7 +273,6 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
       CommunicationStep(profileData: _profileData, onNext: _nextStep),
       DealBreakersStep(profileData: _profileData, onNext: _nextStep),
       PhotoUploadStep(profileData: _profileData, onNext: _nextStep),
-      VoiceRecordingStep(profileData: _profileData, onNext: _nextStep),
     ];
 
     return Stack(
