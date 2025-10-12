@@ -169,6 +169,9 @@ class AuthenticationProvider extends ChangeNotifier {
       final token = await _firebaseService.requestPushToken();
       if (token != null) {
         _pushToken = token;
+        if (_userId != null) {
+          _firebaseDatabase.updatePushToken(_userId!, token);
+        }
       }
     } catch (e) {
       debugPrint(e.toString());
@@ -189,7 +192,6 @@ class AuthenticationProvider extends ChangeNotifier {
       debugPrint('Is user complete setup: ${user.isCompleteSetup}');
       _isLoggedIn = true;
       _phoneNumber = null; // No phone for Google login
-      // _accessToken = 'google_token_${DateTime.now().millisecondsSinceEpoch}';
 
       // Save to storage
       final prefs = await SharedPreferences.getInstance();

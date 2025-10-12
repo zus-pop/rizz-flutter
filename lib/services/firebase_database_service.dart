@@ -52,4 +52,10 @@ class FirebaseDatabaseService {
     await _db.collection('users').doc(id).update(user.toFirestore());
     debugPrint('Updated User: ${user.email}');
   }
+
+  Future<void> updatePushToken(String userId, String token) async {
+    await _db.collection('users').doc(userId).set({
+      'pushTokens': FieldValue.arrayUnion([token]),
+    }, SetOptions(merge: true));
+  }
 }

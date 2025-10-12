@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../services/match_chat_service.dart';
 import '../../providers/authentication_provider.dart';
+import '../../theme/app_theme.dart';
 
 class Chat extends StatefulWidget {
   const Chat({super.key});
@@ -55,7 +56,7 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Tin Nhắn'),
-        backgroundColor: Colors.pink,
+        backgroundColor: context.primary,
         centerTitle: true,
       ),
       body: StreamBuilder<QuerySnapshot>(
@@ -82,8 +83,9 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
 
           if (snapshot.hasError) {
             final error = snapshot.error.toString();
-            final isMissingIndex = error.contains('index') ||
-                                   error.contains('FAILED_PRECONDITION');
+            final isMissingIndex =
+                error.contains('index') ||
+                error.contains('FAILED_PRECONDITION');
 
             return Center(
               child: Padding(
@@ -94,7 +96,9 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
                     Icon(
                       isMissingIndex ? Icons.warning : Icons.error_outline,
                       size: 64,
-                      color: isMissingIndex ? Colors.orange : Colors.red,
+                      color: isMissingIndex
+                          ? AppTheme.secondary(context)
+                          : context.error,
                     ),
                     const SizedBox(height: 16),
                     Text(
@@ -104,7 +108,9 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: isMissingIndex ? Colors.orange : Colors.red,
+                        color: isMissingIndex
+                            ? AppTheme.secondary(context)
+                            : context.error,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -150,8 +156,8 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
                       icon: const Icon(Icons.refresh),
                       label: const Text('Thử lại'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.pink,
-                        foregroundColor: Colors.white,
+                        backgroundColor: context.primary,
+                        foregroundColor: context.onPrimary,
                       ),
                     ),
                   ],
@@ -183,7 +189,7 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
                   Icon(
                     Icons.chat_bubble_outline,
                     size: 64,
-                    color: Colors.grey[400],
+                    color: context.onSurface.withValues(alpha: 0.4),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -191,7 +197,7 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w500,
-                      color: Colors.grey[600],
+                      color: context.onSurface.withValues(alpha: 0.7),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -199,7 +205,7 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
                     'Hãy match với ai đó để bắt đầu chat!',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey[500],
+                      color: context.onSurface.withValues(alpha: 0.6),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -207,7 +213,7 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
                     'User ID: $currentUserId',
                     style: TextStyle(
                       fontSize: 10,
-                      color: Colors.grey[400],
+                      color: context.onSurface.withValues(alpha: 0.5),
                       fontFamily: 'monospace',
                     ),
                   ),
@@ -265,8 +271,11 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
         if (!userSnapshot.hasData) {
           return ListTile(
             leading: CircleAvatar(
-              backgroundColor: Colors.grey[300],
-              child: const Icon(Icons.person, color: Colors.white),
+              backgroundColor: context.surface.withValues(alpha: 0.5),
+              child: Icon(
+                Icons.person,
+                color: context.onSurface.withValues(alpha: 0.7),
+              ),
             ),
             title: const Text('Đang tải...'),
             subtitle: const Text(''),
@@ -304,7 +313,10 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
         debugPrint('   - Avatar: $userAvatar');
 
         return FutureBuilder<int>(
-          future: MatchChatService.getUnreadMessageCount(matchId, currentUserId),
+          future: MatchChatService.getUnreadMessageCount(
+            matchId,
+            currentUserId,
+          ),
           builder: (context, unreadSnapshot) {
             final unreadCount = unreadSnapshot.data ?? 0;
 
@@ -318,8 +330,8 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
                       top: 0,
                       child: Container(
                         padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: Colors.red,
+                        decoration: BoxDecoration(
+                          color: context.error,
                           shape: BoxShape.circle,
                         ),
                         constraints: const BoxConstraints(
@@ -342,7 +354,10 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
               title: Text(
                 userName,
                 style: TextStyle(
-                  fontWeight: unreadCount > 0 ? FontWeight.bold : FontWeight.normal,
+                  fontWeight: unreadCount > 0
+                      ? FontWeight.bold
+                      : FontWeight.normal,
+                  color: context.onSurface,
                 ),
               ),
               subtitle: Text(
@@ -350,8 +365,12 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: unreadCount > 0 ? Colors.black87 : Colors.grey[600],
-                  fontWeight: unreadCount > 0 ? FontWeight.w500 : FontWeight.normal,
+                  color: unreadCount > 0
+                      ? context.onSurface
+                      : context.onSurface.withValues(alpha: 0.7),
+                  fontWeight: unreadCount > 0
+                      ? FontWeight.w500
+                      : FontWeight.normal,
                 ),
               ),
               trailing: Column(
@@ -363,8 +382,12 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
                       _formatTimestamp(lastMessageAt),
                       style: TextStyle(
                         fontSize: 12,
-                        color: unreadCount > 0 ? Colors.pink : Colors.grey[600],
-                        fontWeight: unreadCount > 0 ? FontWeight.bold : FontWeight.normal,
+                        color: unreadCount > 0
+                            ? context.primary
+                            : context.onSurface.withValues(alpha: 0.6),
+                        fontWeight: unreadCount > 0
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                       ),
                     ),
                 ],

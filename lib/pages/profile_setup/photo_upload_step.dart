@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:reorderables/reorderables.dart';
 import 'package:rizz_mobile/models/profile_setup_data.dart';
 import 'package:rizz_mobile/theme/app_theme.dart';
 
@@ -101,6 +102,16 @@ class _PhotoUploadStepState extends State<PhotoUploadStep> {
     }
   }
 
+  void _reorderPhotos(int oldIndex, int newIndex) {
+    setState(() {
+      if (oldIndex < newIndex) {
+        newIndex -= 1;
+      }
+      final File item = widget.profileData.photos.removeAt(oldIndex);
+      widget.profileData.photos.insert(newIndex, item);
+    });
+  }
+
   void _removePhoto(int index) {
     setState(() {
       widget.profileData.photos.removeAt(index);
@@ -147,7 +158,7 @@ class _PhotoUploadStepState extends State<PhotoUploadStep> {
       backgroundColor: context.colors.surface,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -222,122 +233,197 @@ class _PhotoUploadStepState extends State<PhotoUploadStep> {
 
               if (_hasPhotos) const SizedBox(height: 16),
 
-              // Photo Grid - More compact
-              Expanded(
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                    childAspectRatio: 1.0,
+              // Drag and drop instruction
+              if (_hasPhotos)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
                   ),
-                  itemCount: maxPhotos,
-                  itemBuilder: (context, index) {
-                    if (index < widget.profileData.photos.length) {
-                      // Show uploaded photo
-                      return Stack(
-                        children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: context.primary.withValues(alpha: 0.3),
-                                width: 2,
-                              ),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: Image.file(
-                                widget.profileData.photos[index],
-                                fit: BoxFit.cover,
-                                width: double.infinity,
-                                height: double.infinity,
-                              ),
-                            ),
-                          ),
-                          // Main photo indicator
-                          if (index == 0)
-                            Positioned(
-                              top: 6,
-                              left: 6,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: context.primary,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  'Ảnh chính',
-                                  style: AppTheme.caption.copyWith(
-                                    color: context.colors.onPrimary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          // Remove button
-                          Positioned(
-                            top: 6,
-                            right: 6,
-                            child: GestureDetector(
-                              onTap: () => _removePhoto(index),
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  color: Colors.red,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Icon(
-                                  Icons.close,
-                                  color: context.colors.onPrimary,
-                                  size: 14,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
-                    } else {
-                      // Show add photo placeholder
-                      return GestureDetector(
-                        onTap: _showPhotoOptions,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: context.colors.surfaceContainerHigh,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: context.outline,
-                              style: BorderStyle.solid,
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: context.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: context.primary.withValues(alpha: 0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.drag_indicator,
+                        color: context.primary,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Kéo thả để sắp xếp thứ tự ảnh',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: context.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+              // Photo Grid - More compact with drag and drop reordering
+              Expanded(
+                child: SingleChildScrollView(
+                  child: ReorderableWrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    onReorder: (oldIndex, newIndex) {
+                      // Only allow reordering within uploaded photos
+                      if (oldIndex < widget.profileData.photos.length &&
+                          newIndex <= widget.profileData.photos.length) {
+                        _reorderPhotos(oldIndex, newIndex);
+                      }
+                    },
+                    children: List.generate(maxPhotos, (index) {
+                      final itemWidth =
+                          (MediaQuery.of(context).size.width - 40 - 16) / 3;
+
+                      if (index < widget.profileData.photos.length) {
+                        // Show uploaded photo
+                        return SizedBox(
+                          key: ValueKey('photo_$index'),
+                          width: itemWidth,
+                          height: itemWidth,
+                          child: Stack(
                             children: [
-                              Icon(
-                                Icons.add,
-                                size: 24,
-                                color: context.onSurface.withValues(alpha: 0.7),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Thêm',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: context.onSurface.withValues(
-                                    alpha: 0.7,
+                              Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: context.primary.withValues(
+                                      alpha: 0.3,
+                                    ),
+                                    width: 2,
                                   ),
-                                  fontWeight: FontWeight.w500,
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Image.file(
+                                    widget.profileData.photos[index],
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                  ),
+                                ),
+                              ),
+                              // Main photo indicator
+                              if (index == 0)
+                                Positioned(
+                                  top: 6,
+                                  left: 6,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: context.primary,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      'Ảnh chính',
+                                      style: AppTheme.caption.copyWith(
+                                        color: context.colors.onPrimary,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              // Remove button
+                              Positioned(
+                                top: 6,
+                                right: 6,
+                                child: GestureDetector(
+                                  onTap: () => _removePhoto(index),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red,
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Icon(
+                                      Icons.close,
+                                      color: context.colors.onPrimary,
+                                      size: 14,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              // Drag handle indicator
+                              Positioned(
+                                bottom: 6,
+                                right: 6,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.6),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Icon(
+                                    Icons.drag_indicator,
+                                    color: Colors.white,
+                                    size: 14,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                      );
-                    }
-                  },
+                        );
+                      } else {
+                        // Show add photo placeholder
+                        return SizedBox(
+                          key: ValueKey('placeholder_$index'),
+                          width: itemWidth,
+                          height: itemWidth,
+                          child: GestureDetector(
+                            onTap: _showPhotoOptions,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: context.colors.surfaceContainerHigh,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: context.outline,
+                                  style: BorderStyle.solid,
+                                ),
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.add,
+                                    size: 24,
+                                    color: context.onSurface.withValues(
+                                      alpha: 0.7,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Thêm',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: context.onSurface.withValues(
+                                        alpha: 0.7,
+                                      ),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+                    }),
+                  ),
                 ),
               ),
 

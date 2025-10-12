@@ -44,7 +44,7 @@ class PerformanceOptimizer {
 
       // Log excessive frame drops
       if (_frameDropCount > 10 && kDebugMode) {
-        debugPrint('Performance warning: ${_frameDropCount} frames dropped');
+        debugPrint('Performance warning: $_frameDropCount frames dropped');
         _frameDropCount = 0; // Reset counter
       }
     }
@@ -86,7 +86,10 @@ class PerformanceOptimizer {
   // Optimize widget rebuilds by debouncing rapid state changes
   static Timer? _debounceTimer;
 
-  static void debounce(VoidCallback callback, {Duration delay = const Duration(milliseconds: 300)}) {
+  static void debounce(
+    VoidCallback callback, {
+    Duration delay = const Duration(milliseconds: 300),
+  }) {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(delay, callback);
   }
@@ -123,7 +126,10 @@ class PerformanceOptimizer {
   }
 
   // Batch multiple async operations
-  static Future<List<T>> batchOperations<T>(List<Future<T>> operations, {int batchSize = 5}) async {
+  static Future<List<T>> batchOperations<T>(
+    List<Future<T>> operations, {
+    int batchSize = 5,
+  }) async {
     final results = <T>[];
 
     for (int i = 0; i < operations.length; i += batchSize) {

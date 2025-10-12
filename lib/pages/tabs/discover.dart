@@ -60,17 +60,68 @@ class _DiscoverState extends State<Discover>
         ),
         centerTitle: false,
         actions: [
-          // Single filter button
-          IconButton(
-            onPressed: _showFilterModal,
-            icon: Icon(Icons.tune, color: context.primary, size: 30),
-            tooltip: 'Bộ lọc',
+          // Enhanced AI Filter button with badge
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            child: Stack(
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        context.primary,
+                        context.colors.secondary,
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: context.primary.withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: IconButton(
+                    onPressed: _showFilterModal,
+                    icon: const Icon(Icons.auto_awesome, color: Colors.white, size: 24),
+                    tooltip: 'AI Smart Filter',
+                  ),
+                ),
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          context.colors.tertiary,
+                          Colors.amber,
+                        ],
+                      ),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: context.colors.surface,
+                        width: 2,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.stars_rounded,
+                      size: 12,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
       body: Consumer<ProfileProvider>(
         builder: (context, profileProvider, child) {
           debugPrint(profileProvider.profiles.length.toString());
+          
           // Handle different loading states
           if (profileProvider.isLoading) {
             return Center(

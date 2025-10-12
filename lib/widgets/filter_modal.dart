@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:firebase_ai/firebase_ai.dart';
 import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
@@ -60,7 +62,7 @@ class _FilterModalState extends State<FilterModal> {
   final TextEditingController _voiceFilterController = TextEditingController();
   String _voiceFilterText = '';
   bool _isProcessingVoiceFilter = false;
-  bool _isListening = false;
+  bool _isListening = false; // Local state for UI
   stt.SpeechToText? _speech;
 
   // AI model for voice filter processing
@@ -118,7 +120,16 @@ class _FilterModalState extends State<FilterModal> {
           description: 'Cảm xúc từ mô tả giọng nói',
         ),
         'voice_quality': Schema.enumString(
-          enumValues: ["Ấm", "Khàn", "Trong", "Sáng", "Mượt"],
+          enumValues: [
+            "Ấm",
+            "Khàn",
+            "Trong trẻo",
+            "Sáng",
+            "Mượt",
+            "Trầm",
+            "Ngang mũi",
+            "Thì thào",
+          ],
           description: 'Chất lượng giọng nói từ mô tả',
         ),
         'accent': Schema.enumString(
@@ -141,6 +152,9 @@ class _FilterModalState extends State<FilterModal> {
 
     _model = FirebaseAI.vertexAI().generativeModel(
       model: 'gemini-2.5-flash',
+      systemInstruction: Content.text(
+        'Bỏ qua những field không thể phân tích, đừng cố đưa nó vào response',
+      ),
       generationConfig: GenerationConfig(
         responseMimeType: 'application/json',
         responseSchema: jsonSchema,
@@ -162,24 +176,31 @@ class _FilterModalState extends State<FilterModal> {
   void _toggleListening() {
     if (_speech == null) return;
     if (_isListening) {
-      _speech!.stop();
-      setState(() {
-        _isListening = false;
-      });
-      // On stop, if we captured transcript, process it
-      if (_voiceFilterController.text.trim().isNotEmpty) {
-        _processVoiceFilterFromInput();
-      }
+      _stopListening();
     } else {
       _startListening();
     }
+  }
+
+  void _stopListening() {
+    if (_speech == null) return;
+    _speech!.stop();
+    setState(() {
+      _isListening = false;
+    });
   }
 
   Future<void> _initSpeech() async {
     _speech = stt.SpeechToText();
     final available = await _speech!.initialize(
       onError: (e) => debugPrint('STT error: ${e.errorMsg}'),
-      onStatus: (status) => debugPrint('STT status: $status'),
+      onStatus: (status) {
+        debugPrint('STT status: $status');
+        // Update listening state based on status
+        setState(() {
+          _isListening = status == 'listening';
+        });
+      },
     );
     if (!available && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -202,20 +223,42 @@ class _FilterModalState extends State<FilterModal> {
         return;
       }
     }
+
     setState(() {
       _isListening = true;
+      _voiceFilterController.text = ''; // Clear previous text
+      _voiceFilterText = '';
     });
+
     await _speech!.listen(
       localeId: 'vi_VN',
-      listenMode: stt.ListenMode.dictation,
-      partialResults: true,
+      listenOptions: stt.SpeechListenOptions(
+        listenMode: stt.ListenMode.dictation,
+        partialResults: true,
+      ),
+      pauseFor: const Duration(
+        seconds: 3,
+      ), // Auto-stop after 3 seconds of silence
+      listenFor: const Duration(seconds: 30), // Maximum listen duration
       onResult: (result) {
         setState(() {
-          if (result.finalResult) {
-            _voiceFilterController.text = result.recognizedWords;
-            _voiceFilterText = result.recognizedWords;
+          _voiceFilterController.text = result.recognizedWords;
+          _voiceFilterText = result.recognizedWords;
+
+          // If final result (user stopped speaking), auto-stop and process
+          if (result.finalResult && result.recognizedWords.trim().isNotEmpty) {
+            _stopListening();
+            // Auto-process after a short delay
+            Future.delayed(const Duration(milliseconds: 500), () {
+              if (mounted && _voiceFilterText.trim().isNotEmpty) {
+                _processVoiceFilterFromInput();
+              }
+            });
           }
         });
+      },
+      onSoundLevelChange: (level) {
+        // Optional: Handle sound level changes for visual feedback
       },
     );
   }
@@ -227,17 +270,45 @@ class _FilterModalState extends State<FilterModal> {
       _isProcessingVoiceFilter = true;
     });
 
+    // Show the AI thinking modal
+    if (mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext dialogContext) => _aIThinkingModal(),
+      );
+    }
+
     try {
       final prompt = text;
       final response = await _model.generateContent([Content.text(prompt)]);
       if (response.text != null) {
         final jsonResponse = jsonDecode(response.text!);
+
+        // Close the thinking modal
+        if (mounted) {
+          Navigator.of(context, rootNavigator: true).pop();
+        }
+
         setState(() {
           _selectedEmotion = jsonResponse['emotion'];
           _selectedVoiceQuality = jsonResponse['voice_quality'];
           _selectedAccent = jsonResponse['accent'];
         });
         debugPrint('JSON: $jsonResponse');
+
+        // Show success animation briefly
+        if (mounted) {
+          await showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (BuildContext dialogContext) => _aISuccessModal(
+              emotion: jsonResponse['emotion'],
+              voiceQuality: jsonResponse['voice_quality'],
+              accent: jsonResponse['accent'],
+            ),
+          );
+        }
 
         // Auto-apply filters and close the bottom sheet
         widget.onApplyFilter(
@@ -256,6 +327,10 @@ class _FilterModalState extends State<FilterModal> {
       }
     } catch (e) {
       debugPrint('Error processing voice filter: $e');
+      // Close the thinking modal if it's still open
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -275,6 +350,236 @@ class _FilterModalState extends State<FilterModal> {
   void dispose() {
     _voiceFilterController.dispose();
     super.dispose();
+  }
+
+  Widget _buildModernExampleChip(String text, BuildContext context) {
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _voiceFilterController.text = text;
+          _voiceFilterText = text;
+        });
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: context.colors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: context.primary.withValues(alpha: 0.2),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.auto_fix_high_rounded,
+              size: 12,
+              color: context.primary.withValues(alpha: 0.7),
+            ),
+            const SizedBox(width: 5),
+            Text(
+              text,
+              style: TextStyle(
+                fontSize: 11,
+                color: context.onSurface.withValues(alpha: 0.8),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _aIThinkingModal() {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          color: context.colors.surface,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: context.primary.withValues(alpha: 0.3),
+              blurRadius: 24,
+              spreadRadius: 8,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Animated AI icon
+            _PulsingAIIcon(),
+            const SizedBox(height: 24),
+
+            // Title with gradient
+            ShaderMask(
+              shaderCallback: (bounds) => LinearGradient(
+                colors: [context.primary, context.colors.secondary],
+              ).createShader(bounds),
+              child: const Text(
+                'AI đang suy nghĩ',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Animated dots (ChatGPT style)
+            _ThinkingDots(),
+            const SizedBox(height: 20),
+
+            // Status text
+            Text(
+              'Đang phân tích giọng nói của bạn...',
+              style: TextStyle(
+                fontSize: 14,
+                color: context.onSurface.withValues(alpha: 0.7),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _aISuccessModal({
+    String? emotion,
+    String? voiceQuality,
+    String? accent,
+  }) {
+    // Auto close after 2 seconds
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+    });
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              context.primary.withValues(alpha: 0.95),
+              context.colors.secondary.withValues(alpha: 0.9),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: context.primary.withValues(alpha: 0.4),
+              blurRadius: 24,
+              spreadRadius: 8,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Success icon with animation
+            TweenAnimationBuilder(
+              duration: const Duration(milliseconds: 600),
+              tween: Tween<double>(begin: 0, end: 1),
+              builder: (context, double value, child) {
+                return Transform.scale(
+                  scale: value,
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.check_circle_rounded,
+                      color: Colors.white,
+                      size: 64,
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 24),
+
+            const Text(
+              'Phân tích thành công!',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Results preview
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  if (emotion != null)
+                    _resultRow(Icons.mood_rounded, 'Cảm xúc', emotion),
+                  if (voiceQuality != null) ...[
+                    const SizedBox(height: 8),
+                    _resultRow(
+                      Icons.graphic_eq_rounded,
+                      'Chất giọng',
+                      voiceQuality,
+                    ),
+                  ],
+                  if (accent != null) ...[
+                    const SizedBox(height: 8),
+                    _resultRow(Icons.location_on_rounded, 'Vùng miền', accent),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _resultRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(icon, color: Colors.white, size: 20),
+        const SizedBox(width: 8),
+        Text(
+          '$label:',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            value,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.9),
+              fontSize: 14,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -368,8 +673,541 @@ class _FilterModalState extends State<FilterModal> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Voice Analysis Filter (Natural Language) - REDESIGNED
+                      const SizedBox(height: 10),
+
+                      // Modern AI Filter Card with glassmorphism effect
+                      Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              context.primary.withValues(alpha: 0.08),
+                              context.colors.secondary.withValues(alpha: 0.05),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: context.primary.withValues(alpha: 0.15),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Sleek Header
+                              Row(
+                                children: [
+                                  // Animated gradient icon
+                                  Container(
+                                    width: 44,
+                                    height: 44,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          context.primary,
+                                          context.colors.secondary,
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: context.primary.withValues(
+                                            alpha: 0.25,
+                                          ),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Icon(
+                                      Icons.auto_awesome_rounded,
+                                      color: Colors.white,
+                                      size: 24,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            ShaderMask(
+                                              shaderCallback: (bounds) =>
+                                                  LinearGradient(
+                                                    colors: [
+                                                      context.primary,
+                                                      context.colors.secondary,
+                                                    ],
+                                                  ).createShader(bounds),
+                                              child: Text(
+                                                'AI Voice Filter',
+                                                style: TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 6,
+                                                    vertical: 2,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.amber,
+                                                borderRadius:
+                                                    BorderRadius.circular(6),
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(
+                                                    Icons.stars_rounded,
+                                                    size: 10,
+                                                    color: Colors.white,
+                                                  ),
+                                                  const SizedBox(width: 2),
+                                                  Text(
+                                                    'AI',
+                                                    style: TextStyle(
+                                                      fontSize: 9,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          'Powered by AI',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: context.onSurface.withValues(
+                                              alpha: 0.6,
+                                            ),
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              const SizedBox(height: 16),
+
+                              // Modern text input
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: context.colors.surface,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: _isListening
+                                        ? context.colors.error.withValues(
+                                            alpha: 0.5,
+                                          )
+                                        : context.primary.withValues(
+                                            alpha: 0.12,
+                                          ),
+                                    width: 1.5,
+                                  ),
+                                  boxShadow: _isListening
+                                      ? [
+                                          BoxShadow(
+                                            color: context.colors.error
+                                                .withValues(alpha: 0.15),
+                                            blurRadius: 16,
+                                            spreadRadius: 2,
+                                          ),
+                                        ]
+                                      : [
+                                          BoxShadow(
+                                            color: context.colors.shadow
+                                                .withValues(alpha: 0.03),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                ),
+                                child: Column(
+                                  children: [
+                                    TextField(
+                                      controller: _voiceFilterController,
+                                      onChanged: _onVoiceFilterChanged,
+                                      maxLines: 4,
+                                      decoration: InputDecoration(
+                                        filled: false,
+                                        hintText: _isListening
+                                            ? '🎤 Đang lắng nghe...'
+                                            : '✨ Mô tả giọng nói bạn muốn tìm...',
+                                        hintStyle: TextStyle(
+                                          color: context.onSurface.withValues(
+                                            alpha: 0.45,
+                                          ),
+                                          fontSize: 14,
+                                        ),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
+                                          borderSide: BorderSide.none,
+                                        ),
+                                        contentPadding: const EdgeInsets.all(
+                                          16,
+                                        ),
+                                      ),
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: context.onSurface,
+                                        height: 1.5,
+                                      ),
+                                    ),
+
+                                    // Listening indicator
+                                    if (_isListening)
+                                      Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 10,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: context.colors.error
+                                              .withValues(alpha: 0.08),
+                                          borderRadius: const BorderRadius.only(
+                                            bottomLeft: Radius.circular(16),
+                                            bottomRight: Radius.circular(16),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Container(
+                                              width: 8,
+                                              height: 8,
+                                              decoration: BoxDecoration(
+                                                color: context.colors.error,
+                                                shape: BoxShape.circle,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              'Đang nghe... (tự động dừng sau 3s im lặng)',
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                color: context.colors.error,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+
+                              const SizedBox(height: 14),
+
+                              // Action buttons - Modern redesign
+                              Row(
+                                children: [
+                                  // Voice button
+                                  Expanded(
+                                    child: _isListening
+                                        ? Container(
+                                            height: 48,
+                                            decoration: BoxDecoration(
+                                              color: context.colors.error,
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: context.colors.error
+                                                      .withValues(alpha: 0.3),
+                                                  blurRadius: 12,
+                                                  spreadRadius: 1,
+                                                ),
+                                              ],
+                                            ),
+                                            child: Material(
+                                              color: Colors.transparent,
+                                              child: InkWell(
+                                                onTap: _toggleListening,
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                child: Center(
+                                                  child: Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                    children: [
+                                                      Icon(
+                                                        Icons.stop_rounded,
+                                                        color: Colors.white,
+                                                        size: 20,
+                                                      ),
+                                                      const SizedBox(width: 6),
+                                                      Text(
+                                                        'Dừng lại',
+                                                        style: TextStyle(
+                                                          color: Colors.white,
+                                                          fontSize: 14,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          )
+                                        : Container(
+                                            height: 48,
+                                            decoration: BoxDecoration(
+                                              color: context.colors.surface,
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              border: Border.all(
+                                                color: context.primary
+                                                    .withValues(alpha: 0.2),
+                                                width: 1.5,
+                                              ),
+                                            ),
+                                            child: Material(
+                                              color: Colors.transparent,
+                                              child: InkWell(
+                                                onTap: _toggleListening,
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                child: Center(
+                                                  child: Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                    children: [
+                                                      Icon(
+                                                        Icons.mic_none_rounded,
+                                                        color: context.primary,
+                                                        size: 20,
+                                                      ),
+                                                      const SizedBox(width: 6),
+                                                      Text(
+                                                        'Nói',
+                                                        style: TextStyle(
+                                                          color:
+                                                              context.primary,
+                                                          fontSize: 14,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  // AI Process button
+                                  Expanded(
+                                    flex: 2,
+                                    child: Container(
+                                      height: 48,
+                                      decoration: BoxDecoration(
+                                        gradient: _isProcessingVoiceFilter
+                                            ? LinearGradient(
+                                                colors: [
+                                                  context.onSurface.withValues(
+                                                    alpha: 0.3,
+                                                  ),
+                                                  context.onSurface.withValues(
+                                                    alpha: 0.3,
+                                                  ),
+                                                ],
+                                              )
+                                            : _voiceFilterText.trim().isEmpty
+                                            ? LinearGradient(
+                                                colors: [
+                                                  context.onSurface.withValues(
+                                                    alpha: 0.2,
+                                                  ),
+                                                  context.onSurface.withValues(
+                                                    alpha: 0.2,
+                                                  ),
+                                                ],
+                                              )
+                                            : LinearGradient(
+                                                begin: Alignment.centerLeft,
+                                                end: Alignment.centerRight,
+                                                colors: [
+                                                  context.primary,
+                                                  context.colors.secondary,
+                                                ],
+                                              ),
+                                        borderRadius: BorderRadius.circular(12),
+                                        boxShadow:
+                                            _isProcessingVoiceFilter ||
+                                                _voiceFilterText.trim().isEmpty
+                                            ? []
+                                            : [
+                                                BoxShadow(
+                                                  color: context.primary
+                                                      .withValues(alpha: 0.3),
+                                                  blurRadius: 12,
+                                                  offset: const Offset(0, 4),
+                                                ),
+                                              ],
+                                      ),
+                                      child: Material(
+                                        color: Colors.transparent,
+                                        child: InkWell(
+                                          onTap:
+                                              _isProcessingVoiceFilter ||
+                                                  _voiceFilterText
+                                                      .trim()
+                                                      .isEmpty
+                                              ? null
+                                              : _processVoiceFilterFromInput,
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          child: Center(
+                                            child: _isProcessingVoiceFilter
+                                                ? Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                    children: [
+                                                      SizedBox(
+                                                        width: 18,
+                                                        height: 18,
+                                                        child: CircularProgressIndicator(
+                                                          strokeWidth: 2,
+                                                          valueColor:
+                                                              AlwaysStoppedAnimation<
+                                                                Color
+                                                              >(Colors.white),
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 8),
+                                                      Text(
+                                                        'Đang xử lý...',
+                                                        style: TextStyle(
+                                                          color: Colors.white,
+                                                          fontSize: 14,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  )
+                                                : Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                    children: [
+                                                      Icon(
+                                                        Icons
+                                                            .auto_awesome_rounded,
+                                                        color:
+                                                            _voiceFilterText
+                                                                .trim()
+                                                                .isEmpty
+                                                            ? context.onSurface
+                                                                  .withValues(
+                                                                    alpha: 0.5,
+                                                                  )
+                                                            : Colors.white,
+                                                        size: 20,
+                                                      ),
+                                                      const SizedBox(width: 6),
+                                                      Text(
+                                                        'AI Phân tích',
+                                                        style: TextStyle(
+                                                          color:
+                                                              _voiceFilterText
+                                                                  .trim()
+                                                                  .isEmpty
+                                                              ? context
+                                                                    .onSurface
+                                                                    .withValues(
+                                                                      alpha:
+                                                                          0.5,
+                                                                    )
+                                                              : Colors.white,
+                                                          fontSize: 14,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              // Quick suggestions
+                              if (!_isProcessingVoiceFilter &&
+                                  !_isListening) ...[
+                                const SizedBox(height: 14),
+                                Text(
+                                  'Thử ngay:',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: context.onSurface.withValues(
+                                      alpha: 0.6,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 6,
+                                  runSpacing: 6,
+                                  children: [
+                                    _buildModernExampleChip(
+                                      'Giọng miền Nam, vui vẻ',
+                                      context,
+                                    ),
+                                    _buildModernExampleChip(
+                                      'Giọng ấm, trầm',
+                                      context,
+                                    ),
+                                    _buildModernExampleChip(
+                                      'Giọng Bắc, tự tin',
+                                      context,
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+
                       // Age Range Filter
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 40),
                       Text(
                         'Độ tuổi',
                         style: AppTheme.headline4.copyWith(
@@ -415,165 +1253,6 @@ class _FilterModalState extends State<FilterModal> {
                           },
                         ),
                       ),
-
-                      // Voice Analysis Filter (Natural Language)
-                      const SizedBox(height: 40),
-                      Text(
-                        'Bộ lọc giọng nói thông minh',
-                        style: AppTheme.headline4.copyWith(
-                          color: context.onSurface,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Mô tả bằng giọng nói loại giọng bạn muốn tìm',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: context.onSurface.withValues(alpha: 0.7),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Voice input container
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: context.colors.surfaceContainer,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: context.outline.withValues(alpha: 0.2),
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Voice filter text input
-                            TextField(
-                              controller: _voiceFilterController,
-                              onChanged: _onVoiceFilterChanged,
-                              maxLines: 3,
-                              decoration: InputDecoration(
-                                hintText:
-                                    'Ví dụ: "Tôi muốn tìm giọng nói vui vẻ, ấm áp, có giọng miền Nam"',
-                                hintStyle: TextStyle(
-                                  color: context.onSurface.withValues(
-                                    alpha: 0.5,
-                                  ),
-                                  fontSize: 14,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: BorderSide(
-                                    color: context.outline.withValues(
-                                      alpha: 0.3,
-                                    ),
-                                  ),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: BorderSide(
-                                    color: context.outline.withValues(
-                                      alpha: 0.3,
-                                    ),
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: BorderSide(
-                                    color: context.primary,
-                                    width: 2,
-                                  ),
-                                ),
-                                contentPadding: const EdgeInsets.all(12),
-                              ),
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: context.onSurface,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-
-                            // Button row for speech and text processing
-                            Row(
-                              children: [
-                                // Speech-to-text button
-                                Expanded(
-                                  child: ElevatedButton.icon(
-                                    onPressed: _toggleListening,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: _isListening
-                                          ? Colors.red
-                                          : context.outline,
-                                      foregroundColor: _isListening
-                                          ? Colors.white
-                                          : context.onSurface,
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 12,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                    ),
-                                    icon: Icon(
-                                      _isListening ? Icons.stop : Icons.mic,
-                                    ),
-                                    label: Text(
-                                      _isListening ? 'Dừng' : 'Nói',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                // Process button
-                                Expanded(
-                                  flex: 2,
-                                  child: ElevatedButton.icon(
-                                    onPressed: _isProcessingVoiceFilter
-                                        ? null
-                                        : _processVoiceFilterFromInput,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: context.primary,
-                                      foregroundColor: context.onPrimary,
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 12,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                    ),
-                                    icon: _isProcessingVoiceFilter
-                                        ? SizedBox(
-                                            width: 20,
-                                            height: 20,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              valueColor:
-                                                  AlwaysStoppedAnimation<Color>(
-                                                    context.onPrimary,
-                                                  ),
-                                            ),
-                                          )
-                                        : const Icon(Icons.psychology),
-                                    label: Text(
-                                      _isProcessingVoiceFilter
-                                          ? 'Đang phân tích...'
-                                          : 'Phân tích bằng AI',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 40),
 
                       // Premium Filters Section
                       Consumer<AuthenticationProvider>(
@@ -912,7 +1591,7 @@ class _FilterModalState extends State<FilterModal> {
                             onChanged: (value) {
                               profileProvider.toggleFiltering();
                             },
-                            activeColor: context.primary,
+                            activeThumbColor: context.primary,
                           ),
                         ],
                       ),
@@ -926,7 +1605,7 @@ class _FilterModalState extends State<FilterModal> {
                       child: OutlinedButton(
                         onPressed: () {
                           setState(() {
-                            _ageRange = const RangeValues(18, 65);
+                            _ageRange = const RangeValues(18, 30);
                             _distance = 50;
                             _selectedEmotion = null;
                             _selectedVoiceQuality = null;
@@ -996,6 +1675,148 @@ class _FilterModalState extends State<FilterModal> {
           ),
         ],
       ),
+    );
+  }
+}
+
+// Animated AI Icon Widget (pulsing effect)
+class _PulsingAIIcon extends StatefulWidget {
+  const _PulsingAIIcon();
+
+  @override
+  State<_PulsingAIIcon> createState() => _PulsingAIIconState();
+}
+
+class _PulsingAIIconState extends State<_PulsingAIIcon>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _opacityAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _scaleAnimation = Tween<double>(
+      begin: 0.9,
+      end: 1.1,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+
+    _opacityAnimation = Tween<double>(
+      begin: 0.6,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _scaleAnimation.value,
+          child: Opacity(
+            opacity: _opacityAnimation.value,
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [context.primary, context.colors.secondary],
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: context.primary.withValues(alpha: 0.4),
+                    blurRadius: 20,
+                    spreadRadius: 5,
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.auto_awesome,
+                color: Colors.white,
+                size: 56,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// Animated Thinking Dots (ChatGPT style)
+class _ThinkingDots extends StatefulWidget {
+  const _ThinkingDots();
+
+  @override
+  State<_ThinkingDots> createState() => _ThinkingDotsState();
+}
+
+class _ThinkingDotsState extends State<_ThinkingDots>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(3, (index) {
+            final delay = index * 0.2;
+            final value = (_controller.value - delay) % 1.0;
+            final opacity = (math.sin(value * math.pi * 2) + 1) / 2;
+            final scale = 0.6 + (opacity * 0.4);
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Transform.scale(
+                scale: scale,
+                child: Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        context.primary.withValues(alpha: opacity),
+                        context.colors.secondary.withValues(alpha: opacity),
+                      ],
+                    ),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            );
+          }),
+        );
+      },
     );
   }
 }

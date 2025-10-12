@@ -366,32 +366,706 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
     return '$minutes:$seconds';
   }
 
-  Widget _buildAnalysisRow(String label, String value) {
-    return Row(
+  // Build helper methods for cleaner UI components
+  Widget _buildHeader() {
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: 80,
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.purple,
+        Text(
+          'Ghi âm giọng nói',
+          style: AppTheme.headline1.copyWith(
+            color: context.onSurface,
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Hãy giới thiệu bản thân để AI phân tích và mọi người hiểu thêm về bạn',
+          style: TextStyle(
+            fontSize: 16,
+            color: context.onSurface.withValues(alpha: 0.7),
+            height: 1.5,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPromptCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            context.primary.withValues(alpha: 0.12),
+            context.primary.withValues(alpha: 0.06),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: context.primary.withValues(alpha: 0.3),
+          width: 2,
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.lightbulb_outline, color: context.primary, size: 22),
+              const SizedBox(width: 8),
+              Text(
+                'Gợi ý câu hỏi',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: context.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            prompts[_currentPromptIndex],
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w500,
+              color: context.onSurface,
+              height: 1.4,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          TextButton.icon(
+            onPressed: _nextPrompt,
+            icon: Icon(Icons.refresh, size: 18, color: context.primary),
+            label: Text(
+              'Thử câu hỏi khác',
+              style: TextStyle(
+                color: context.primary,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecordingButton() {
+    return Column(
+      children: [
+        GestureDetector(
+          onTap: _record,
+          child: Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: _isCountingDown
+                    ? [
+                        context.colors.tertiaryContainer,
+                        context.colors.tertiary.withValues(alpha: 0.8),
+                      ]
+                    : _isRecording
+                    ? [
+                        context.colors.error,
+                        context.colors.error.withValues(alpha: 0.8),
+                      ]
+                    : [context.primary, context.primary.withValues(alpha: 0.8)],
+              ),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color:
+                      (_isCountingDown
+                              ? context.colors.tertiary
+                              : _isRecording
+                              ? context.colors.error
+                              : context.primary)
+                          .withValues(alpha: 0.4),
+                  blurRadius: 20,
+                  spreadRadius: 4,
+                ),
+              ],
+            ),
+            child: Center(
+              child: _isCountingDown
+                  ? Text(
+                      '$_countdownSeconds',
+                      style: const TextStyle(
+                        fontSize: 48,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Icon(
+                      _isRecording ? Icons.stop_rounded : Icons.mic_rounded,
+                      color: Colors.white,
+                      size: 56,
+                    ),
             ),
           ),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            value,
+        const SizedBox(height: 24),
+        Text(
+          _isCountingDown
+              ? 'Chuẩn bị...'
+              : _isRecording
+              ? 'Nhấn để dừng'
+              : 'Nhấn để bắt đầu',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: _isCountingDown
+                ? context.colors.tertiary
+                : _isRecording
+                ? context.colors.error
+                : context.onSurface,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          _isRecording
+              ? 'Còn ${_maxRecordingDurationSeconds - _recordingDuration.inSeconds}s'
+              : 'Tối đa ${_maxRecordingDurationSeconds}s',
+          style: TextStyle(
+            fontSize: 14,
+            color: context.onSurface.withValues(alpha: 0.6),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecordingProgress() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: context.colors.errorContainer,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: context.colors.error.withValues(alpha: 0.4),
+          width: 2,
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: context.colors.error,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Đang ghi âm',
+                style: TextStyle(
+                  fontSize: 18,
+                  color: context.colors.error,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Text(
+            _formatDuration(_recordingDuration),
             style: TextStyle(
-              fontSize: 14,
-              color: context.onSurface.withValues(alpha: 0.8),
+              fontSize: 48,
+              fontWeight: FontWeight.bold,
+              color: context.colors.error,
+              letterSpacing: 2,
+            ),
+          ),
+          const SizedBox(height: 20),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value:
+                  _recordingDuration.inSeconds / _maxRecordingDurationSeconds,
+              backgroundColor: context.colors.surfaceContainerHighest,
+              valueColor: AlwaysStoppedAnimation<Color>(context.colors.error),
+              minHeight: 8,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAnalysisCard() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: context.primary.withValues(alpha: 0.6),
+          width: 2.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [context.primary, context.colors.secondary],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: context.primary.withValues(alpha: 0.3),
+                      blurRadius: 8,
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.auto_awesome,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'AI Voice Analysis',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: context.primary,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    Text(
+                      'Powered by Gemini',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: context.colors.secondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  color: _isPlaying
+                      ? context.colors.tertiaryContainer
+                      : context.colors.tertiary.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: _isPlaying
+                        ? context.colors.onTertiaryContainer
+                        : context.colors.tertiary,
+                    width: 2,
+                  ),
+                ),
+                child: IconButton(
+                  onPressed: _playRecording,
+                  icon: Icon(
+                    _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                    color: _isPlaying
+                        ? context.colors.onTertiaryContainer
+                        : context.colors.tertiary,
+                  ),
+                  tooltip: _isPlaying ? 'Tạm dừng' : 'Nghe audio',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          _buildAnalysisItem(
+            icon: Icons.mood_rounded,
+            label: 'Cảm xúc',
+            value: _audioAnalysis!['emotion'] ?? 'N/A',
+            color: context.colors.error,
+          ),
+          const SizedBox(height: 14),
+          _buildAnalysisItem(
+            icon: Icons.graphic_eq_rounded,
+            label: 'Chất giọng',
+            value: _audioAnalysis!['voice_quality'] ?? 'N/A',
+            color: context.primary,
+          ),
+          const SizedBox(height: 14),
+          _buildAnalysisItem(
+            icon: Icons.location_on_rounded,
+            label: 'Vùng miền',
+            value: _audioAnalysis!['accent'] ?? 'N/A',
+            color: context.colors.secondary,
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  context.colors.tertiaryContainer,
+                  context.colors.tertiary.withValues(alpha: 0.18),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: context.colors.tertiary.withValues(alpha: 0.55),
+                width: 2,
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: context.colors.tertiary.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.stars_rounded,
+                    color: context.colors.tertiary,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'AI Overview',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: context.colors.tertiary,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _audioAnalysis!['overview'] ?? 'Không có đánh giá',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontStyle: FontStyle.italic,
+                          color: context.onSurface.withValues(alpha: 0.9),
+                          height: 1.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAnalysisItem({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.45), width: 2),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  color.withValues(alpha: 0.4),
+                  color.withValues(alpha: 0.2),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                    color: context.onSurface.withValues(alpha: 0.95),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAudioPlayer() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            context.colors.surfaceContainerHigh.withValues(alpha: 0.8),
+            context.colors.surfaceContainer.withValues(alpha: 0.6),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: context.outline.withValues(alpha: 0.4),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: context.colors.tertiary.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.check_circle_rounded,
+                  color: context.colors.tertiary,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Thời lượng: ${_formatDuration(_recordingDuration)}',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: context.colors.tertiary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              trackHeight: 6,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 22),
+              activeTrackColor: context.primary,
+              inactiveTrackColor: Colors.grey.withValues(alpha: 0.3),
+              thumbColor: context.primary,
+              overlayColor: context.primary.withValues(alpha: 0.3),
+            ),
+            child: Slider(
+              value: _totalDuration.inMilliseconds > 0
+                  ? _playbackPosition.inMilliseconds /
+                        _totalDuration.inMilliseconds
+                  : 0.0,
+              onChanged: (value) {
+                if (_totalDuration.inMilliseconds > 0) {
+                  final newPosition = Duration(
+                    milliseconds: (value * _totalDuration.inMilliseconds)
+                        .toInt(),
+                  );
+                  _audioPlayer.seek(newPosition);
+                }
+              },
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                _formatDuration(_playbackPosition),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: context.onSurface.withValues(alpha: 0.8),
+                ),
+              ),
+              Text(
+                _formatDuration(_totalDuration),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: context.onSurface.withValues(alpha: 0.8),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: _playRecording,
+            icon: Icon(
+              _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+              size: 24,
+            ),
+            label: Text(
+              _isPlaying ? 'Tạm dừng' : 'Phát audio',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: context.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              elevation: 2,
+            ),
+          ),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: _deleteRecording,
+            icon: const Icon(Icons.refresh_rounded, size: 24),
+            label: const Text(
+              'Ghi lại',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: context.colors.surfaceContainerHigh,
+              foregroundColor: context.onSurface,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
             ),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildCompleteButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: _hasRecording ? widget.onNext : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _hasRecording ? context.primary : context.outline,
+          foregroundColor: _hasRecording
+              ? Colors.white
+              : context.onSurface.withValues(alpha: 0.5),
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          elevation: _hasRecording ? 3 : 0,
+        ),
+        child: const Text(
+          'Hoàn tất thiết lập',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingOverlay() {
+    return Container(
+      color: Colors.black.withValues(alpha: 0.75),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.all(40),
+          margin: const EdgeInsets.symmetric(horizontal: 40),
+          decoration: BoxDecoration(
+            color: context.colors.surface,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.4),
+                blurRadius: 24,
+                spreadRadius: 8,
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 90,
+                height: 90,
+                child: CircularProgressIndicator(
+                  strokeWidth: 8,
+                  valueColor: AlwaysStoppedAnimation<Color>(context.primary),
+                ),
+              ),
+              const SizedBox(height: 28),
+              Icon(Icons.psychology_rounded, color: context.primary, size: 56),
+              const SizedBox(height: 20),
+              Text(
+                'AI đang phân tích',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: context.primary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Vui lòng đợi trong giây lát...',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: context.onSurface.withValues(alpha: 0.7),
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -402,614 +1076,58 @@ class _VoiceRecordingStepState extends State<VoiceRecordingStep> {
       body: SafeArea(
         child: Stack(
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24.0,
-                vertical: 16.0,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header Section - More prominent
-                  Text(
-                    'Ghi âm giọng nói của bạn',
-                    style: AppTheme.headline1.copyWith(
-                      color: context.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Ghi âm một đoạn giới thiệu ngắn để AI phân tích giọng nói và mọi người hiểu rõ hơn về cá tính của bạn.\n\nThời lượng tối đa: ${_maxRecordingDurationSeconds}s giây.',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: context.onSurface.withValues(alpha: 0.7),
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Recording Prompt - Only show when not playing and no recording exists
-                  if (!_isPlaying && !_hasRecording) ...[
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: context.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: context.primary.withValues(alpha: 0.2),
-                          width: 1,
-                        ),
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.lightbulb_outline,
-                                color: context.primary,
-                                size: 18,
-                              ),
-                              const SizedBox(width: 8),
-                              const Text(
-                                'Hãy thử nói:',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            prompts[_currentPromptIndex],
-                            style: AppTheme.body1.copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: context.onSurface,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          TextButton(
-                            onPressed: _nextPrompt,
-                            style: TextButton.styleFrom(
-                              minimumSize: Size.zero,
-                              padding: const EdgeInsets.symmetric(vertical: 4),
-                            ),
-                            child: Text(
-                              'Thử một gợi ý khác',
-                              style: TextStyle(
-                                color: context.primary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-
-                  // Main Recording Section - Most prominent
-                  Expanded(
-                    child: Center(
-                      child: SingleChildScrollView(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            if (!_hasRecording) ...[
-                              // Recording Interface
-                              Column(
-                                children: [
-                                  // Show countdown or recording button
-                                  if (_isCountingDown) ...[
-                                    // Countdown Display
-                                    Container(
-                                      width: 80,
-                                      height: 80,
-                                      decoration: BoxDecoration(
-                                        color: Colors.orange,
-                                        shape: BoxShape.circle,
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.orange.withValues(
-                                              alpha: 0.3,
-                                            ),
-                                            blurRadius: 10,
-                                            spreadRadius: 2,
-                                          ),
-                                        ],
-                                      ),
-                                      child: Center(
-                                        child: Text(
-                                          '$_countdownSeconds',
-                                          style: const TextStyle(
-                                            fontSize: 28,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ] else ...[
-                                    // Simple Recording Button - No animation
-                                    GestureDetector(
-                                      onTap: _record,
-                                      child: Container(
-                                        width: 80,
-                                        height: 80,
-                                        decoration: BoxDecoration(
-                                          color: _isRecording
-                                              ? Colors.red
-                                              : context.primary,
-                                          shape: BoxShape.circle,
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color:
-                                                  (_isRecording
-                                                          ? Colors.red
-                                                          : context.primary)
-                                                      .withValues(alpha: 0.3),
-                                              blurRadius: 10,
-                                              spreadRadius: 2,
-                                            ),
-                                          ],
-                                        ),
-                                        child: Icon(
-                                          _isRecording ? Icons.stop : Icons.mic,
-                                          color: context.colors.onPrimary,
-                                          size: 32,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                  const SizedBox(height: 16),
-
-                                  // Recording Status Text - Prominent
-                                  Text(
-                                    _isCountingDown
-                                        ? 'Chuẩn bị ghi âm... (Nhấn để hủy)'
-                                        : _isRecording
-                                        ? 'Đang ghi âm... (còn ${_maxRecordingDurationSeconds - _recordingDuration.inSeconds}s)'
-                                        : 'Nhấn để bắt đầu ghi âm (tối đa ${_maxRecordingDurationSeconds}s)',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: _isCountingDown
-                                          ? Colors.orange
-                                          : _isRecording
-                                          ? Colors.red
-                                          : context.onSurface,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-
-                                  // Recording Duration - Only show when recording
-                                  if (_isRecording) ...[
-                                    const SizedBox(height: 16),
-                                    // Progress indicator for max duration limit
-                                    SizedBox(
-                                      width: 200,
-                                      child: LinearProgressIndicator(
-                                        value:
-                                            _recordingDuration.inSeconds /
-                                            _maxRecordingDurationSeconds,
-                                        backgroundColor: Colors.grey.withValues(
-                                          alpha: 0.3,
-                                        ),
-                                        valueColor:
-                                            const AlwaysStoppedAnimation<Color>(
-                                              Colors.red,
-                                            ),
-                                        minHeight: 6,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      _formatDuration(_recordingDuration),
-                                      style: const TextStyle(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.red,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    // Simple Recording Indicator
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Container(
-                                          width: 8,
-                                          height: 8,
-                                          decoration: const BoxDecoration(
-                                            color: Colors.red,
-                                            shape: BoxShape.circle,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        const Text(
-                                          'Đang ghi âm...',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            color: Colors.red,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ] else ...[
-                              // Playback Interface - Cleaner layout
-                              Column(
-                                children: [
-                                  // Show AI Analysis when available
-                                  if (_audioAnalysis != null) ...[
-                                    Container(
-                                      padding: const EdgeInsets.all(20),
-                                      decoration: BoxDecoration(
-                                        color: Colors.purple.withValues(
-                                          alpha: 0.1,
-                                        ),
-                                        borderRadius: BorderRadius.circular(16),
-                                        border: Border.all(
-                                          color: Colors.purple.withValues(
-                                            alpha: 0.3,
-                                          ),
-                                          width: 2,
-                                        ),
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              const Icon(
-                                                Icons.smart_toy,
-                                                color: Colors.purple,
-                                                size: 24,
-                                              ),
-                                              const SizedBox(width: 8),
-                                              const Text(
-                                                'Phân tích giọng nói qua AI',
-                                                style: TextStyle(
-                                                  fontSize: 18,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.purple,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 16),
-                                          _buildAnalysisRow(
-                                            'Cảm xúc:',
-                                            _audioAnalysis!['emotion'] ?? 'N/A',
-                                          ),
-                                          const SizedBox(height: 8),
-                                          _buildAnalysisRow(
-                                            'Chất giọng:',
-                                            _audioAnalysis!['voice_quality'] ??
-                                                'N/A',
-                                          ),
-                                          const SizedBox(height: 8),
-                                          _buildAnalysisRow(
-                                            'Vùng miền:',
-                                            _audioAnalysis!['accent'] ?? 'N/A',
-                                          ),
-                                          const SizedBox(height: 12),
-                                          Container(
-                                            padding: const EdgeInsets.all(12),
-                                            decoration: BoxDecoration(
-                                              color: Colors.purple.withValues(
-                                                alpha: 0.05,
-                                              ),
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            child: Row(
-                                              children: [
-                                                const Icon(
-                                                  Icons.lightbulb,
-                                                  color: Colors.purple,
-                                                  size: 16,
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Expanded(
-                                                  child: Text(
-                                                    _audioAnalysis!['overview'] ??
-                                                        'Không có đánh giá',
-                                                    style: const TextStyle(
-                                                      fontSize: 14,
-                                                      fontStyle:
-                                                          FontStyle.italic,
-                                                      color: Colors.purple,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 10),
-                                  ],
-
-                                  // Playback Progress with Recording Duration
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 20,
-                                      vertical: 16,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: context.colors.surfaceContainerHigh
-                                          .withValues(alpha: 0.5),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Column(
-                                      children: [
-                                        // Recording Duration Header
-                                        Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            const Icon(
-                                              Icons.check_circle,
-                                              color: Colors.green,
-                                              size: 20,
-                                            ),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              'Thời lượng ghi âm: ${_formatDuration(_recordingDuration)}',
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w600,
-                                                color: Colors.green,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 16),
-                                        // Progress Bar
-                                        SliderTheme(
-                                          data: SliderTheme.of(context).copyWith(
-                                            trackHeight: 4,
-                                            thumbShape:
-                                                const RoundSliderThumbShape(
-                                                  enabledThumbRadius: 8,
-                                                ),
-                                            overlayShape:
-                                                const RoundSliderOverlayShape(
-                                                  overlayRadius: 16,
-                                                ),
-                                          ),
-                                          child: Slider(
-                                            value:
-                                                _totalDuration.inMilliseconds >
-                                                    0
-                                                ? _playbackPosition
-                                                          .inMilliseconds /
-                                                      _totalDuration
-                                                          .inMilliseconds
-                                                : 0.0,
-                                            onChanged: (value) {
-                                              if (_totalDuration
-                                                      .inMilliseconds >
-                                                  0) {
-                                                final newPosition = Duration(
-                                                  milliseconds:
-                                                      (value *
-                                                              _totalDuration
-                                                                  .inMilliseconds)
-                                                          .toInt(),
-                                                );
-                                                _audioPlayer.seek(newPosition);
-                                              }
-                                            },
-                                            activeColor: context.primary,
-                                            inactiveColor: Colors.grey
-                                                .withValues(alpha: 0.3),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 10),
-                                        // Time Display
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(
-                                              _formatDuration(
-                                                _playbackPosition,
-                                              ),
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w500,
-                                                color: context.onSurface
-                                                    .withValues(alpha: 0.7),
-                                              ),
-                                            ),
-                                            Text(
-                                              _formatDuration(_totalDuration),
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w500,
-                                                color: context.onSurface
-                                                    .withValues(alpha: 0.7),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-
-                                  const SizedBox(height: 24),
-
-                                  // Playback Controls - Simplified
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceEvenly,
-                                    children: [
-                                      // Play/Pause Button
-                                      Expanded(
-                                        child: ElevatedButton.icon(
-                                          onPressed: _playRecording,
-                                          icon: Icon(
-                                            _isPlaying
-                                                ? Icons.pause
-                                                : Icons.play_arrow,
-                                          ),
-                                          label: Text(
-                                            _isPlaying ? 'Tạm dừng' : 'Phát',
-                                          ),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: context.primary,
-                                            foregroundColor:
-                                                context.colors.onPrimary,
-                                            padding: const EdgeInsets.symmetric(
-                                              vertical: 14,
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      // Delete Button
-                                      Expanded(
-                                        child: ElevatedButton.icon(
-                                          onPressed: _deleteRecording,
-                                          icon: const Icon(Icons.refresh),
-                                          label: const Text('Ghi lại'),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: context
-                                                .colors
-                                                .surfaceContainerHigh,
-                                            foregroundColor: context.onSurface,
-                                            padding: const EdgeInsets.symmetric(
-                                              vertical: 14,
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  // Bottom Actions - Comact
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _hasRecording ? widget.onNext : null,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _hasRecording
-                                ? context.primary
-                                : context.outline,
-                            foregroundColor: _hasRecording
-                                ? context.colors.onPrimary
-                                : context.onSurface.withValues(alpha: 0.5),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: _hasRecording ? 2 : 0,
-                          ),
-                          child: const Text(
-                            'Hoàn tất thiết lập',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // Loading Overlay when AI is analyzing
-            if (_isAnalyzingAudio) ...[
-              Container(
-                color: Colors.black.withValues(alpha: 0.7),
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.all(32),
-                    margin: const EdgeInsets.symmetric(horizontal: 40),
-                    decoration: BoxDecoration(
-                      color: context.colors.surface,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.3),
-                          blurRadius: 20,
-                          spreadRadius: 5,
-                        ),
-                      ],
-                    ),
+            Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
                     child: Column(
-                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const SizedBox(
-                          width: 80,
-                          height: 80,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 6,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.blue,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        const Icon(
-                          Icons.psychology,
-                          color: Colors.blue,
-                          size: 48,
-                        ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'AI đang phân tích giọng nói của bạn...',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Vui lòng đợi trong giây lát',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: context.onSurface.withValues(alpha: 0.7),
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
+                        // Header
+                        _buildHeader(),
+                        const SizedBox(height: 28),
+
+                        // Content based on state
+                        if (!_hasRecording) ...[
+                          // Recording mode
+                          if (!_isRecording && !_isCountingDown) ...[
+                            _buildPromptCard(),
+                            const SizedBox(height: 32),
+                          ],
+
+                          Center(child: _buildRecordingButton()),
+
+                          if (_isRecording) ...[
+                            const SizedBox(height: 32),
+                            _buildRecordingProgress(),
+                          ],
+                        ] else ...[
+                          // Playback mode with analysis
+                          if (_audioAnalysis != null) ...[
+                            _buildAnalysisCard(),
+                            const SizedBox(height: 20),
+                          ],
+
+                          _buildAudioPlayer(),
+                          const SizedBox(height: 20),
+                          _buildActionButtons(),
+                        ],
                       ],
                     ),
                   ),
                 ),
-              ),
-            ],
+
+                // Bottom button
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: _buildCompleteButton(),
+                ),
+              ],
+            ),
+
+            // Loading overlay
+            if (_isAnalyzingAudio) _buildLoadingOverlay(),
           ],
         ),
       ),
