@@ -460,6 +460,21 @@ class ProfileProvider extends ChangeNotifier {
         'targetUserId': profileId,
       });
 
+      // Remove from passes collection if it exists (in case user previously passed and now likes)
+      final passRef = _firestore
+          .collection('users')
+          .doc(_currentUserId!)
+          .collection('passes')
+          .doc(profileId);
+
+      // Check if pass exists before deleting
+      final passDoc = await passRef.get();
+      if (passDoc.exists) {
+        batch.delete(passRef);
+        // Update local tracking
+        _passedUserIds.remove(profileId);
+      }
+
       // Check if target user also liked current user (potential match)
       final targetLikeDoc = await _firestore
           .collection('users')

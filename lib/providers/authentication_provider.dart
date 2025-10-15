@@ -238,4 +238,9 @@ class AuthenticationProvider extends ChangeNotifier {
         await ProfileSetupService.isProfileSetupComplete();
     notifyListeners();
   }
+
+  Future<User?> whoAmI() async {
+    final user = await _firebaseDatabase.getUserById(_userId!);
+    return user;
+  }
 }
