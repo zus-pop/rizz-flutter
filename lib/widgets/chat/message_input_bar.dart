@@ -13,6 +13,9 @@ class MessageInputBar extends StatelessWidget {
   final VoidCallback onSend;
   final VoidCallback onAISuggest;
   final AuthenticationProvider authProvider;
+  final VoidCallback? onRecordStart;
+  final VoidCallback? onRecordStop;
+  final bool isRecording;
 
   const MessageInputBar({
     super.key,
@@ -24,6 +27,9 @@ class MessageInputBar extends StatelessWidget {
     required this.onSend,
     required this.onAISuggest,
     required this.authProvider,
+    this.onRecordStart,
+    this.onRecordStop,
+    this.isRecording = false,
   });
 
   @override
@@ -48,17 +54,23 @@ class MessageInputBar extends StatelessWidget {
               _buildAIButton(context)
             else
               _buildPremiumPromptButton(context),
+
+            // Voice recording button
+            _buildVoiceButton(context),
+
             Expanded(
               child: TextField(
                 controller: controller,
                 decoration: InputDecoration(
-                  hintText: 'Nhập tin nhắn...',
+                  hintText: isRecording ? 'Đang ghi âm...' : 'Nhập tin nhắn...',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(24),
                     borderSide: BorderSide.none,
                   ),
                   filled: true,
-                  fillColor: context.surface.withValues(alpha: 0.5),
+                  fillColor: isRecording
+                      ? Colors.red.withValues(alpha: 0.1)
+                      : context.surface.withValues(alpha: 0.5),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 20,
                     vertical: 10,
@@ -67,6 +79,7 @@ class MessageInputBar extends StatelessWidget {
                 maxLines: null,
                 textCapitalization: TextCapitalization.sentences,
                 onSubmitted: (_) => onSend(),
+                enabled: !isRecording,
               ),
             ),
             const SizedBox(width: 8),
@@ -125,6 +138,38 @@ class MessageInputBar extends StatelessWidget {
             height: 40,
             alignment: Alignment.center,
             child: Icon(Icons.diamond, size: 18, color: context.primary),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVoiceButton(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(right: 8),
+      child: Material(
+        color: isRecording
+            ? Colors.red.withValues(alpha: 0.2)
+            : context.surface.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(24),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(24),
+          onTap: () {
+            if (isRecording) {
+              onRecordStop?.call();
+            } else {
+              onRecordStart?.call();
+            }
+          },
+          child: Container(
+            width: 40,
+            height: 40,
+            alignment: Alignment.center,
+            child: Icon(
+              isRecording ? Icons.stop : Icons.mic,
+              size: 20,
+              color: isRecording ? Colors.red : context.onSurface.withValues(alpha: 0.7),
+            ),
           ),
         ),
       ),

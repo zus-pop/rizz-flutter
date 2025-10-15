@@ -301,8 +301,15 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
             ? imageUrls[0] as String?
             : null;
 
+        // Get last message info with type support
+        final lastMessageType = matchData['lastMessageType'] as String?;
         final lastMessage = matchData['lastMessage'] as String?;
         final lastMessageAt = matchData['lastMessageAt'] as Timestamp?;
+
+        // Display message based on type
+        final displayMessage = lastMessageType == 'voice'
+            ? '🎤 Tin nhắn thoại'
+            : (lastMessage ?? 'Chưa có tin nhắn');
 
         // Debug log
         debugPrint('👤 Match #$matchId:');
@@ -311,6 +318,8 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
         debugPrint('   - LastName: $lastName');
         debugPrint('   - Display Name: $userName');
         debugPrint('   - Avatar: $userAvatar');
+        debugPrint('   - Last Message Type: $lastMessageType');
+        debugPrint('   - Display Message: $displayMessage');
 
         return FutureBuilder<int>(
           future: MatchChatService.getUnreadMessageCount(
@@ -361,7 +370,7 @@ class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin<Chat> {
                 ),
               ),
               subtitle: Text(
-                lastMessage ?? 'Chưa có tin nhắn',
+                displayMessage,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(

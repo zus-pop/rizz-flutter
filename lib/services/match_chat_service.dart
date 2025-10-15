@@ -130,6 +130,96 @@ class MatchChatService {
     }
   }
 
+  /// Send a voice message in a match chat
+  ///
+  /// [matchId] - The match ID
+  /// [senderId] - The user ID of the message sender
+  /// [voiceUrl] - The Firebase Storage URL of the voice message
+  /// [duration] - Duration of the voice message in seconds
+  /// [fileName] - Optional file name
+  static Future<void> sendVoiceMessage({
+    required String matchId,
+    required String senderId,
+    required String voiceUrl,
+    int? duration,
+    String? fileName,
+  }) async {
+    try {
+      debugPrint('');
+      debugPrint('🎤🎤🎤 MatchChatService.sendVoiceMessage() 🎤🎤🎤');
+      debugPrint('📥 Input Parameters:');
+      debugPrint('   - matchId: $matchId');
+      debugPrint('   - senderId: $senderId');
+      debugPrint('   - voiceUrl: $voiceUrl');
+      debugPrint('   - duration: $duration');
+      debugPrint('   - fileName: $fileName');
+      debugPrint('');
+
+      final batch = _firestore.batch();
+
+      // Add voice message to messages collection
+      final messageRef = _firestore.collection('messages').doc();
+
+      debugPrint('📝 Creating voice message document:');
+      debugPrint('   - Collection: messages');
+      debugPrint('   - Document ID: ${messageRef.id}');
+
+      batch.set(messageRef, {
+        'matchId': matchId,
+        'senderId': senderId,
+        'text': '', // Empty for voice messages
+        'type': 'voice',
+        'voiceUrl': voiceUrl,
+        'duration': duration,
+        'fileName': fileName,
+        'timestamp': FieldValue.serverTimestamp(),
+        'isRead': false,
+      });
+
+      debugPrint('✅ Voice message batch.set() added');
+
+      // Update match document with last message info
+      final matchRef = _firestore.collection('matches').doc(matchId);
+
+      debugPrint('');
+      debugPrint('📝 Updating match document:');
+      debugPrint('   - Collection: matches');
+      debugPrint('   - Document ID: $matchId');
+
+      batch.update(matchRef, {
+        'lastMessage': '🎤 Tin nhắn thoại',
+        'lastMessageType': 'voice',
+        'lastMessageAt': FieldValue.serverTimestamp(),
+        'lastMessageBy': senderId,
+      });
+
+      debugPrint('✅ Match batch.update() added');
+      debugPrint('');
+      debugPrint('🔄 Committing batch to Firestore...');
+
+      await batch.commit();
+
+      debugPrint('✅✅✅ VOICE MESSAGE SENT SUCCESSFULLY! ✅✅✅');
+      debugPrint('🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤');
+      debugPrint('');
+
+      if (kDebugMode) {
+        print('Voice message sent in match: $matchId');
+      }
+    } catch (e, stackTrace) {
+      debugPrint('');
+      debugPrint('❌❌❌ ERROR IN sendVoiceMessage() ❌❌❌');
+      debugPrint('Error Type: ${e.runtimeType}');
+      debugPrint('Error Message: $e');
+      debugPrint('Stack Trace:');
+      debugPrint('$stackTrace');
+      debugPrint('❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌');
+      debugPrint('');
+
+      rethrow;
+    }
+  }
+
   /// Get messages stream for a specific match
   ///
   /// [matchId] - The match ID to get messages for
