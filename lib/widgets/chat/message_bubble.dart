@@ -58,16 +58,19 @@ class _MessageBubbleState extends State<MessageBubble>
           if (!widget.isMe && widget.showAvatar) ...[
             CircleAvatar(
               radius: 16,
-              backgroundColor: Colors.grey[300],
+              backgroundColor: context.surface.withValues(
+                alpha: 0.5,
+              ), // Use theme surface color
               backgroundImage: widget.avatarUrl != null
                   ? NetworkImage(widget.avatarUrl!)
                   : null,
               child: widget.avatarUrl == null && widget.userName != null
                   ? Text(
                       widget.userName![0].toUpperCase(),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
+                        color: context.onSurface, // Use theme text color
                       ),
                     )
                   : null,
@@ -110,7 +113,9 @@ class _MessageBubbleState extends State<MessageBubble>
                     ? Text(
                         _formatMessageTime(widget.timestamp!),
                         style: TextStyle(
-                          color: Colors.grey[600],
+                          color: context.onSurface.withValues(
+                            alpha: 0.6,
+                          ), // Use theme color with alpha
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
                         ),
@@ -130,13 +135,17 @@ class _MessageBubbleState extends State<MessageBubble>
                     decoration: BoxDecoration(
                       color: widget.isMe
                           ? context.primary
-                          : Colors
-                                .white, // Tin nhắn người khác màu trắng nổi bật
+                          : context
+                                .surface, // Use theme surface color instead of white
                       borderRadius: BorderRadius.only(
                         topLeft: const Radius.circular(20),
                         topRight: const Radius.circular(20),
                         bottomLeft: Radius.circular(widget.isMe ? 20 : 4),
                         bottomRight: Radius.circular(widget.isMe ? 4 : 20),
+                      ),
+                      border: Border.all(
+                        color: context.onSurface.withValues(alpha: 0.5),
+                        width: 0.5,
                       ),
                       // Thêm shadow cho tin nhắn người khác để nổi bật hơn
                       boxShadow: !widget.isMe
@@ -154,7 +163,8 @@ class _MessageBubbleState extends State<MessageBubble>
                       style: TextStyle(
                         color: widget.isMe
                             ? context.onPrimary
-                            : Colors.grey[900],
+                            : context
+                                  .onSurface, // Use theme text color instead of grey
                         fontSize: 15,
                       ),
                     ),
@@ -167,7 +177,9 @@ class _MessageBubbleState extends State<MessageBubble>
                         _formatMessageTime(widget.timestamp!),
                         style: TextStyle(
                           fontSize: 11,
-                          color: Colors.grey[600],
+                          color: context.onSurface.withValues(
+                            alpha: 0.6,
+                          ), // Use theme color
                           fontWeight: FontWeight.w500,
                         ),
                       ),

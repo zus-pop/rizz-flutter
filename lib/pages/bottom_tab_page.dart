@@ -10,10 +10,16 @@ import 'package:rizz_mobile/pages/tabs/discover.dart';
 import 'package:rizz_mobile/pages/tabs/liked.dart';
 import 'package:rizz_mobile/pages/tabs/profile.dart';
 import 'package:rizz_mobile/providers/authentication_provider.dart';
+import 'package:rizz_mobile/models/tab_index.dart';
 import 'package:rizz_mobile/theme/app_theme.dart';
 
 class BottomTabPage extends StatefulWidget {
   const BottomTabPage({super.key});
+
+  // Static method to navigate programmatically
+  static void navigateToTab(BuildContext context, TabIndex tabIndex) {
+    _BottomTabPageState.navigateToTab(context, tabIndex);
+  }
 
   @override
   State<BottomTabPage> createState() => _BottomTabPageState();
@@ -25,17 +31,64 @@ class _BottomTabPageState extends State<BottomTabPage> {
   final padding = EdgeInsets.symmetric(horizontal: 18, vertical: 12);
   double gap = 10;
 
-  static const List<Widget> _tabs = <Widget>[
-    Discover(),
-    Liked(),
-    Chat(),
-    Profile(),
-  ];
+  // Static reference to current state for programmatic navigation
+  static _BottomTabPageState? _currentState;
+
+  // Static method to navigate programmatically
+  static void navigateToTab(BuildContext context, TabIndex tabIndex) {
+    if (_currentState != null) {
+      debugPrint(
+        'Found BottomTabPage state via static reference, navigating to: ${tabIndex.name}',
+      );
+      _currentState!._navigateToTab(tabIndex.value);
+    } else {
+      debugPrint(
+        'Could not find BottomTabPage state for navigation - static reference is null',
+      );
+    }
+  }
+
+  // Generate tab widgets from enum
+  List<Widget> get _tabWidgets {
+    return TabIndex.values.map((tabIndex) {
+      switch (tabIndex) {
+        case TabIndex.discover:
+          return const Discover();
+        case TabIndex.liked:
+          return const Liked();
+        case TabIndex.chat:
+          return const Chat();
+        case TabIndex.profile:
+          return const Profile();
+      }
+    }).toList();
+  }
+
+  // Generate tab buttons from enum
+  List<GButton> get _tabButtons {
+    final buttons = TabIndex.values.map((tabIndex) {
+      return GButton(icon: tabIndex.icon, text: tabIndex.displayName);
+    }).toList();
+    debugPrint('Generated ${buttons.length} tab buttons');
+    return buttons;
+  }
 
   @override
   void initState() {
+    _currentState = this; // Store reference to current state
     context.read<AuthenticationProvider>().updateToken();
     _checkPremium();
+
+    // Listen to page controller changes
+    _pageController.addListener(() {
+      final page = _pageController.page?.round() ?? 0;
+      if (page != _selectedIndex) {
+        setState(() {
+          _selectedIndex = page;
+        });
+      }
+    });
+
     super.initState();
   }
 
@@ -71,8 +124,23 @@ class _BottomTabPageState extends State<BottomTabPage> {
     }
   }
 
+  // Public method to navigate programmatically
+  void _navigateToTab(int index) {
+    debugPrint('Navigating to tab index: $index, current: $_selectedIndex');
+    if (index >= 0 && index < _tabWidgets.length && _selectedIndex != index) {
+      setState(() {
+        _selectedIndex = index;
+      });
+      _pageController.jumpToPage(index);
+      debugPrint('Navigation completed to index: $index');
+    } else {
+      debugPrint('Navigation skipped - invalid index or same tab');
+    }
+  }
+
   @override
   void dispose() {
+    _currentState = null; // Clear reference
     _pageController.dispose();
     super.dispose();
   }
@@ -86,7 +154,7 @@ class _BottomTabPageState extends State<BottomTabPage> {
           PageView(
             controller: _pageController,
             physics: const NeverScrollableScrollPhysics(),
-            children: _tabs,
+            children: _tabWidgets,
           ),
           Positioned(
             bottom: 5, // Distance from bottom
@@ -114,6 +182,9 @@ class _BottomTabPageState extends State<BottomTabPage> {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(30.0),
                   child: GNav(
+                    key: ValueKey(
+                      _selectedIndex,
+                    ), // Force rebuild when index changes
                     rippleColor: context.primary.withValues(alpha: 0.3),
                     hoverColor: context.primary.withValues(alpha: 0.2),
                     gap: 8,
@@ -130,12 +201,7 @@ class _BottomTabPageState extends State<BottomTabPage> {
                     duration: const Duration(milliseconds: 400),
                     tabBackgroundColor: context.primary,
                     color: context.onSurface.withValues(alpha: 0.6),
-                    tabs: const [
-                      GButton(icon: Icons.home, text: 'Khám phá'),
-                      GButton(icon: Icons.favorite, text: 'Đã thích'),
-                      GButton(icon: Icons.chat, text: 'Tin nhắn'),
-                      GButton(icon: Icons.person, text: 'Hồ sơ'),
-                    ],
+                    tabs: _tabButtons,
                     selectedIndex: _selectedIndex,
                     onTabChange: _onTabChange,
                   ),

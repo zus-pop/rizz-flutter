@@ -40,15 +40,45 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
       actions: [
         // AI Toggle for Premium Users
         if (isPremium)
-          IconButton(
-            icon: Icon(
-              isAIEnabled ? Icons.auto_awesome : Icons.auto_awesome_outlined,
-              color: isAIEnabled
-                  ? context.onPrimary
-                  : context.onSurface.withValues(alpha: 0.6),
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            child: Material(
+              color: isAIEnabled ? context.onPrimary : Colors.transparent,
+              borderRadius: BorderRadius.circular(20),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: onAIToggle,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.auto_awesome,
+                        size: 18,
+                        color: isAIEnabled
+                            ? context.primary
+                            : context.onSurface.withValues(alpha: 0.6),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        isAIEnabled ? 'AI ON' : 'AI OFF',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: isAIEnabled
+                              ? context.primary
+                              : context.onSurface.withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
-            onPressed: onAIToggle,
-            tooltip: isAIEnabled ? 'Tắt AI gợi ý' : 'Bật AI gợi ý',
           ),
         PopupMenuButton<String>(
           onSelected: (value) {

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 import 'package:provider/provider.dart';
+import 'package:rizz_mobile/models/user.dart';
 import 'package:rizz_mobile/providers/profile_provider.dart';
 import 'package:rizz_mobile/providers/authentication_provider.dart';
 import 'package:rizz_mobile/theme/app_theme.dart';
 import 'package:rizz_mobile/widgets/filter_modal.dart';
 import 'package:rizz_mobile/widgets/swipe_card.dart';
+import 'package:rizz_mobile/widgets/match_dialog.dart';
 
 class Discover extends StatefulWidget {
   const Discover({super.key});
@@ -17,20 +19,21 @@ class Discover extends StatefulWidget {
 class _DiscoverState extends State<Discover>
     with AutomaticKeepAliveClientMixin<Discover> {
   final CardSwiperController controller = CardSwiperController();
+  User? _currentUser;
   @override
   bool get wantKeepAlive => true;
   @override
   void initState() {
     super.initState();
     // Initialize profiles when widget is created
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final authProvider = context.read<AuthenticationProvider>();
       final profileProvider = context.read<ProfileProvider>();
 
       if (authProvider.userId != null) {
         profileProvider.setCurrentUserId(authProvider.userId!);
+        _currentUser = await context.read<AuthenticationProvider>().whoAmI();
       }
-
       profileProvider.initialize();
     });
     debugPrint("Discover initialized");
@@ -68,10 +71,7 @@ class _DiscoverState extends State<Discover>
                 Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [
-                        context.primary,
-                        context.colors.secondary,
-                      ],
+                      colors: [context.primary, context.colors.secondary],
                     ),
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
@@ -84,7 +84,11 @@ class _DiscoverState extends State<Discover>
                   ),
                   child: IconButton(
                     onPressed: _showFilterModal,
-                    icon: const Icon(Icons.auto_awesome, color: Colors.white, size: 24),
+                    icon: const Icon(
+                      Icons.auto_awesome,
+                      color: Colors.white,
+                      size: 24,
+                    ),
                     tooltip: 'AI Smart Filter',
                   ),
                 ),
@@ -95,10 +99,7 @@ class _DiscoverState extends State<Discover>
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [
-                          context.colors.tertiary,
-                          Colors.amber,
-                        ],
+                        colors: [context.colors.tertiary, Colors.amber],
                       ),
                       shape: BoxShape.circle,
                       border: Border.all(
@@ -121,7 +122,7 @@ class _DiscoverState extends State<Discover>
       body: Consumer<ProfileProvider>(
         builder: (context, profileProvider, child) {
           debugPrint(profileProvider.profiles.length.toString());
-          
+
           // Handle different loading states
           if (profileProvider.isLoading) {
             return Center(
@@ -402,35 +403,10 @@ class _DiscoverState extends State<Discover>
             final isMutual = await profileProvider.likeProfile(profileId);
             // Show match notification if it's mutual
             if (mounted && isMutual) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Row(
-                    children: [
-                      Icon(Icons.favorite, color: Colors.white, size: 24),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          '🎉 It\'s a match with ${profileProvider.profiles[previousIndex].getFullName()}!',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  duration: const Duration(seconds: 4),
-                  backgroundColor: Colors.pink,
-                  action: SnackBarAction(
-                    label: 'View',
-                    textColor: Colors.white,
-                    onPressed: () {
-                      // Navigate to liked tab to see the match
-                      // This would require a tab controller or navigation setup
-                    },
-                  ),
-                ),
+              MatchDialog.show(
+                context,
+                profileProvider.profiles[previousIndex],
+                currentUser: _currentUser,
               );
             }
           }
@@ -490,7 +466,6 @@ class _DiscoverState extends State<Discover>
 
   void _showFilterModal() {
     final profileProvider = context.read<ProfileProvider>();
-    debugPrint("here");
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,

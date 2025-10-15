@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:ui';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -136,6 +137,7 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
   bool _isLoading = false;
   bool _hasError = false;
   bool _isCompleted = false;
+  bool _isAudioLoaded = false; // Track if audio has been loaded
   Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
 
@@ -152,9 +154,7 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
     super.initState();
     _audioPlayer = AudioPlayer();
     _setupAudioListeners();
-    if (_getAudioUrl() != null) {
-      _loadAudio();
-    }
+    // Remove automatic audio loading - will load on demand when play button is pressed
 
     // Initialize rotation animation controllers
     _middleRingController = AnimationController(
@@ -251,6 +251,8 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
   }
 
   Future<void> _loadAudio() async {
+    if (!mounted) return;
+
     setState(() {
       _isLoading = true;
       _hasError = false;
@@ -258,22 +260,27 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
 
     try {
       final audioUrl = _getAudioUrl();
-      if (audioUrl != null) {
+      if (audioUrl != null && mounted) {
         await _audioPlayer.setSource(UrlSource(audioUrl));
-        setState(() {
-          _isLoading = false;
-        });
-      } else {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _isAudioLoaded = true; // Mark as loaded
+          });
+        }
+      } else if (mounted) {
         setState(() {
           _isLoading = false;
           _hasError = true;
         });
       }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _hasError = true;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _hasError = true;
+        });
+      }
     }
   }
 
@@ -321,17 +328,20 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
   @override
   void didUpdateWidget(SwipeCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Stop audio when the user changes (card is being reused for different user)
+    // Only reset audio state when the user actually changes (different user ID)
     final oldId = oldWidget.user.id;
     final newId = widget.user.id;
 
     if (oldId != newId) {
       _stopAudioPlayback();
-      // Load audio for the new user
-      if (_getAudioUrl() != null) {
-        _loadAudio();
-      }
+      // Reset audio loaded state for new user - will load on demand
+      _isAudioLoaded = false;
+      _hasError = false;
+      _duration = Duration.zero;
+      _position = Duration.zero;
+      _isCompleted = false;
     }
+    // If it's the same user (e.g., undo), don't touch the audio player
   }
 
   @override
@@ -344,17 +354,28 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
   }
 
   void _stopAudioPlayback() {
+    if (!mounted) return;
+
     if (_isPlaying) {
       _audioPlayer.stop();
-      setState(() {
-        _isPlaying = false;
-        _position = Duration.zero;
-        _isCompleted = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isPlaying = false;
+          _position = Duration.zero;
+          _isCompleted = false;
+        });
+      }
     }
   }
 
   Future<void> _playPause() async {
+    if (!mounted) return;
+
+    // If audio hasn't been loaded yet, load it first
+    if (!_isAudioLoaded && !_hasError) {
+      await _loadAudio();
+    }
+
     if (_hasError) {
       await _loadAudio();
       return;
@@ -371,10 +392,12 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
           // Case 2: Replay - audio completed, restart from beginning
           await _audioPlayer.seek(Duration.zero);
           await _audioPlayer.resume();
-          setState(() {
-            _isCompleted = false;
-            _position = Duration.zero;
-          });
+          if (mounted) {
+            setState(() {
+              _isCompleted = false;
+              _position = Duration.zero;
+            });
+          }
         } else if (_position > Duration.zero) {
           // Case 3: Resume - audio was paused midway
           await _audioPlayer.resume();
@@ -384,9 +407,11 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
         }
       }
     } catch (e) {
-      setState(() {
-        _hasError = true;
-      });
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+        });
+      }
     }
   }
 
@@ -407,31 +432,68 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                context.primary.withValues(alpha: 0.15),
-                context.primary.withValues(alpha: 0.08),
-                Colors.purple.withValues(alpha: 0.12),
-                Colors.blue.withValues(alpha: 0.10),
-              ],
+              colors: authProvider.isRizzPlus
+                  ? [
+                      // Premium: Enhanced gradient with gold accents
+                      Colors.amber.withValues(alpha: 0.15),
+                      context.primary.withValues(alpha: 0.12),
+                      Colors.purple.withValues(alpha: 0.15),
+                      Colors.blue.withValues(alpha: 0.12),
+                      Colors.amber.withValues(alpha: 0.08),
+                    ]
+                  : [
+                      // Non-premium: Standard gradient
+                      context.primary.withValues(alpha: 0.15),
+                      context.primary.withValues(alpha: 0.08),
+                      Colors.purple.withValues(alpha: 0.12),
+                      Colors.blue.withValues(alpha: 0.10),
+                    ],
             ),
             border: Border.all(
-              color: Colors.white.withValues(alpha: 0.3),
-              width: 1.5,
+              color: Colors.white.withValues(
+                alpha: 0.3,
+              ), // Non-premium: white border
+              width: authProvider.isRizzPlus
+                  ? 2
+                  : 1.5, // Premium: thicker border
             ),
-            boxShadow: [
-              BoxShadow(
-                color: context.primary.withValues(alpha: 0.2),
-                spreadRadius: 0,
-                blurRadius: 25,
-                offset: const Offset(0, 10),
-              ),
-              BoxShadow(
-                color: Colors.purple.withValues(alpha: 0.15),
-                spreadRadius: 0,
-                blurRadius: 15,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            boxShadow: authProvider.isRizzPlus
+                ? [
+                    // Premium: Enhanced shadows with gold glow
+                    BoxShadow(
+                      color: Colors.amber.withValues(alpha: 0.2),
+                      spreadRadius: 2,
+                      blurRadius: 30,
+                      offset: const Offset(0, 12),
+                    ),
+                    BoxShadow(
+                      color: context.primary.withValues(alpha: 0.15),
+                      spreadRadius: 0,
+                      blurRadius: 20,
+                      offset: const Offset(0, 6),
+                    ),
+                    BoxShadow(
+                      color: Colors.purple.withValues(alpha: 0.1),
+                      spreadRadius: 0,
+                      blurRadius: 15,
+                      offset: const Offset(0, 3),
+                    ),
+                  ]
+                : [
+                    // Non-premium: Standard shadows
+                    BoxShadow(
+                      color: context.primary.withValues(alpha: 0.2),
+                      spreadRadius: 0,
+                      blurRadius: 25,
+                      offset: const Offset(0, 10),
+                    ),
+                    BoxShadow(
+                      color: Colors.purple.withValues(alpha: 0.15),
+                      spreadRadius: 0,
+                      blurRadius: 15,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(15),
@@ -457,6 +519,81 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
+                                  if (_getImageUrls().isNotEmpty) ...[
+                                    Container(
+                                      width: 40,
+                                      height: 40,
+                                      margin: const EdgeInsets.only(right: 10),
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: context.primary.withValues(
+                                            alpha: 0.5,
+                                          ),
+                                          width: 2,
+                                        ),
+                                      ),
+                                      child: ClipOval(
+                                        child: authProvider.isRizzPlus
+                                            ? CachedNetworkImage(
+                                                imageUrl: _getImageUrls().first,
+                                                fit: BoxFit.cover,
+                                                placeholder: (context, url) =>
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                    ),
+                                                errorWidget:
+                                                    (context, url, error) =>
+                                                        Container(
+                                                          color: context.surface
+                                                              .withValues(
+                                                                alpha: 0.5,
+                                                              ),
+                                                          child: Icon(
+                                                            Icons.person,
+                                                            color: context
+                                                                .onSurface
+                                                                .withValues(
+                                                                  alpha: 0.6,
+                                                                ),
+                                                          ),
+                                                        ),
+                                              )
+                                            : ImageFiltered(
+                                                imageFilter: ImageFilter.blur(
+                                                  sigmaX: 8,
+                                                  sigmaY: 8,
+                                                ),
+                                                child: CachedNetworkImage(
+                                                  imageUrl:
+                                                      _getImageUrls().first,
+                                                  fit: BoxFit.cover,
+                                                  placeholder: (context, url) =>
+                                                      CircularProgressIndicator(
+                                                        strokeWidth: 2,
+                                                      ),
+                                                  errorWidget:
+                                                      (context, url, error) =>
+                                                          Container(
+                                                            color: context
+                                                                .surface
+                                                                .withValues(
+                                                                  alpha: 0.5,
+                                                                ),
+                                                            child: Icon(
+                                                              Icons.person,
+                                                              color: context
+                                                                  .onSurface
+                                                                  .withValues(
+                                                                    alpha: 0.6,
+                                                                  ),
+                                                            ),
+                                                          ),
+                                                ),
+                                              ),
+                                      ),
+                                    ),
+                                  ],
                                   Text(
                                     '${_getName()}${_getAge() != 0 ? ', ${_getAge()}' : ''}',
                                     style: TextStyle(
@@ -627,14 +764,14 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
                                         width: 50,
                                         height: 50,
                                         child: CircularProgressIndicator(
-                                          color: Colors.white,
+                                          color: context.primary,
                                           strokeWidth: 3,
                                         ),
                                       )
                                     : _hasError
                                     ? Icon(
                                         Icons.error,
-                                        color: Colors.white,
+                                        color: context.primary,
                                         size: 48,
                                       )
                                     : AnimatedSwitcher(
@@ -754,9 +891,11 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
                                   await _audioPlayer.seek(
                                     Duration(seconds: value.toInt()),
                                   );
-                                  setState(() {
-                                    _isCompleted = false;
-                                  });
+                                  if (mounted) {
+                                    setState(() {
+                                      _isCompleted = false;
+                                    });
+                                  }
                                 },
                               ),
                             ),
@@ -822,24 +961,41 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: context.surface,
+                        color: authProvider.isRizzPlus
+                            ? context.primary.withValues(
+                                alpha: 0.9,
+                              ) // Premium: vibrant primary
+                            : context.surface.withValues(
+                                alpha: 0.8,
+                              ), // Non-premium: subtle surface
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
-                          color: context.primary.withValues(alpha: 0.3),
-                          width: 2,
+                          color: context.primary.withValues(
+                            alpha: 0.2,
+                          ), // Non-premium: subtle border
+                          width: authProvider.isRizzPlus
+                              ? 3
+                              : 2, // Premium: thicker border
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: context.primary.withValues(alpha: 0.2),
-                            blurRadius: 12,
-                            offset: const Offset(0, 3),
+                      ),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Icon(
+                            authProvider.isRizzPlus
+                                ? Icons
+                                      .visibility // Premium: full visibility
+                                : Icons
+                                      .visibility_off, // Non-premium: restricted
+                            color: authProvider.isRizzPlus
+                                ? Colors
+                                      .white // Premium: white icon
+                                : context.primary.withValues(
+                                    alpha: 0.6,
+                                  ), // Non-premium: muted
+                            size: 24,
                           ),
                         ],
-                      ),
-                      child: Icon(
-                        Icons.visibility,
-                        color: context.primary,
-                        size: 24,
                       ),
                     ),
                   ),

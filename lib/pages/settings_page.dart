@@ -90,9 +90,9 @@ class _SettingsPageState extends State<SettingsPage>
           labelColor: context.colors.onPrimary,
           unselectedLabelColor: context.colors.onPrimary.withValues(alpha: 0.7),
           indicatorColor: context.colors.onPrimary,
-          indicatorWeight: 3,
+          indicatorWeight: 2,
           tabs: const [
-            Tab(icon: Icon(Icons.tune), text: 'Ưa thích'),
+            // Tab(icon: Icon(Icons.tune), text: 'Ưa thích'),?
             Tab(icon: Icon(Icons.person), text: 'Hồ sơ'),
             Tab(icon: Icon(Icons.settings), text: 'Ứng dụng'),
           ],
@@ -104,7 +104,7 @@ class _SettingsPageState extends State<SettingsPage>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildPreferencesTab(),
+          // _buildPreferencesTab(),
           _buildProfileTab(),
           _buildAppSettingsTab(),
         ],

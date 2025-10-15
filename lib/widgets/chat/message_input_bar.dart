@@ -36,7 +36,8 @@ class MessageInputBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context
+            .surface, // Use theme surface color instead of hardcoded white
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: .05),
@@ -95,7 +96,7 @@ class MessageInputBar extends StatelessWidget {
       margin: const EdgeInsets.only(right: 8),
       child: Material(
         color: isAIEnabled
-            ? context.primary.withValues(alpha: 0.1)
+            ? context.primary.withValues(alpha: 0.15)
             : context.surface.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(24),
         child: InkWell(
@@ -111,12 +112,34 @@ class MessageInputBar extends StatelessWidget {
                     height: 16,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : Icon(
-                    Icons.auto_awesome,
-                    size: 18,
-                    color: isAIEnabled
-                        ? context.primary
-                        : context.onSurface.withValues(alpha: 0.5),
+                : Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Icon(
+                        Icons.auto_awesome,
+                        size: 18,
+                        color: isAIEnabled
+                            ? context.primary
+                            : context.onSurface.withValues(alpha: 0.5),
+                      ),
+                      if (isAIEnabled)
+                        Positioned(
+                          top: 2,
+                          right: 2,
+                          child: Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: context.primary,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: context.surface,
+                                width: 1.5,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
           ),
         ),
@@ -168,7 +191,9 @@ class MessageInputBar extends StatelessWidget {
             child: Icon(
               isRecording ? Icons.stop : Icons.mic,
               size: 20,
-              color: isRecording ? Colors.red : context.onSurface.withValues(alpha: 0.7),
+              color: isRecording
+                  ? Colors.red
+                  : context.onSurface.withValues(alpha: 0.7),
             ),
           ),
         ),
@@ -195,7 +220,8 @@ class MessageInputBar extends StatelessWidget {
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: Colors.white,
+                    color: Colors
+                        .white, // Keep white for contrast on primary background
                   ),
                 )
               : Icon(

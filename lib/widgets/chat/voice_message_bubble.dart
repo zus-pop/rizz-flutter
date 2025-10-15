@@ -54,7 +54,8 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
         setState(() {
           _isPlaying = state == PlayerState.playing;
           // Chỉ hiển thị loading nếu đang play nhưng vị trí vẫn là 0
-          _isLoading = state == PlayerState.playing && _currentPosition == Duration.zero;
+          _isLoading =
+              state == PlayerState.playing && _currentPosition == Duration.zero;
         });
       }
     });
@@ -102,7 +103,8 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
         setState(() {
           _isLoading = true; // Bắt đầu loading khi chuẩn bị play
         });
-        if (_currentPosition == Duration.zero || _currentPosition >= _totalDuration) {
+        if (_currentPosition == Duration.zero ||
+            _currentPosition >= _totalDuration) {
           await _audioPlayer.play(UrlSource(widget.voiceUrl));
         } else {
           await _audioPlayer.resume();
@@ -151,7 +153,9 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
   Widget build(BuildContext context) {
     final effectiveDuration = _totalDuration > Duration.zero
         ? _totalDuration
-        : (widget.duration != null ? Duration(seconds: widget.duration!) : Duration.zero);
+        : (widget.duration != null
+              ? Duration(seconds: widget.duration!)
+              : Duration.zero);
 
     // Tính toán thanh tiến trình
     final progress = effectiveDuration > Duration.zero
@@ -175,18 +179,21 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
           if (!widget.isMe && widget.showAvatar) ...[
             CircleAvatar(
               radius: 16,
-              backgroundColor: Colors.grey[300],
+              backgroundColor: context.surface.withValues(
+                alpha: 0.5,
+              ), // Use theme surface color
               backgroundImage: widget.avatarUrl != null
                   ? NetworkImage(widget.avatarUrl!)
                   : null,
               child: widget.avatarUrl == null && widget.userName != null
                   ? Text(
-                widget.userName![0].toUpperCase(),
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              )
+                      widget.userName![0].toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: context.onSurface, // Use theme text color
+                      ),
+                    )
                   : null,
             ),
             const SizedBox(width: 8),
@@ -224,7 +231,9 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
                     ? Text(
                         _formatMessageTime(widget.timestamp!),
                         style: TextStyle(
-                          color: Colors.grey[600],
+                          color: context.onSurface.withValues(
+                            alpha: 0.6,
+                          ), // Use theme color
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
                         ),
@@ -248,12 +257,17 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
                     decoration: BoxDecoration(
                       color: widget.isMe
                           ? context.primary
-                          : Colors.white,
+                          : context
+                                .surface, // Use theme surface color instead of white
                       borderRadius: BorderRadius.only(
                         topLeft: const Radius.circular(20),
                         topRight: const Radius.circular(20),
                         bottomLeft: Radius.circular(widget.isMe ? 20 : 4),
                         bottomRight: Radius.circular(widget.isMe ? 4 : 20),
+                      ),
+                      border: Border.all(
+                        color: context.onSurface.withValues(alpha: 0.5),
+                        width: 0.5,
                       ),
                       boxShadow: !widget.isMe
                           ? [
@@ -287,13 +301,18 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
                                       height: 16,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(
-                                          widget.isMe ? Colors.white : context.primary,
-                                        ),
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              widget.isMe
+                                                  ? Colors.white
+                                                  : context.primary,
+                                            ),
                                       ),
                                     )
                                   : Icon(
-                                      _isPlaying ? Icons.pause : Icons.play_arrow,
+                                      _isPlaying
+                                          ? Icons.pause
+                                          : Icons.play_arrow,
                                       color: widget.isMe
                                           ? Colors.white
                                           : context.primary,
@@ -317,7 +336,9 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
                                   value: progress,
                                   backgroundColor: widget.isMe
                                       ? Colors.white.withValues(alpha: 0.3)
-                                      : Colors.grey[300],
+                                      : context.surface.withValues(
+                                          alpha: 0.3,
+                                        ), // Use theme surface color
                                   valueColor: AlwaysStoppedAnimation<Color>(
                                     widget.isMe
                                         ? Colors.white
@@ -334,7 +355,9 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
                                   fontSize: 11,
                                   color: widget.isMe
                                       ? context.onPrimary.withValues(alpha: 0.9)
-                                      : Colors.grey[600],
+                                      : context.onSurface.withValues(
+                                          alpha: 0.6,
+                                        ), // Use theme color
                                 ),
                               ),
                             ],
@@ -352,7 +375,9 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
                         _formatMessageTime(widget.timestamp!),
                         style: TextStyle(
                           fontSize: 11,
-                          color: Colors.grey[600],
+                          color: context.onSurface.withValues(
+                            alpha: 0.6,
+                          ), // Use theme color
                           fontWeight: FontWeight.w500,
                         ),
                       ),
