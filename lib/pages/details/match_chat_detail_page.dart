@@ -1,6 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
+import 'package:record/record.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import '../../services/match_chat_service.dart';
 import '../../providers/authentication_provider.dart';
 import '../../services/ai_message_service.dart';
@@ -26,6 +30,11 @@ class _MatchChatDetailPageState extends State<MatchChatDetailPage> {
   List<String> _aiSuggestions = [];
   late final AIMessageService _aiMessageService;
 
+  // Voice message variables
+  bool _isRecording = false;
+  String? _recordedFilePath;
+  final AudioRecorder _recorder = AudioRecorder(); // Tạo instance ở đây
+
   @override
   void initState() {
     super.initState();
@@ -40,6 +49,7 @@ class _MatchChatDetailPageState extends State<MatchChatDetailPage> {
     _messageController.removeListener(_onTextChanged);
     _messageController.dispose();
     _scrollController.dispose();
+    _recorder.dispose(); // Dispose recorder
     super.dispose();
   }
 
@@ -229,6 +239,205 @@ class _MatchChatDetailPageState extends State<MatchChatDetailPage> {
     }
   }
 
+  Future<void> _startRecording() async {
+    try {
+      // Request permission
+      final hasPermission = await _recorder.hasPermission();
+      if (!hasPermission) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('⚠️ Vui lòng cấp quyền ghi âm trong cài đặt'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+        return;
+      }
+
+      // Get temporary directory
+      final dir = await getTemporaryDirectory();
+      final filePath = '${dir.path}/voice_message_${DateTime.now().millisecondsSinceEpoch}.m4a';
+
+      // Start recording
+      await _recorder.start(
+        const RecordConfig(
+          encoder: AudioEncoder.aacLc,
+          bitRate: 128000,
+          sampleRate: 44100,
+        ),
+        path: filePath,
+      );
+
+      setState(() {
+        _isRecording = true;
+        _recordedFilePath = filePath;
+      });
+
+      debugPrint('🎤 Recording started: $filePath');
+    } catch (e) {
+      debugPrint('❌ Error starting recording: $e');
+      if (mounted) {
+        setState(() {
+          _isRecording = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Lỗi ghi âm: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _stopRecordingAndSend(
+    String matchId,
+    String? currentUserId,
+  ) async {
+    try {
+      final path = await _recorder.stop();
+
+      debugPrint('✅ Recording stopped: $path');
+
+      // Use the recorded file path
+      final recordedPath = path ?? _recordedFilePath;
+
+      if (recordedPath == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('⚠️ Không tìm thấy file ghi âm'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
+      if (currentUserId == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('⚠️ Chưa đăng nhập! Vui lòng đăng nhập lại.'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+        return;
+      }
+
+      // Show uploading indicator
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(width: 12),
+                Text('Đang tải tin nhắn thoại lên...'),
+              ],
+            ),
+            duration: Duration(seconds: 30),
+          ),
+        );
+      }
+
+      final file = File(recordedPath);
+
+      if (!file.existsSync()) {
+        throw Exception('File không tồn tại: $recordedPath');
+      }
+
+      // Upload to Firebase Storage
+      final fileName = 'voice_messages/$matchId/${DateTime.now().millisecondsSinceEpoch}.m4a';
+      final storageRef = FirebaseStorage.instance.ref().child(fileName);
+
+      debugPrint('📤 Uploading voice message to: $fileName');
+
+      final uploadTask = storageRef.putFile(
+        file,
+        SettableMetadata(contentType: 'audio/m4a'),
+      );
+
+      final snapshot = await uploadTask;
+      final downloadUrl = await snapshot.ref.getDownloadURL();
+
+      debugPrint('✅ Upload complete. URL: $downloadUrl');
+
+      // Send voice message using MatchChatService
+      await MatchChatService.sendVoiceMessage(
+        matchId: matchId,
+        senderId: currentUserId,
+        voiceUrl: downloadUrl,
+        fileName: fileName,
+      );
+
+      debugPrint('✅ Voice message sent successfully!');
+
+      // Clear the file and hide uploading indicator
+      if (mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Đã gửi tin nhắn thoại'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+
+        // Scroll to bottom
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_scrollController.hasClients) {
+            _scrollController.animateTo(
+              0,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+            );
+          }
+        });
+      }
+
+      // Clean up the temp file
+      try {
+        await file.delete();
+      } catch (e) {
+        debugPrint('⚠️ Could not delete temp file: $e');
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error stopping recording and sending: $e');
+      debugPrint('Stack trace: $stackTrace');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Lỗi gửi tin nhắn thoại: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRecording = false;
+          _recordedFilePath = null;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<AuthenticationProvider>(
@@ -323,6 +532,9 @@ class _MatchChatDetailPageState extends State<MatchChatDetailPage> {
                   currentUserId,
                 ),
                 authProvider: authProvider,
+                onRecordStart: _startRecording,
+                onRecordStop: () => _stopRecordingAndSend(matchId, currentUserId),
+                isRecording: _isRecording,
               ),
             ],
           ),

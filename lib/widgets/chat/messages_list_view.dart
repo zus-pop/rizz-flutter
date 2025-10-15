@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/match_chat_service.dart';
 import '../../widgets/chat/message_bubble.dart';
+import '../../widgets/chat/voice_message_bubble.dart';
 
 class MessagesListView extends StatelessWidget {
   final String matchId;
@@ -65,10 +66,30 @@ class MessagesListView extends StatelessWidget {
             final messageDoc = messages[index];
             final messageData = messageDoc.data() as Map<String, dynamic>;
             final senderId = messageData['senderId'] as String;
-            final text = messageData['text'] as String;
+            final text = messageData['text'] as String? ?? '';
+            final messageType = messageData['type'] as String? ?? 'text';
             final timestamp = messageData['timestamp'] as Timestamp?;
             final isMe = senderId == currentUserId;
 
+            // Check if it's a voice message
+            if (messageType == 'voice') {
+              final voiceUrl = messageData['voiceUrl'] as String?;
+              final duration = messageData['duration'] as int?;
+
+              if (voiceUrl != null) {
+                return VoiceMessageBubble(
+                  voiceUrl: voiceUrl,
+                  duration: duration,
+                  isMe: isMe,
+                  timestamp: timestamp,
+                  showAvatar: !isMe,
+                  avatarUrl: !isMe ? otherUserAvatar : null,
+                  userName: !isMe ? otherUserName : null,
+                );
+              }
+            }
+
+            // Regular text message
             return MessageBubble(
               text: text,
               isMe: isMe,
