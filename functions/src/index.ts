@@ -22,12 +22,21 @@ export const messageNotification = onDocumentCreated(
     document: "messages/{sku}",
     region: "asia-southeast1",
   },
-  (event) => {
+  async (event) => {
     const data = event.data?.data();
     if (!data) return;
     logger.log(`We got new message: [${data}]`);
     const matchId: string = data.matchId;
     const senderId: string = data.senderId;
+    const sender = await db
+      .collection("users")
+      .doc(senderId)
+      .get()
+      .then((doc) => {
+        const data = doc.data();
+        if (!data) return;
+        return data;
+      });
     const message: string =
       data.type === "text" ? data.text : "Tin nhắn mới qua âm thanh";
     return db
@@ -55,8 +64,14 @@ export const messageNotification = onDocumentCreated(
             const multicastMessage: MulticastMessage = {
               tokens: pushTokens,
               notification: {
-                title: `Message from ${senderId}`,
+                title: `Message from ${
+                  sender
+                    ? `${sender.firstName} ${sender.lastName}`
+                    : "other user"
+                }`,
                 body: message,
+                imageUrl:
+                  sender && sender.imageUrls ? sender.imageUrls[0] : null,
               },
             };
             if (message) {

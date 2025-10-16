@@ -261,7 +261,6 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
   @override
   Widget build(BuildContext context) {
     final steps = [
-      VoiceRecordingStep(profileData: _profileData, onNext: _nextStep),
       ProfileDetailsStep(profileData: _profileData, onNext: _nextStep),
       GenderInterestStep(profileData: _profileData, onNext: _nextStep),
       LookingForStep(profileData: _profileData, onNext: _nextStep),
@@ -273,6 +272,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
       CommunicationStep(profileData: _profileData, onNext: _nextStep),
       DealBreakersStep(profileData: _profileData, onNext: _nextStep),
       PhotoUploadStep(profileData: _profileData, onNext: _nextStep),
+      VoiceRecordingStep(profileData: _profileData, onNext: _nextStep),
     ];
 
     return Stack(
