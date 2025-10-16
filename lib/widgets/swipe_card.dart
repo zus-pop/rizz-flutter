@@ -511,70 +511,84 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
                       Stack(
                         children: [
                           Align(
-                            alignment: Alignment.topLeft,
+                            alignment: Alignment.topCenter,
                             child: Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 15,
                               ),
                               child: Row(
-                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  if (_getImageUrls().isNotEmpty) ...[
-                                    Container(
-                                      width: 40,
-                                      height: 40,
-                                      margin: const EdgeInsets.only(right: 10),
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: context.primary.withValues(
-                                            alpha: 0.5,
+                                  // Left side: Avatar and Name
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (_getImageUrls().isNotEmpty) ...[
+                                        Container(
+                                          width: 40,
+                                          height: 40,
+                                          margin: const EdgeInsets.only(
+                                            right: 10,
                                           ),
-                                          width: 2,
-                                        ),
-                                      ),
-                                      child: ClipOval(
-                                        child: authProvider.isRizzPlus
-                                            ? CachedNetworkImage(
-                                                imageUrl: _getImageUrls().first,
-                                                fit: BoxFit.cover,
-                                                placeholder: (context, url) =>
-                                                    CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                    ),
-                                                errorWidget:
-                                                    (context, url, error) =>
-                                                        Container(
-                                                          color: context.surface
-                                                              .withValues(
-                                                                alpha: 0.5,
-                                                              ),
-                                                          child: Icon(
-                                                            Icons.person,
-                                                            color: context
-                                                                .onSurface
-                                                                .withValues(
-                                                                  alpha: 0.6,
-                                                                ),
-                                                          ),
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: context.primary.withValues(
+                                                alpha: 0.5,
+                                              ),
+                                              width: 2,
+                                            ),
+                                          ),
+                                          child: ClipOval(
+                                            child: authProvider.isRizzPlus
+                                                ? CachedNetworkImage(
+                                                    imageUrl:
+                                                        _getImageUrls().first,
+                                                    fit: BoxFit.cover,
+                                                    placeholder: (context, url) =>
+                                                        CircularProgressIndicator(
+                                                          strokeWidth: 2,
                                                         ),
-                                              )
-                                            : ImageFiltered(
-                                                imageFilter: ImageFilter.blur(
-                                                  sigmaX: 8,
-                                                  sigmaY: 8,
-                                                ),
-                                                child: CachedNetworkImage(
-                                                  imageUrl:
-                                                      _getImageUrls().first,
-                                                  fit: BoxFit.cover,
-                                                  placeholder: (context, url) =>
-                                                      CircularProgressIndicator(
-                                                        strokeWidth: 2,
-                                                      ),
-                                                  errorWidget:
-                                                      (context, url, error) =>
-                                                          Container(
+                                                    errorWidget:
+                                                        (context, url, error) =>
+                                                            Container(
+                                                              color: context
+                                                                  .surface
+                                                                  .withValues(
+                                                                    alpha: 0.5,
+                                                                  ),
+                                                              child: Icon(
+                                                                Icons.person,
+                                                                color: context
+                                                                    .onSurface
+                                                                    .withValues(
+                                                                      alpha:
+                                                                          0.6,
+                                                                    ),
+                                                              ),
+                                                            ),
+                                                  )
+                                                : ImageFiltered(
+                                                    imageFilter:
+                                                        ImageFilter.blur(
+                                                          sigmaX: 8,
+                                                          sigmaY: 8,
+                                                        ),
+                                                    child: CachedNetworkImage(
+                                                      imageUrl:
+                                                          _getImageUrls().first,
+                                                      fit: BoxFit.cover,
+                                                      placeholder: (context, url) =>
+                                                          CircularProgressIndicator(
+                                                            strokeWidth: 2,
+                                                          ),
+                                                      errorWidget:
+                                                          (
+                                                            context,
+                                                            url,
+                                                            error,
+                                                          ) => Container(
                                                             color: context
                                                                 .surface
                                                                 .withValues(
@@ -589,26 +603,91 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
                                                                   ),
                                                             ),
                                                           ),
-                                                ),
-                                              ),
-                                      ),
-                                    ),
-                                  ],
-                                  Text(
-                                    '${_getName()}${_getAge() != 0 ? ', ${_getAge()}' : ''}',
-                                    style: TextStyle(
-                                      color: context.primary,
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.bold,
-                                      shadows: [
-                                        Shadow(
-                                          color: context.primary.withValues(
-                                            alpha: 0.3,
+                                                    ),
+                                                  ),
                                           ),
-                                          offset: const Offset(0, 1),
-                                          blurRadius: 3,
                                         ),
                                       ],
+                                      Text(
+                                        '${_getName()}${_getAge() != 0 ? ', ${_getAge()}' : ''}',
+                                        style: TextStyle(
+                                          color: context.primary,
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.bold,
+                                          shadows: [
+                                            Shadow(
+                                              color: context.primary.withValues(
+                                                alpha: 0.3,
+                                              ),
+                                              offset: const Offset(0, 1),
+                                              blurRadius: 3,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+
+                                  // Right side: View detail button
+                                  GestureDetector(
+                                    onTap: () async {
+                                      if (authProvider.isRizzPlus) {
+                                        _showProfileDetails(context);
+                                        return;
+                                      }
+
+                                      final status =
+                                          await presentPaywallIfNeeded();
+                                      if (status == PaywallResult.purchased) {
+                                        authProvider.isRizzPlus = true;
+                                      } else if (status ==
+                                          PaywallResult.restored) {
+                                        debugPrint("Restored");
+                                        return;
+                                      } else {
+                                        debugPrint("No purchased occur");
+                                      }
+                                    },
+                                    child: Container(
+                                      width: 48,
+                                      height: 48,
+                                      decoration: BoxDecoration(
+                                        color: authProvider.isRizzPlus
+                                            ? context.primary.withValues(
+                                                alpha: 0.9,
+                                              ) // Premium: vibrant primary
+                                            : context.surface.withValues(
+                                                alpha: 0.8,
+                                              ), // Non-premium: subtle surface
+                                        borderRadius: BorderRadius.circular(24),
+                                        border: Border.all(
+                                          color: context.primary.withValues(
+                                            alpha: 0.2,
+                                          ), // Non-premium: subtle border
+                                          width: authProvider.isRizzPlus
+                                              ? 3
+                                              : 2, // Premium: thicker border
+                                        ),
+                                      ),
+                                      child: Stack(
+                                        alignment: Alignment.center,
+                                        children: [
+                                          Icon(
+                                            authProvider.isRizzPlus
+                                                ? Icons
+                                                      .visibility // Premium: full visibility
+                                                : Icons
+                                                      .visibility_off, // Non-premium: restricted
+                                            color: authProvider.isRizzPlus
+                                                ? Colors
+                                                      .white // Premium: white icon
+                                                : context.primary.withValues(
+                                                    alpha: 0.6,
+                                                  ), // Non-premium: muted
+                                            size: 24,
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -935,71 +1014,6 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
                     ],
                   ),
                 ),
-
-                // Cute detail button in top-right
-                Positioned(
-                  top: 40,
-                  right: 16,
-                  child: GestureDetector(
-                    onTap: () async {
-                      if (authProvider.isRizzPlus) {
-                        _showProfileDetails(context);
-                        return;
-                      }
-
-                      final status = await presentPaywallIfNeeded();
-                      if (status == PaywallResult.purchased) {
-                        authProvider.isRizzPlus = true;
-                      } else if (status == PaywallResult.restored) {
-                        debugPrint("Restored");
-                        return;
-                      } else {
-                        debugPrint("No purchased occur");
-                      }
-                    },
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: authProvider.isRizzPlus
-                            ? context.primary.withValues(
-                                alpha: 0.9,
-                              ) // Premium: vibrant primary
-                            : context.surface.withValues(
-                                alpha: 0.8,
-                              ), // Non-premium: subtle surface
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: context.primary.withValues(
-                            alpha: 0.2,
-                          ), // Non-premium: subtle border
-                          width: authProvider.isRizzPlus
-                              ? 3
-                              : 2, // Premium: thicker border
-                        ),
-                      ),
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Icon(
-                            authProvider.isRizzPlus
-                                ? Icons
-                                      .visibility // Premium: full visibility
-                                : Icons
-                                      .visibility_off, // Non-premium: restricted
-                            color: authProvider.isRizzPlus
-                                ? Colors
-                                      .white // Premium: white icon
-                                : context.primary.withValues(
-                                    alpha: 0.6,
-                                  ), // Non-premium: muted
-                            size: 24,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
@@ -1209,7 +1223,8 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
-                                    _getUniversity() ?? "University not set",
+                                    _getUniversity() ??
+                                        "Chưa cập nhật trường học",
                                     style: AppTheme.body1.copyWith(
                                       color: context.onSurface,
                                     ),
@@ -1217,10 +1232,47 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
                                 ],
                               ),
 
+                              const SizedBox(height: 8),
+
+                              // Gender and interested in
+                              Row(
+                                children: [
+                                  if (widget.user.gender != null) ...[
+                                    Icon(
+                                      Icons.person,
+                                      size: 20,
+                                      color: context.primary,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      widget.user.gender!,
+                                      style: AppTheme.body1.copyWith(
+                                        color: context.onSurface,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                  ],
+                                  if (widget.user.interestedIn != null) ...[
+                                    Icon(
+                                      Icons.favorite_border,
+                                      size: 20,
+                                      color: Colors.pink,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Quan tâm đến: ${widget.user.interestedIn}',
+                                      style: AppTheme.body1.copyWith(
+                                        color: context.onSurface,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+
                               const SizedBox(height: 20),
 
                               Text(
-                                'About',
+                                'Giới thiệu',
                                 style: AppTheme.headline4.copyWith(
                                   color: context.primary,
                                 ),
@@ -1229,7 +1281,7 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
                               const SizedBox(height: 8),
 
                               Text(
-                                _getBio() ?? "No bio provided",
+                                _getBio() ?? "Chưa có giới thiệu",
                                 style: AppTheme.body1.copyWith(
                                   color: context.onSurface,
                                 ),
@@ -1237,8 +1289,33 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
 
                               const SizedBox(height: 20),
 
+                              // Voice analysis section
+                              if (_getVoiceQuality() != null ||
+                                  _getEmotion() != null) ...[
+                                Text(
+                                  'Phân tích giọng nói',
+                                  style: AppTheme.headline4.copyWith(
+                                    color: context.primary,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                if (_getVoiceQuality() != null)
+                                  _buildDetailItem(
+                                    context,
+                                    'Chất giọng',
+                                    _getVoiceQuality()!,
+                                  ),
+                                if (_getEmotion() != null)
+                                  _buildDetailItem(
+                                    context,
+                                    'Cảm xúc',
+                                    _getEmotion()!,
+                                  ),
+                                const SizedBox(height: 20),
+                              ],
+
                               Text(
-                                'Interests',
+                                'Sở thích',
                                 style: AppTheme.headline4.copyWith(
                                   color: context.primary,
                                 ),
@@ -1281,7 +1358,7 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
 
                               // Additional user details
                               Text(
-                                'More about me',
+                                'Thêm về tôi',
                                 style: AppTheme.headline4.copyWith(
                                   color: context.primary,
                                 ),
@@ -1293,7 +1370,7 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
                               if (widget.user.studyStyle != null)
                                 _buildDetailItem(
                                   context,
-                                  'Study style',
+                                  'Phong cách học tập',
                                   widget.user.studyStyle!,
                                 ),
 
@@ -1301,7 +1378,7 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
                               if (widget.user.weekendHabit != null)
                                 _buildDetailItem(
                                   context,
-                                  'Weekend habits',
+                                  'Thói quen cuối tuần',
                                   widget.user.weekendHabit!,
                                 ),
 
@@ -1309,7 +1386,7 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
                               if (widget.user.campusLife != null)
                                 _buildDetailItem(
                                   context,
-                                  'Campus life',
+                                  'Cuộc sống trên trường',
                                   widget.user.campusLife!,
                                 ),
 
@@ -1317,7 +1394,7 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
                               if (widget.user.afterGraduation != null)
                                 _buildDetailItem(
                                   context,
-                                  'After graduation',
+                                  'Sau khi tốt nghiệp',
                                   widget.user.afterGraduation!,
                                 ),
 
@@ -1325,8 +1402,48 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
                               if (widget.user.communicationPreference != null)
                                 _buildDetailItem(
                                   context,
-                                  'Communication',
+                                  'Phong cách giao tiếp',
                                   widget.user.communicationPreference!,
+                                ),
+
+                              // Love language
+                              if (widget.user.loveLanguage != null)
+                                _buildDetailItem(
+                                  context,
+                                  'Ngôn ngữ tình yêu',
+                                  widget.user.loveLanguage!,
+                                ),
+
+                              // Zodiac sign
+                              if (widget.user.zodiac != null)
+                                _buildDetailItem(
+                                  context,
+                                  'Cung hoàng đạo',
+                                  widget.user.zodiac!,
+                                ),
+
+                              // Looking for
+                              if (widget.user.lookingFor != null)
+                                _buildDetailItem(
+                                  context,
+                                  'Đang tìm kiếm',
+                                  widget.user.lookingFor!,
+                                ),
+
+                              // Accent
+                              if (widget.user.accent != null)
+                                _buildDetailItem(
+                                  context,
+                                  'Giọng địa phương',
+                                  widget.user.accent!,
+                                ),
+
+                              // Distance (if available)
+                              if (widget.user.distanceKm != null)
+                                _buildDetailItem(
+                                  context,
+                                  'Khoảng cách',
+                                  '${widget.user.distanceKm!.toStringAsFixed(1)} km',
                                 ),
 
                               const SizedBox(height: 20),

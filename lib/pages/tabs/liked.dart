@@ -298,34 +298,24 @@ class _LikedContentState extends State<_LikedContent> {
   }
 
   double _calculateGridHeight(int itemCount) {
-    if (itemCount == 0) return 200; // Empty state height
+    if (itemCount == 0) return 280; // Empty state height
 
-    // Grid with 2 columns, aspect ratio 3:5
-    // Each row height = itemWidth * (5/3) + mainAxisSpacing
-    // itemWidth = (screenWidth - padding - crossAxisSpacing) / 2
-    // But for simplicity, let's use approximate calculations
-
+    // Use a more reliable calculation that doesn't depend on MediaQuery during build
     const int crossAxisCount = 2;
-    const double aspectRatio = 3 / 5; // width:height ratio
-    const double crossAxisSpacing = 12;
     const double mainAxisSpacing = 12;
-    const double horizontalPadding = 32; // 16 * 2
 
-    // Get screen width (approximate)
-    final double screenWidth = MediaQuery.of(context).size.width;
-    final double availableWidth =
-        screenWidth - horizontalPadding - crossAxisSpacing;
-    final double itemWidth = availableWidth / crossAxisCount;
-    final double itemHeight =
-        itemWidth /
-        aspectRatio; // Since aspectRatio = width/height, height = width/aspectRatio
+    // Estimate based on typical screen width and aspect ratio
+    // Use a more conservative approach
+    const double estimatedItemWidth = 160; // Approximate width per item
+    const double aspectRatio = 3 / 5; // width:height ratio
+    const double itemHeight = estimatedItemWidth / aspectRatio;
 
     final int rowCount = (itemCount / crossAxisCount).ceil();
     final double totalHeight =
         (rowCount * itemHeight) + ((rowCount - 1) * mainAxisSpacing);
 
-    // Add some padding
-    return totalHeight + 20;
+    // Add padding and ensure minimum height
+    return totalHeight + 40;
   }
 
   Widget _buildSectionEmptyState(BuildContext context, String title) {
@@ -379,7 +369,7 @@ class _LikedContentState extends State<_LikedContent> {
         crossAxisCount: 2,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: 3 / 5,
+        childAspectRatio: 0.65, // More reasonable aspect ratio for cards
       ),
       itemCount: userIds.length,
       itemBuilder: (context, index) {
@@ -392,7 +382,6 @@ class _LikedContentState extends State<_LikedContent> {
             }
 
             if (!snapshot.hasData || !snapshot.data!.exists) {
-              debugPrint('❌ User not found: $userId');
               return _buildErrorCard();
             }
 
@@ -401,13 +390,6 @@ class _LikedContentState extends State<_LikedContent> {
               null,
             );
             final userWithId = user.copyWithId(userId);
-
-            // Debug: Print user info
-            debugPrint('✅ User loaded: ${userWithId.getFullName()} (ID: $userId)');
-            debugPrint('   FirstName: ${userWithId.firstName}');
-            debugPrint('   LastName: ${userWithId.lastName}');
-            debugPrint('   Age: ${userWithId.getAge()}');
-            debugPrint('   University: ${userWithId.university}');
 
             return _buildInteractionCard(
               context,
@@ -459,153 +441,155 @@ class _LikedContentState extends State<_LikedContent> {
     bool isLikedBy = false,
     bool isLiked = false,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: context.outline.withValues(alpha: 0.6),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: context.onSurface.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Container(
+          constraints: BoxConstraints(
+            minHeight: 200,
+            maxHeight: constraints.maxHeight,
           ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          color: context.surface,
-          child: Column(
-            children: [
-              // Header with like indicator
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: context.surface.withValues(alpha: 0.9),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (isLikedBy) ...[
-                      Icon(Icons.visibility, color: context.primary, size: 16),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Đã thích bạn',
-                        style: TextStyle(
-                          color: context.primary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ] else if (isLiked) ...[
-                      Icon(
-                        Icons.favorite_border,
-                        color: Colors.orange,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Bạn đã thích',
-                        style: TextStyle(
-                          color: Colors.orange,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: context.outline.withValues(alpha: 0.6),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: context.onSurface.withValues(alpha: 0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
-
-              // Profile info
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  children: [
-                    // Name - Make it more prominent
-                    Text(
-                      profile.getFullName(),
-                      style: TextStyle(
-                        color: context.onSurface,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.5,
-                      ),
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              color: context.surface,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Header with like indicator
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 6,
                     ),
-                    const SizedBox(height: 6),
-                    // Age with icon
-                    Row(
+                    decoration: BoxDecoration(
+                      color: context.surface.withValues(alpha: 0.9),
+                    ),
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          Icons.cake_outlined,
-                          size: 14,
-                          color: context.onSurface.withValues(alpha: 0.6),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${profile.getAge()} tuổi',
-                          style: TextStyle(
-                            color: context.onSurface.withValues(alpha: 0.7),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                    // University (if available)
-                    if (profile.university != null && profile.university!.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
+                        if (isLikedBy) ...[
                           Icon(
-                            Icons.school_outlined,
-                            size: 12,
-                            color: context.primary.withValues(alpha: 0.7),
+                            Icons.visibility,
+                            color: context.primary,
+                            size: 14,
                           ),
                           const SizedBox(width: 4),
                           Flexible(
                             child: Text(
-                              profile.university!,
+                              'Đã thích bạn',
                               style: TextStyle(
-                                color: context.primary.withValues(alpha: 0.8),
+                                color: context.primary,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w500,
                               ),
-                              textAlign: TextAlign.center,
-                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ] else if (isLiked) ...[
+                          Icon(
+                            Icons.favorite_border,
+                            color: Colors.orange,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              'Bạn đã thích',
+                              style: TextStyle(
+                                color: Colors.orange,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
+                      ],
+                    ),
+                  ),
+
+                  // Profile info
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          profile.getFullName(),
+                          style: TextStyle(
+                            color: context.primary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              '${profile.getAge()}',
+                              style: TextStyle(
+                                color: context.onSurface.withValues(alpha: 0.7),
+                                fontSize: 13,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(Icons.cake, color: context.primary, size: 16),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Audio player section - flexible height
+                  Flexible(
+                    fit: FlexFit.loose,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        minHeight: 80,
+                        maxHeight: 120,
                       ),
-                    ],
-                  ],
-                ),
-              ),
+                      child: _LikedAudioPlayer(profile: profile),
+                    ),
+                  ),
 
-              // Audio player section
-              Expanded(child: _LikedAudioPlayer(profile: profile)),
-
-              // Action buttons
-              _buildActionButtons(
-                context,
-                profile,
-                isMatch: isMatch,
-                isLikedBy: isLikedBy,
-                isLiked: isLiked,
+                  // Action buttons - fixed height
+                  SizedBox(
+                    height: 44,
+                    child: _buildActionButtons(
+                      context,
+                      profile,
+                      isMatch: isMatch,
+                      isLikedBy: isLikedBy,
+                      isLiked: isLiked,
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -617,7 +601,7 @@ class _LikedContentState extends State<_LikedContent> {
     bool isLiked = false,
   }) {
     return Container(
-      height: 48,
+      height: 44,
       decoration: BoxDecoration(
         color: context.surface.withValues(alpha: 0.9),
         borderRadius: const BorderRadius.only(
@@ -668,7 +652,8 @@ class _LikedContentState extends State<_LikedContent> {
                   }
                 },
                 child: Container(
-                  height: 48,
+                  height: 44,
+                  alignment: Alignment.center,
                   decoration: BoxDecoration(
                     border: Border(
                       right: BorderSide(
@@ -680,7 +665,7 @@ class _LikedContentState extends State<_LikedContent> {
                   child: Icon(
                     isMatch ? Icons.close : Icons.close,
                     color: context.error,
-                    size: 24,
+                    size: 22,
                   ),
                 ),
               ),
@@ -713,15 +698,15 @@ class _LikedContentState extends State<_LikedContent> {
                                   Icon(
                                     Icons.favorite,
                                     color: Colors.white,
-                                    size: 24,
+                                    size: 20,
                                   ),
-                                  const SizedBox(width: 12),
+                                  const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
                                       '🎉 Khớp với ${profile.getFullName()}!',
                                       style: const TextStyle(
                                         color: Colors.white,
-                                        fontSize: 16,
+                                        fontSize: 14,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -769,12 +754,13 @@ class _LikedContentState extends State<_LikedContent> {
                     }
                   }
                 },
-                child: SizedBox(
-                  height: 48,
+                child: Container(
+                  height: 44,
+                  alignment: Alignment.center,
                   child: Icon(
                     isLikedBy ? Icons.favorite : Icons.favorite,
                     color: isLiked ? Colors.orange : context.primary,
-                    size: 24,
+                    size: 22,
                   ),
                 ),
               ),
@@ -801,6 +787,7 @@ class _LikedAudioPlayerState extends State<_LikedAudioPlayer> {
   bool _isLoading = false;
   bool _hasError = false;
   bool _isCompleted = false;
+  bool _isAudioLoaded = false; // Track if audio has been loaded
   Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
 
@@ -809,9 +796,7 @@ class _LikedAudioPlayerState extends State<_LikedAudioPlayer> {
     super.initState();
     _audioPlayer = AudioPlayer();
     _setupAudioListeners();
-    if (widget.profile.audioUrl != null) {
-      _loadAudio();
-    }
+    // Remove automatic audio loading
   }
 
   void _setupAudioListeners() {
@@ -855,11 +840,13 @@ class _LikedAudioPlayerState extends State<_LikedAudioPlayer> {
       await _audioPlayer.setSource(UrlSource(widget.profile.audioUrl!));
       setState(() {
         _isLoading = false;
+        _isAudioLoaded = true; // Mark audio as loaded
       });
     } catch (e) {
       setState(() {
         _isLoading = false;
         _hasError = true;
+        _isAudioLoaded = false; // Reset flag on error
       });
     }
   }
@@ -875,6 +862,11 @@ class _LikedAudioPlayerState extends State<_LikedAudioPlayer> {
     if (_hasError) {
       await _loadAudio();
       return;
+    }
+
+    // Load audio on first play if not already loaded
+    if (!_isAudioLoaded && widget.profile.audioUrl != null) {
+      await _loadAudio();
     }
 
     try {
@@ -907,55 +899,54 @@ class _LikedAudioPlayerState extends State<_LikedAudioPlayer> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Audio waveform visualization
-          Expanded(
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: context.onSurface.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Center(
-                child: Icon(Icons.graphic_eq, color: context.primary, size: 48),
-              ),
+          // Audio waveform visualization - smaller and more responsive
+          Container(
+            height: 40,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: context.onSurface.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Center(
+              child: Icon(Icons.graphic_eq, color: context.primary, size: 24),
             ),
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
 
-          // Play/Pause button
+          // Play/Pause button - smaller for better fit
           GestureDetector(
             onTap: _playPause,
             child: Container(
-              width: 56,
-              height: 56,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
                 color: context.primary,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: context.primary.withValues(alpha: 0.4),
+                    color: context.primary.withValues(alpha: 0.3),
                     spreadRadius: 0,
-                    blurRadius: 15,
-                    offset: const Offset(0, 3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),
               child: _isLoading
                   ? SizedBox(
-                      width: 20,
-                      height: 20,
+                      width: 16,
+                      height: 16,
                       child: CircularProgressIndicator(
                         color: context.onPrimary,
                         strokeWidth: 2,
                       ),
                     )
                   : _hasError
-                  ? Icon(Icons.error, color: context.onPrimary, size: 24)
+                  ? Icon(Icons.error, color: context.onPrimary, size: 20)
                   : Icon(
                       _isPlaying
                           ? Icons.pause
@@ -963,12 +954,10 @@ class _LikedAudioPlayerState extends State<_LikedAudioPlayer> {
                           ? Icons.replay
                           : Icons.play_arrow,
                       color: context.onPrimary,
-                      size: 28,
+                      size: 22,
                     ),
             ),
           ),
-
-          const SizedBox(height: 8),
         ],
       ),
     );

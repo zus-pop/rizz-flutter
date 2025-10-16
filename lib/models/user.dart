@@ -23,6 +23,8 @@ class User {
   final String? emotion; // AI-analyzed emotion from voice
   final String? voiceQuality; // AI-analyzed voice quality
   final String? accent;
+  final String? loveLanguage; // Love language preference
+  final String? zodiac; // Zodiac sign
   final bool? isCompleteSetup;
   final double? distanceKm; // Distance in kilometers
   final String? id; // Document ID from Firestore
@@ -50,6 +52,8 @@ class User {
     this.emotion,
     this.voiceQuality,
     this.accent,
+    this.loveLanguage,
+    this.zodiac,
     this.isCompleteSetup,
     this.distanceKm,
     this.id,
@@ -83,6 +87,8 @@ class User {
       emotion: data?['emotion'] as String?,
       voiceQuality: data?['voiceQuality'] as String?,
       accent: data?['accent'] as String?,
+      loveLanguage: data?['loveLanguage'] as String?,
+      zodiac: data?['zodiac'] as String?,
       isCompleteSetup: data?['isCompleteSetup'] as bool?,
     );
   }
@@ -113,6 +119,8 @@ class User {
     if (emotion != null) data['emotion'] = emotion;
     if (voiceQuality != null) data['voiceQuality'] = voiceQuality;
     if (accent != null) data['accent'] = accent;
+    if (loveLanguage != null) data['loveLanguage'] = loveLanguage;
+    if (zodiac != null) data['zodiac'] = zodiac;
     if (isCompleteSetup != null) data['isCompleteSetup'] = isCompleteSetup;
     return data;
   }
@@ -163,6 +171,8 @@ class User {
       emotion: emotion,
       voiceQuality: voiceQuality,
       accent: accent,
+      loveLanguage: loveLanguage,
+      zodiac: zodiac,
       isCompleteSetup: isCompleteSetup,
       distanceKm: distanceKm,
     );
@@ -194,6 +204,8 @@ class User {
       emotion: emotion,
       voiceQuality: voiceQuality,
       accent: accent,
+      loveLanguage: loveLanguage,
+      zodiac: zodiac,
       isCompleteSetup: isCompleteSetup,
       distanceKm: distance,
     );

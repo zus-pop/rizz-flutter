@@ -1088,7 +1088,9 @@ class _VoiceRecordingPageState extends State<VoiceRecordingPage>
       });
 
       _showSnackBar('Giọng nói đã được lưu thành công!');
-      Navigator.of(context).pop();
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
     } catch (e) {
       debugPrint('Error saving voice recording: $e');
       _showSnackBar('Lỗi khi lưu giọng nói: $e');

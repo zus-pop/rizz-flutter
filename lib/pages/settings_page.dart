@@ -1,11 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rizz_mobile/constants/profile_options.dart';
 import 'package:rizz_mobile/pages/splash_screen.dart';
 import 'package:rizz_mobile/providers/app_setting_provider.dart';
 import 'package:rizz_mobile/providers/authentication_provider.dart';
-import 'package:rizz_mobile/services/onboarding_service.dart';
-import 'package:rizz_mobile/services/profile_setup_service.dart';
+import 'package:rizz_mobile/services/firebase_database_service.dart';
 import 'package:rizz_mobile/theme/app_theme.dart';
 import 'package:rizz_mobile/theme/theme.dart';
 
@@ -20,6 +20,9 @@ class _SettingsPageState extends State<SettingsPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
+  // Loading state for saving
+  bool _isSaving = false;
+
   // Preference Settings (Discovery & Matching)
   RangeValues _ageRange = const RangeValues(22, 30);
   double _distance = 50.0;
@@ -32,6 +35,18 @@ class _SettingsPageState extends State<SettingsPage>
   String? _selectedLoveLanguage;
   String? _selectedZodiac;
   String? _selectedGender;
+  String? _firstName;
+  String? _lastName;
+  String? _bio;
+  String? _selectedInterestedIn;
+  String? _selectedLookingForProfile; // Profile-specific looking for
+  String? _selectedStudyStyle;
+  String? _selectedWeekendHabit;
+  String? _selectedCampusLife;
+  String? _selectedCommunicationPreference;
+  final Set<String> _selectedDealBreakers = <String>{};
+  final Set<String> _selectedInterestsProfile =
+      <String>{}; // Profile-specific interests
 
   // App Settings (Notifications & Privacy)
   bool _pushNotifications = true;
@@ -44,25 +59,48 @@ class _SettingsPageState extends State<SettingsPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _loadCurrentUserSettings();
+  }
 
-    // Initialize default values
-    if (lookingForOptions.isNotEmpty) {
-      _selectedLookingFor = lookingForOptions.first.name;
-    }
-    if (genderOptions.isNotEmpty) {
-      _selectedGender = genderOptions.first.name;
-    }
-    if (universityOptions.isNotEmpty) {
-      _selectedUniversity = universityOptions.first.name;
-    }
-    if (afterGraduation.isNotEmpty) {
-      _selectedAfterGraduation = afterGraduation.first.name;
-    }
-    if (loveLanguageOptions.isNotEmpty) {
-      _selectedLoveLanguage = loveLanguageOptions.first.name;
-    }
-    if (zodiacOptions.isNotEmpty) {
-      _selectedZodiac = zodiacOptions.first.name;
+  Future<void> _loadCurrentUserSettings() async {
+    try {
+      final authProvider = Provider.of<AuthenticationProvider>(
+        context,
+        listen: false,
+      );
+
+      if (authProvider.userId != null) {
+        final firebaseService = FirebaseDatabaseService();
+        final currentUser = await firebaseService.getUserById(
+          authProvider.userId!,
+        );
+
+        if (currentUser != null && mounted) {
+          setState(() {
+            _firstName = currentUser.firstName;
+            _lastName = currentUser.lastName;
+            _bio = currentUser.bio;
+            _selectedGender = currentUser.gender;
+            _selectedUniversity = currentUser.university;
+            _selectedAfterGraduation = currentUser.afterGraduation;
+            _selectedLoveLanguage = currentUser.loveLanguage;
+            _selectedZodiac = currentUser.zodiac;
+            _selectedInterestedIn = currentUser.interestedIn;
+            _selectedLookingForProfile = currentUser.lookingFor;
+            _selectedStudyStyle = currentUser.studyStyle;
+            _selectedWeekendHabit = currentUser.weekendHabit;
+            _selectedCampusLife = currentUser.campusLife;
+            _selectedCommunicationPreference =
+                currentUser.communicationPreference;
+            _selectedDealBreakers.clear();
+            _selectedDealBreakers.addAll(currentUser.dealBreakers ?? []);
+            _selectedInterestsProfile.clear();
+            _selectedInterestsProfile.addAll(currentUser.interests ?? []);
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading current user settings: $e');
     }
   }
 
@@ -134,6 +172,29 @@ class _SettingsPageState extends State<SettingsPage>
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
+          _buildFirstNameSection(),
+          const SizedBox(height: 16),
+          _buildLastNameSection(),
+          const SizedBox(height: 16),
+          _buildGenderSection(),
+          _buildBioSection(),
+          const SizedBox(height: 16),
+          _buildInterestedInSection(),
+          const SizedBox(height: 16),
+          _buildLookingForProfileSection(),
+          const SizedBox(height: 16),
+          _buildStudyStyleSection(),
+          const SizedBox(height: 16),
+          _buildWeekendHabitSection(),
+          const SizedBox(height: 16),
+          _buildCampusLifeSection(),
+          const SizedBox(height: 16),
+          _buildCommunicationPreferenceSection(),
+          const SizedBox(height: 16),
+          _buildDealBreakersSection(),
+          const SizedBox(height: 16),
+          _buildInterestsProfileSection(),
+          const SizedBox(height: 16),
           _buildUniversitySection(),
           const SizedBox(height: 16),
           _buildAfterGraduationSection(),
@@ -141,8 +202,6 @@ class _SettingsPageState extends State<SettingsPage>
           _buildLoveLanguageSection(),
           const SizedBox(height: 16),
           _buildZodiacSection(),
-          const SizedBox(height: 16),
-          _buildGenderSection(),
         ],
       ),
     );
@@ -153,10 +212,10 @@ class _SettingsPageState extends State<SettingsPage>
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          _buildNotificationSettings(),
-          const SizedBox(height: 16),
-          _buildPrivacySettings(),
-          const SizedBox(height: 16),
+          // _buildNotificationSettings(),
+          // const SizedBox(height: 16),
+          // _buildPrivacySettings(),
+          // const SizedBox(height: 16),
           _buildAppPreferences(),
         ],
       ),
@@ -643,8 +702,7 @@ class _SettingsPageState extends State<SettingsPage>
     );
   }
 
-  // App Settings Components
-  Widget _buildNotificationSettings() {
+  Widget _buildFirstNameSection() {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -653,20 +711,31 @@ class _SettingsPageState extends State<SettingsPage>
           children: [
             Row(
               children: [
-                Icon(Icons.notifications, color: context.primary, size: 20),
+                Icon(Icons.person_outline, color: context.primary, size: 20),
                 const SizedBox(width: 8),
                 const Text(
-                  'Thông báo',
+                  'Tên',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            _buildSwitchTile(
-              'Push Notifications',
-              'Nhận thông báo cho match và chat',
-              _pushNotifications,
-              (value) => setState(() => _pushNotifications = value),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+              decoration: BoxDecoration(
+                border: Border.all(color: context.outline),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                _firstName ?? 'Chưa cập nhật',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: _firstName != null
+                      ? context.onSurface
+                      : context.onSurface.withValues(alpha: 0.5),
+                ),
+              ),
             ),
           ],
         ),
@@ -674,7 +743,7 @@ class _SettingsPageState extends State<SettingsPage>
     );
   }
 
-  Widget _buildPrivacySettings() {
+  Widget _buildLastNameSection() {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -683,34 +752,486 @@ class _SettingsPageState extends State<SettingsPage>
           children: [
             Row(
               children: [
-                Icon(Icons.privacy_tip, color: context.primary, size: 20),
+                Icon(Icons.person_outline, color: context.primary, size: 20),
                 const SizedBox(width: 8),
                 const Text(
-                  'Quyền riêng tư & Hiển thị',
+                  'Họ',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            _buildSwitchTile(
-              'Hiển thị trạng thái hoạt động',
-              'Cho phép người khác biết khi bạn đang hoạt động',
-              _showOnlineStatus,
-              (value) => setState(() => _showOnlineStatus = value),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+              decoration: BoxDecoration(
+                border: Border.all(color: context.outline),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                _lastName ?? 'Chưa cập nhật',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: _lastName != null
+                      ? context.onSurface
+                      : context.onSurface.withValues(alpha: 0.5),
+                ),
+              ),
             ),
-            const Divider(),
-            _buildSwitchTile(
-              'Hiển thị khoảng cách',
-              'Hiển thị khoảng cách trên hồ sơ của bạn',
-              _showDistance,
-              (value) => setState(() => _showDistance = value),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBioSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.description, color: context.primary, size: 20),
+                const SizedBox(width: 8),
+                const Text(
+                  'Tiểu sử',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                ),
+              ],
             ),
-            const Divider(),
-            _buildSwitchTile(
-              'Có thể được tìm thấy',
-              'Cho phép người khác tìm thấy bạn trong khám phá',
-              _discoverable,
-              (value) => setState(() => _discoverable = value),
+            const SizedBox(height: 16),
+            TextFormField(
+              initialValue: _bio,
+              maxLines: 3,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                hintText: 'Viết một chút về bản thân bạn...',
+              ),
+              onChanged: (value) => setState(() => _bio = value),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInterestedInSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.favorite_border, color: context.primary, size: 20),
+                const SizedBox(width: 8),
+                const Text(
+                  'Quan tâm đến',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              initialValue: _selectedInterestedIn,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+              ),
+              items: genderOptions.map((option) {
+                return DropdownMenuItem(
+                  value: option.name,
+                  child: Text(option.name),
+                );
+              }).toList(),
+              onChanged: (value) =>
+                  setState(() => _selectedInterestedIn = value),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLookingForProfileSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.search, color: context.primary, size: 20),
+                const SizedBox(width: 8),
+                const Text(
+                  'Tìm kiếm',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              initialValue: _selectedLookingForProfile,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+              ),
+              items: lookingForOptions.map((option) {
+                return DropdownMenuItem(
+                  value: option.name,
+                  child: Text(option.name),
+                );
+              }).toList(),
+              onChanged: (value) =>
+                  setState(() => _selectedLookingForProfile = value),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStudyStyleSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.book, color: context.primary, size: 20),
+                const SizedBox(width: 8),
+                const Text(
+                  'Phong cách học tập',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              initialValue: _selectedStudyStyle,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+              ),
+              items: studyStyles.map((option) {
+                return DropdownMenuItem(
+                  value: option.name,
+                  child: Text(option.name),
+                );
+              }).toList(),
+              onChanged: (value) => setState(() => _selectedStudyStyle = value),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWeekendHabitSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.weekend, color: context.primary, size: 20),
+                const SizedBox(width: 8),
+                const Text(
+                  'Thói quen cuối tuần',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              initialValue: _selectedWeekendHabit,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+              ),
+              items: weekendHabits.map((option) {
+                return DropdownMenuItem(
+                  value: option.name,
+                  child: Text(option.name),
+                );
+              }).toList(),
+              onChanged: (value) =>
+                  setState(() => _selectedWeekendHabit = value),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCampusLifeSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.school_outlined, color: context.primary, size: 20),
+                const SizedBox(width: 8),
+                const Text(
+                  'Cuộc sống trên trường',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              initialValue: _selectedCampusLife,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+              ),
+              items: campusLife.map((option) {
+                return DropdownMenuItem(
+                  value: option.name,
+                  child: Text(option.name),
+                );
+              }).toList(),
+              onChanged: (value) => setState(() => _selectedCampusLife = value),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCommunicationPreferenceSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.message, color: context.primary, size: 20),
+                const SizedBox(width: 8),
+                const Text(
+                  'Phong cách giao tiếp',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              initialValue: _selectedCommunicationPreference,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+              ),
+              items: communicationPreferences.map((option) {
+                return DropdownMenuItem(
+                  value: option.name,
+                  child: Text(option.name),
+                );
+              }).toList(),
+              onChanged: (value) =>
+                  setState(() => _selectedCommunicationPreference = value),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDealBreakersSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.block, color: context.primary, size: 20),
+                const SizedBox(width: 8),
+                const Text(
+                  'Điểm không chấp nhận',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Chọn tối đa 3 điểm không chấp nhận',
+              style: TextStyle(
+                fontSize: 14,
+                color: context.onSurface.withValues(alpha: 0.7),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: dealBreakers.map((option) {
+                final isSelected = _selectedDealBreakers.contains(option.name);
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      if (isSelected) {
+                        _selectedDealBreakers.remove(option.name);
+                      } else if (_selectedDealBreakers.length < 3) {
+                        _selectedDealBreakers.add(option.name);
+                      }
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? context.primary
+                          : context.colors.surfaceContainerHigh,
+                      border: Border.all(
+                        color: isSelected ? context.primary : context.outline,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(
+                      option.name,
+                      style: TextStyle(
+                        color: isSelected
+                            ? context.colors.onPrimary
+                            : context.onSurface,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInterestsProfileSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.interests, color: context.primary, size: 20),
+                const SizedBox(width: 8),
+                const Text(
+                  'Sở thích cá nhân',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Chọn tối đa 5 sở thích (${_selectedInterestsProfile.length}/5)',
+              style: TextStyle(
+                fontSize: 14,
+                color: context.onSurface.withValues(alpha: 0.7),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: interests.map((interest) {
+                final isSelected = _selectedInterestsProfile.contains(
+                  interest.name,
+                );
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      if (isSelected) {
+                        _selectedInterestsProfile.remove(interest.name);
+                      } else if (_selectedInterestsProfile.length < 5) {
+                        _selectedInterestsProfile.add(interest.name);
+                      }
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? context.primary
+                          : context.colors.surfaceContainerHigh,
+                      border: Border.all(
+                        color: isSelected ? context.primary : context.outline,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(
+                      interest.name,
+                      style: TextStyle(
+                        color: isSelected
+                            ? context.colors.onPrimary
+                            : context.onSurface,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
             ),
           ],
         ),
@@ -779,80 +1300,80 @@ class _SettingsPageState extends State<SettingsPage>
                 );
               },
             ),
-            const Divider(),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(Icons.person_outline, color: Colors.blue.shade400),
-              title: const Text(
-                'Đặt lại hồ sơ',
-                style: TextStyle(fontWeight: FontWeight.w500),
-              ),
-              subtitle: const Text('Làm lại quá trình thiết lập hồ sơ'),
-              onTap: () {
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Đặt lại hồ sơ'),
-                    content: const Text(
-                      'Thao tác này sẽ đặt lại quá trình thiết lập hồ sơ. Bạn sẽ cần hoàn thành lại. Bạn có chắc không?',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('Hủy'),
-                      ),
-                      TextButton(
-                        onPressed: () async {
-                          Navigator.pop(context);
-                          await _resetProfileSetup();
-                        },
-                        child: Text(
-                          'Đặt lại',
-                          style: TextStyle(color: Colors.blue.shade400),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-            const Divider(),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(Icons.refresh, color: Colors.orange.shade400),
-              title: const Text(
-                'Đặt lại bản demo',
-                style: TextStyle(fontWeight: FontWeight.w500),
-              ),
-              subtitle: const Text('Đặt lại onboarding cho mục đích demo'),
-              onTap: () {
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Đặt lại bản demo'),
-                    content: const Text(
-                      'Thao tác này sẽ đặt lại luồng onboarding cho mục đích demo. Bạn có chắc không?',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('Hủy'),
-                      ),
-                      TextButton(
-                        onPressed: () async {
-                          Navigator.pop(context);
-                          await _resetDemoFlow();
-                        },
-                        child: Text(
-                          'Đặt lại',
-                          style: TextStyle(color: Colors.orange.shade400),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
+            // const Divider(),
+            // ListTile(
+            //   contentPadding: EdgeInsets.zero,
+            //   leading: Icon(Icons.person_outline, color: Colors.blue.shade400),
+            //   title: const Text(
+            //     'Đặt lại hồ sơ',
+            //     style: TextStyle(fontWeight: FontWeight.w500),
+            //   ),
+            //   subtitle: const Text('Làm lại quá trình thiết lập hồ sơ'),
+            //   onTap: () {
+            //     showDialog(
+            //       context: context,
+            //       builder: (context) => AlertDialog(
+            //         title: const Text('Đặt lại hồ sơ'),
+            //         content: const Text(
+            //           'Thao tác này sẽ đặt lại quá trình thiết lập hồ sơ. Bạn sẽ cần hoàn thành lại. Bạn có chắc không?',
+            //         ),
+            //         actions: [
+            //           TextButton(
+            //             onPressed: () => Navigator.pop(context),
+            //             child: const Text('Hủy'),
+            //           ),
+            //           TextButton(
+            //             onPressed: () async {
+            //               Navigator.pop(context);
+            //               await _resetProfileSetup();
+            //             },
+            //             child: Text(
+            //               'Đặt lại',
+            //               style: TextStyle(color: Colors.blue.shade400),
+            //             ),
+            //           ),
+            //         ],
+            //       ),
+            //     );
+            //   },
+            // ),
+            // const Divider(),
+            // ListTile(
+            //   contentPadding: EdgeInsets.zero,
+            //   leading: Icon(Icons.refresh, color: Colors.orange.shade400),
+            //   title: const Text(
+            //     'Đặt lại bản demo',
+            //     style: TextStyle(fontWeight: FontWeight.w500),
+            //   ),
+            //   subtitle: const Text('Đặt lại onboarding cho mục đích demo'),
+            //   onTap: () {
+            //     showDialog(
+            //       context: context,
+            //       builder: (context) => AlertDialog(
+            //         title: const Text('Đặt lại bản demo'),
+            //         content: const Text(
+            //           'Thao tác này sẽ đặt lại luồng onboarding cho mục đích demo. Bạn có chắc không?',
+            //         ),
+            //         actions: [
+            //           TextButton(
+            //             onPressed: () => Navigator.pop(context),
+            //             child: const Text('Hủy'),
+            //           ),
+            //           TextButton(
+            //             onPressed: () async {
+            //               Navigator.pop(context);
+            //               await _resetDemoFlow();
+            //             },
+            //             child: Text(
+            //               'Đặt lại',
+            //               style: TextStyle(color: Colors.orange.shade400),
+            //             ),
+            //           ),
+            //         ],
+            //       ),
+            //     );
+            //   },
+            // ),
           ],
         ),
       ),
@@ -884,17 +1405,88 @@ class _SettingsPageState extends State<SettingsPage>
   }
 
   // Settings Management
-  void _applySettings() {
-    // TODO: Save settings to backend/local storage
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Settings saved successfully',
-          style: AppTheme.body1.copyWith(color: context.colors.onPrimary),
-        ),
-        backgroundColor: context.primary,
-      ),
-    );
+  Future<void> _applySettings() async {
+    if (_isSaving) return; // Prevent multiple simultaneous saves
+
+    setState(() => _isSaving = true);
+
+    try {
+      final authProvider = Provider.of<AuthenticationProvider>(
+        context,
+        listen: false,
+      );
+
+      if (authProvider.userId == null) {
+        throw Exception('User not found');
+      }
+
+      // Update user profile in Firestore with only the changed fields
+      final updates = <String, dynamic>{};
+      if (_firstName != null) updates['firstName'] = _firstName;
+      if (_lastName != null) updates['lastName'] = _lastName;
+      if (_bio != null) updates['bio'] = _bio;
+      if (_selectedGender != null) updates['gender'] = _selectedGender;
+      if (_selectedUniversity != null)
+        updates['university'] = _selectedUniversity;
+      if (_selectedAfterGraduation != null)
+        updates['afterGraduation'] = _selectedAfterGraduation;
+      if (_selectedLoveLanguage != null)
+        updates['loveLanguage'] = _selectedLoveLanguage;
+      if (_selectedZodiac != null) updates['zodiac'] = _selectedZodiac;
+      if (_selectedInterestedIn != null)
+        updates['interestedIn'] = _selectedInterestedIn;
+      if (_selectedLookingForProfile != null)
+        updates['lookingFor'] = _selectedLookingForProfile;
+      if (_selectedStudyStyle != null)
+        updates['studyStyle'] = _selectedStudyStyle;
+      if (_selectedWeekendHabit != null)
+        updates['weekendHabit'] = _selectedWeekendHabit;
+      if (_selectedCampusLife != null)
+        updates['campusLife'] = _selectedCampusLife;
+      if (_selectedCommunicationPreference != null)
+        updates['communicationPreference'] = _selectedCommunicationPreference;
+      if (_selectedDealBreakers.isNotEmpty)
+        updates['dealBreakers'] = _selectedDealBreakers.toList();
+      if (_selectedInterestsProfile.isNotEmpty)
+        updates['interests'] = _selectedInterestsProfile.toList();
+
+      if (updates.isNotEmpty) {
+        // Update specific fields
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(authProvider.userId)
+            .update(updates);
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Cài đặt đã được lưu thành công',
+              style: AppTheme.body1.copyWith(color: context.colors.onPrimary),
+            ),
+            backgroundColor: context.primary,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error saving settings: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Lỗi khi lưu cài đặt: $e',
+              style: AppTheme.body1.copyWith(color: context.colors.onError),
+            ),
+            backgroundColor: context.colors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
   }
 
   // Logout functionality
@@ -907,24 +1499,11 @@ class _SettingsPageState extends State<SettingsPage>
       );
       await authProvider.logout();
 
-      // Reset onboarding for demo purposes
-      // await OnboardingService.resetOnboarding();
-
-      // Reset profile setup as well
-      // await ProfileSetupService.resetProfileSetup();
-
       if (mounted) {
         // Navigate to splash screen to restart the flow
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const SplashScreen()),
           (route) => false,
-        );
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Signed out successfully. Demo flow reset!'),
-            backgroundColor: Colors.green,
-          ),
         );
       }
     } catch (e) {
@@ -932,82 +1511,6 @@ class _SettingsPageState extends State<SettingsPage>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error signing out: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  // Reset profile setup only
-  Future<void> _resetProfileSetup() async {
-    try {
-      // Reset profile setup
-      await ProfileSetupService.resetProfileSetup();
-
-      if (!mounted) return;
-
-      // Update the auth provider
-      final authProvider = Provider.of<AuthenticationProvider>(
-        context,
-        listen: false,
-      );
-      await authProvider.updateProfileSetupStatus();
-
-      if (mounted) {
-        // Navigate to splash screen to restart the flow
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const SplashScreen()),
-          (route) => false,
-        );
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Profile setup reset! You\'ll need to complete it again.',
-            ),
-            backgroundColor: Colors.blue,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error resetting profile setup: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  // Reset demo flow for testing
-  Future<void> _resetDemoFlow() async {
-    try {
-      // Clear authentication data without logging out
-      // Reset onboarding to show it again
-      await OnboardingService.resetOnboarding();
-
-      if (mounted) {
-        // Navigate to splash screen to restart the flow
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const SplashScreen()),
-          (route) => false,
-        );
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Demo flow reset! You\'ll see onboarding again.'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error resetting demo: $e'),
             backgroundColor: Colors.red,
           ),
         );

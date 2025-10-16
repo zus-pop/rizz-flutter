@@ -124,153 +124,96 @@ class _LoginPageState extends State<LoginPage> {
       body: SafeArea(
         child: GestureDetector(
           onTap: () => FocusScope.of(context).unfocus(),
-          child: SingleChildScrollView(
-            controller: _scrollController,
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              children: [
-                const SizedBox(height: 60),
-                // Logo or App Name
-                Container(
-                  height: 120,
-                  width: 120,
-                  decoration: BoxDecoration(
-                    color: context.primary.withValues(alpha: .1),
-                    borderRadius: BorderRadius.circular(60),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(60),
-                    child: Image.asset(
-                      'assets/images/appicon.png',
-                      width: 60,
-                      height: 60,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 32),
-                Text(
-                  'Chào mừng!',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: context.colors.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Đăng nhập để bắt đầu khám phá các giọng nói của mọi người',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: context.colors.onSurface.withValues(alpha: .6),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 48),
-
-                // Phone Number Input
-                // Container(
-                //   decoration: BoxDecoration(
-                //     border: Border.all(color: context.colors.outline),
-                //     borderRadius: BorderRadius.circular(12),
-                //   ),
-                //   child: TextField(
-                //     controller: _phoneController,
-                //     focusNode: _phoneFocusNode,
-                //     keyboardType: TextInputType.phone,
-                //     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                //     decoration: InputDecoration(
-                //       hintText: 'Nhập số điện thoại của bạn',
-                //       prefixIcon: Icon(
-                //         Icons.phone,
-                //         color: context.colors.onSurface.withValues(alpha: .6),
-                //       ),
-                //       border: InputBorder.none,
-                //       contentPadding: const EdgeInsets.all(16),
-                //     ),
-                //   ),
-                // ),
-                // const SizedBox(height: 16),
-
-                // Continue with Phone Button
-                // SizedBox(
-                //   width: double.infinity,
-                //   height: 56,
-                //   child: ElevatedButton(
-                //     onPressed: _isLoading ? null : _loginWithPhone,
-                //     style: ElevatedButton.styleFrom(
-                //       backgroundColor: context.primary,
-                //       foregroundColor: context.colors.onPrimary,
-                //       shape: RoundedRectangleBorder(
-                //         borderRadius: BorderRadius.circular(12),
-                //       ),
-                //       elevation: 2,
-                //     ),
-                //     child: _isLoading
-                //         ? const CircularProgressIndicator(color: Colors.white)
-                //         : const Text(
-                //             'Tiếp tục với số điện thoại',
-                //             style: TextStyle(
-                //               fontSize: 16,
-                //               fontWeight: FontWeight.w600,
-                //             ),
-                //           ),
-                //   ),
-                // ),
-
-                // const SizedBox(height: 24),
-
-                // // Divider
-                // Row(
-                //   children: [
-                //     Expanded(child: Divider(color: context.colors.outline)),
-                //     Padding(
-                //       padding: const EdgeInsets.symmetric(horizontal: 16),
-                //       child: Text(
-                //         'Hoặc',
-                //         style: TextStyle(
-                //           color: context.colors.onSurface.withValues(alpha: .6),
-                //           fontWeight: FontWeight.w500,
-                //         ),
-                //       ),
-                //     ),
-                //     Expanded(child: Divider(color: context.colors.outline)),
-                //   ],
-                // ),
-                const SizedBox(height: 24),
-
-                // Google Sign In Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: OutlinedButton.icon(
-                    onPressed: _isLoading ? null : _loginWithGoogle,
-                    icon: Icon(
-                      Icons.g_mobiledata,
-                      color: context.primary,
-                      size: 50,
-                    ),
-                    label: Text(
-                      'Tiếp tục với Google',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: context.colors.onSurface,
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 60),
+                      // Logo or App Name
+                      Container(
+                        height: 120,
+                        width: 120,
+                        decoration: BoxDecoration(
+                          color: context.primary.withValues(alpha: .1),
+                          borderRadius: BorderRadius.circular(60),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(60),
+                          child: Image.asset(
+                            'assets/images/appicon.png',
+                            width: 60,
+                            height: 60,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
                       ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: context.colors.outline),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                      const SizedBox(height: 32),
+                      Text(
+                        'Chào mừng!',
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: context.colors.onSurface,
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Đăng nhập để bắt đầu khám phá các giọng nói của mọi người',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: context.colors.onSurface.withValues(alpha: .6),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 48),
+
+                      // Phone Number Input (commented out)
+                      // ... existing commented code ...
+                      const SizedBox(height: 24),
+
+                      // Google Sign In Button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: OutlinedButton.icon(
+                          onPressed: _isLoading ? null : _loginWithGoogle,
+                          icon: Icon(
+                            Icons.g_mobiledata,
+                            color: context.primary,
+                            size: 50,
+                          ),
+                          label: Text(
+                            'Tiếp tục với Google',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: context.colors.onSurface,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: context.colors.outline),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // Add some space before bottom content
+                      const SizedBox(height: 48),
+                    ],
                   ),
                 ),
+              ),
 
-                const SizedBox(height: 222),
-
-                // Terms and Privacy
-                RichText(
+              // Terms and Privacy at bottom (outside scroll view)
+              Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: RichText(
                   text: TextSpan(
                     style: TextStyle(
                       color: context.colors.onSurface.withValues(alpha: .6),
@@ -293,8 +236,8 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   textAlign: TextAlign.center,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

@@ -806,29 +806,29 @@ class _ProfileState extends State<Profile>
 
                         const SizedBox(height: 24),
 
-                        // Quick Actions
-                        Column(
-                          children: [
-                            _buildQuickAction(
-                              'Những người tôi thích',
-                              'Xem ai bạn đã thích',
-                              Icons.favorite_outline,
-                              _viewMyLikes,
-                            ),
-                            // _buildQuickAction(
-                            //   'Người dùng bị chặn',
-                            //   'Quản lý hồ sơ bị chặn',
-                            //   Icons.block_outlined,
-                            //   _viewBlockedUsers,
-                            // ),
-                            // _buildQuickAction(
-                            //   'Trợ giúp & Hỗ trợ',
-                            //   'Nhận trợ giúp hoặc liên hệ hỗ trợ',
-                            //   Icons.help_outline,
-                            //   _getHelp,
-                            // ),
-                          ],
-                        ),
+                        //   // Quick Actions
+                        //   Column(
+                        //     children: [
+                        //       _buildQuickAction(
+                        //         'Những người tôi thích',
+                        //         'Xem ai bạn đã thích',
+                        //         Icons.favorite_outline,
+                        //         _viewMyLikes,
+                        //       ),
+                        //       // _buildQuickAction(
+                        //       //   'Người dùng bị chặn',
+                        //       //   'Quản lý hồ sơ bị chặn',
+                        //       //   Icons.block_outlined,
+                        //       //   _viewBlockedUsers,
+                        //       // ),
+                        //       // _buildQuickAction(
+                        //       //   'Trợ giúp & Hỗ trợ',
+                        //       //   'Nhận trợ giúp hoặc liên hệ hỗ trợ',
+                        //       //   Icons.help_outline,
+                        //       //   _getHelp,
+                        //       // ),
+                        //     ],
+                        //   ),
                       ],
                     ),
                   ),
