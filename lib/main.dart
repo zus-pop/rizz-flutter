@@ -12,6 +12,7 @@ import 'package:rizz_mobile/firebase_options.dart';
 import 'package:rizz_mobile/pages/bottom_tab_page.dart';
 import 'package:rizz_mobile/pages/details/match_chat_detail_page.dart';
 import 'package:rizz_mobile/pages/splash_screen.dart';
+import 'package:rizz_mobile/pages/welcome_screen.dart';
 import 'package:rizz_mobile/providers/app_setting_provider.dart';
 import 'package:rizz_mobile/providers/authentication_provider.dart';
 import 'package:rizz_mobile/providers/profile_provider.dart';
@@ -136,9 +137,9 @@ class _MyAppContentState extends State<MyAppContent> {
       showPerformanceOverlay: false,
       title: "Rizz",
       theme: Provider.of<AppSettingProvider>(context).themeData,
-      home: const SplashScreen(),
+      home: const WelcomeScreen(),
       routes: {
-        '/home': (context) => BottomTabPage(),
+        '/home': (context) => WelcomeScreen(),
         '/match_chat_detail': (context) => const MatchChatDetailPage(),
       },
     );

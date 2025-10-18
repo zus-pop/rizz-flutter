@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rive/rive.dart' as rive_lib; // Thêm tiền tố 'as rive_lib' để tránh xung đột tên
+import 'dart:math'; // Import để sử dụng Random
 
 // Chuyển sang StatefulWidget để quản lý trạng thái của Key
 class WelcomeScreen extends StatefulWidget {
@@ -21,8 +22,49 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     });
   }
 
+  // Danh sách các màu pastel
+  final List<Color> _pastelColors = [
+    Colors.pink.shade100,
+    Colors.purple.shade100,
+    Colors.blue.shade100,
+    Colors.green.shade100,
+    Colors.yellow.shade100,
+    Colors.orange.shade100,
+    Colors.red.shade100,
+    Colors.cyan.shade100,
+  ];
+
+  final Random _random = Random(); // Đối tượng Random để lấy màu ngẫu nhiên
+
+  // Hàm để tạo TextSpan với màu ngẫu nhiên (hoặc màu hồng cho "Rizz")
+  TextSpan _buildColoredText(String text) {
+    List<TextSpan> spans = [];
+    const String targetWord = "Rizz";
+    Color rizzColor = Colors.pink.shade400; // Màu hồng đậm hơn cho chữ "Rizz"
+
+    // Logic mới: Duyệt qua chuỗi và kiểm tra từ "Rizz"
+    int i = 0;
+    while (i < text.length) {
+      // Kiểm tra xem từ "Rizz" có bắt đầu từ vị trí i không
+      if (text.length >= i + targetWord.length && text.substring(i, i + targetWord.length) == targetWord) {
+        // Nếu là "Rizz", áp dụng màu hồng cho cả từ "Rizz"
+        spans.add(TextSpan(text: targetWord, style: TextStyle(color: rizzColor)));
+        i += targetWord.length; // Bỏ qua 4 ký tự của "Rizz"
+      } else {
+        // Áp dụng màu pastel ngẫu nhiên cho ký tự còn lại
+        Color charColor = _pastelColors[_random.nextInt(_pastelColors.length)];
+        spans.add(TextSpan(text: text[i], style: TextStyle(color: charColor)));
+        i++; // Tiến lên 1 ký tự
+      }
+    }
+
+    return TextSpan(children: spans);
+  }
+
   @override
   Widget build(BuildContext context) {
+    const String welcomeMessage = 'Chúc mừng 20/10! Bạn biết điểm chung giữa Rizz và bạn là gì không? Cả hai đều muốn làm cho mọi thứ trở nên tuyệt vời hơn. Bắt đầu trải nghiệm ngay nhé!';
+
     return Scaffold(
       // Bọc Stack bằng Container để thêm màu nền Gradient
       body: Container(
@@ -56,23 +98,33 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               ),
             ),
 
-            // Widget 2: Lớp trên cùng là Text
-            // Được bọc trong Center để đảm bảo nó nằm chính giữa
-            const Center(
-              child: Text(
-                'Chào mừng bạn!',
-                style: TextStyle(
-                  fontSize: 40, // Cỡ chữ lớn
-                  fontWeight: FontWeight.bold, // In đậm
-                  color: Colors.white, // Màu trắng
-                  // Thêm hiệu ứng đổ bóng để chữ nổi bật hơn trên nền animation
-                  shadows: [
-                    Shadow(
-                      blurRadius: 10.0,
-                      color: Colors.black87, // Đổi màu bóng sang đen đậm hơn để nổi bật trên nền nhạt
-                      offset: Offset(3.0, 3.0),
+            // Widget 2: Lớp trên cùng là Text (Cập nhật bố cục)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 40.0),
+                child: RichText(
+                  textAlign: TextAlign.center,
+                  text: TextSpan(
+                    style: TextStyle(
+                      fontSize: 24, // Giảm kích thước chữ để phù hợp với văn bản dài hơn
+                      height: 1.5, // Tăng khoảng cách dòng để dễ đọc hơn
+                      fontWeight: FontWeight.w900,
+                      // Màu mặc định cho các ký tự (không cần đặt màu cụ thể ở đây)
+                      // color: Colors.black, // Đã loại bỏ màu mặc định
+                      // Thêm hiệu ứng đổ bóng
+                      shadows: const [
+                        Shadow(
+                          blurRadius: 5.0,
+                          color: Colors.black45,
+                          offset: Offset(2.0, 2.0),
+                        ),
+                      ],
                     ),
-                  ],
+                    children: [
+                      // Sử dụng hàm _buildColoredText để tạo TextSpan với màu sắc động
+                      _buildColoredText(welcomeMessage),
+                    ],
+                  ),
                 ),
               ),
             ),
