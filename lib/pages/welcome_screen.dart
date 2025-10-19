@@ -14,11 +14,40 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   // 1. Khai báo một Key duy nhất cho RiveAnimation
   Key _riveKey = UniqueKey();
 
+  // Biến trạng thái để điều khiển animation của Text
+  bool _textVisible = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Kích hoạt animation sau một khoảng trễ ngắn (ví dụ: 300ms)
+    Future.delayed(const Duration(seconds: 5), () {
+      if (mounted) {
+        // Kiểm tra widget còn tồn tại trước khi gọi setState
+        setState(() {
+          _textVisible = true;
+        });
+      }
+    });
+  }
+
   // 2. Phương thức để tải lại Animation
   void _reloadAnimation() {
     setState(() {
       // Đặt Key mới để buộc Flutter tái tạo RiveAnimation.asset
       _riveKey = UniqueKey();
+
+      // Ẩn text đi để chạy lại animation
+      _textVisible = false;
+    });
+
+    // Hiển thị lại text sau một khoảng trễ ngắn
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        setState(() {
+          _textVisible = true;
+        });
+      }
     });
   }
 
@@ -42,19 +71,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     const String targetWord = "Rizz";
     Color rizzColor = Colors.pink.shade400; // Màu hồng đậm hơn cho chữ "Rizz"
 
-    // Logic mới: Duyệt qua chuỗi và kiểm tra từ "Rizz"
     int i = 0;
     while (i < text.length) {
-      // Kiểm tra xem từ "Rizz" có bắt đầu từ vị trí i không
       if (text.length >= i + targetWord.length && text.substring(i, i + targetWord.length) == targetWord) {
-        // Nếu là "Rizz", áp dụng màu hồng cho cả từ "Rizz"
         spans.add(TextSpan(text: targetWord, style: TextStyle(color: rizzColor)));
-        i += targetWord.length; // Bỏ qua 4 ký tự của "Rizz"
+        i += targetWord.length;
       } else {
-        // Áp dụng màu pastel ngẫu nhiên cho ký tự còn lại
         Color charColor = _pastelColors[_random.nextInt(_pastelColors.length)];
         spans.add(TextSpan(text: text[i], style: TextStyle(color: charColor)));
-        i++; // Tiến lên 1 ký tự
+        i++;
       }
     }
 
@@ -63,15 +88,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const String welcomeMessage = 'Chúc mừng 20/10! Bạn biết điểm chung giữa Rizz và bạn là gì không? Cả hai đều muốn làm cho mọi thứ trở nên tuyệt vời hơn. Bắt đầu trải nghiệm ngay nhé!';
+    const String welcomeMessage = 'Rizz chúc bạn một ngày 20/10 thật rực rỡ và đầy yêu thương';
 
     return Scaffold(
-      // Bọc Stack bằng Container để thêm màu nền Gradient
       body: Container(
         decoration: BoxDecoration(
-          // Dùng LinearGradient của Flutter (không cần tiền tố)
           gradient: LinearGradient(
-            // Màu hồng pastel nhạt và màu trắng ngà
             colors: [
               Colors.pink.shade50.withOpacity(0.8), // Hồng nhạt (Pastel Pink)
               Colors.white, // Màu trắng ngà
@@ -81,49 +103,57 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           ),
         ),
         child: Stack(
-          // Căn chỉnh các widget con bên trong Stack
           alignment: Alignment.center,
           children: [
             // Widget 1: Lớp dưới cùng là animation Rive
-            // Bọc RiveAnimation trong Opacity để làm mờ nhẹ, giúp màu nền xuyên qua
             Opacity(
-              opacity: 0.8, // Giảm độ mờ xuống 80%
+              opacity: 0.8,
               child: rive_lib.RiveAnimation.asset(
-                // 3. Áp dụng Key để kiểm soát việc tải lại
                 key: _riveKey,
-                'assets/animations/welcome.riv',
-                fit: BoxFit.cover, // Thường dùng BoxFit.cover cho animation nền
-                // artboard: 'Celebration',
-                // animations: const ['Confetti'],
+                'assets/animations/confettis.riv',
+                fit: BoxFit.cover,
               ),
             ),
 
             // Widget 2: Lớp trên cùng là Text (Cập nhật bố cục)
             Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 40.0),
-                child: RichText(
-                  textAlign: TextAlign.center,
-                  text: TextSpan(
-                    style: TextStyle(
-                      fontSize: 24, // Giảm kích thước chữ để phù hợp với văn bản dài hơn
-                      height: 1.5, // Tăng khoảng cách dòng để dễ đọc hơn
-                      fontWeight: FontWeight.w900,
-                      // Màu mặc định cho các ký tự (không cần đặt màu cụ thể ở đây)
-                      // color: Colors.black, // Đã loại bỏ màu mặc định
-                      // Thêm hiệu ứng đổ bóng
-                      shadows: const [
-                        Shadow(
-                          blurRadius: 5.0,
-                          color: Colors.black45,
-                          offset: Offset(2.0, 2.0),
+              // THAY ĐỔI: Dùng AnimatedScale thay cho AnimatedSlide
+              child: AnimatedScale(
+                // MỚI: Scale từ 0 (biến mất) lên 1 (bình thường)
+                scale: _textVisible ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 600), // Thời gian "bật" ra
+
+                // MỚI: Đây là chìa khóa để tạo hiệu ứng "bật" (nảy ra)
+                // Nó sẽ đi lố 1.0 một chút rồi quay lại
+                curve: Curves.easeOutBack,
+
+                child: AnimatedOpacity(
+                  // Mờ dần từ 0.0 -> 1.0
+                  opacity: _textVisible ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 500), // Thời gian mờ
+                  curve: Curves.easeIn,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 40.0),
+                    child: RichText(
+                      textAlign: TextAlign.center,
+                      text: TextSpan(
+                        style: TextStyle(
+                          fontSize: 24,
+                          height: 1.5,
+                          fontWeight: FontWeight.w900,
+                          shadows: const [
+                            Shadow(
+                              blurRadius: 5.0,
+                              color: Colors.black45,
+                              offset: Offset(2.0, 2.0),
+                            ),
+                          ],
                         ),
-                      ],
+                        children: [
+                          _buildColoredText(welcomeMessage),
+                        ],
+                      ),
                     ),
-                    children: [
-                      // Sử dụng hàm _buildColoredText để tạo TextSpan với màu sắc động
-                      _buildColoredText(welcomeMessage),
-                    ],
                   ),
                 ),
               ),

@@ -137,9 +137,9 @@ class _MyAppContentState extends State<MyAppContent> {
       showPerformanceOverlay: false,
       title: "Rizz",
       theme: Provider.of<AppSettingProvider>(context).themeData,
-      home: const WelcomeScreen(),
+      home: const SplashScreen(),
       routes: {
-        '/home': (context) => WelcomeScreen(),
+        '/home': (context) => BottomTabPage(),
         '/match_chat_detail': (context) => const MatchChatDetailPage(),
       },
     );
