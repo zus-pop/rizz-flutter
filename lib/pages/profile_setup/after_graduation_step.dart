@@ -44,62 +44,68 @@ class _AfterGraduationStepState extends State<AfterGraduationStep> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 20),
+            const SizedBox(height: 4),
             const Text(
               'Sau khi tốt nghiệp bạn sẽ,',
               style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 10),
 
-            // After Graduation Options
-            ...afterGraduation.map((option) {
-              final isSelected = _selectedAfterGraduation == option.name;
-              return Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                child: GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedAfterGraduation = option.name;
-                    });
-                  },
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? context.primary
-                          : context.colors.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected ? context.primary : context.outline,
-                        width: isSelected ? 2 : 1,
-                      ),
-                      boxShadow: [
-                        if (isSelected)
-                          BoxShadow(
-                            color: context.primary.withValues(alpha: .3),
-                            blurRadius: 8,
-                            spreadRadius: 0,
+            // After Graduation Options - Made scrollable
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: afterGraduation.map((option) {
+                    final isSelected = _selectedAfterGraduation == option.name;
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedAfterGraduation = option.name;
+                          });
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? context.primary
+                                : context.colors.surface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isSelected
+                                  ? context.primary
+                                  : context.outline,
+                              width: isSelected ? 2 : 1,
+                            ),
+                            boxShadow: [
+                              if (isSelected)
+                                BoxShadow(
+                                  color: context.primary.withValues(alpha: .3),
+                                  blurRadius: 8,
+                                  spreadRadius: 0,
+                                ),
+                            ],
                           ),
-                      ],
-                    ),
-                    child: Text(
-                      option.name,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: isSelected
-                            ? context.colors.onPrimary
-                            : context.onSurface,
+                          child: Text(
+                            option.name,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: isSelected
+                                  ? context.colors.onPrimary
+                                  : context.onSurface,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
+                    );
+                  }).toList(),
                 ),
-              );
-            }),
-
-            const Spacer(),
+              ),
+            ),
 
             // Progress Indicator
             Row(

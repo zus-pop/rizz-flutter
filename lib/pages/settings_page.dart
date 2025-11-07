@@ -23,6 +23,10 @@ class _SettingsPageState extends State<SettingsPage>
   // Loading state for saving
   bool _isSaving = false;
 
+  // Text controllers for editable fields
+  final TextEditingController _firstNameController = TextEditingController();
+  final TextEditingController _lastNameController = TextEditingController();
+
   // Preference Settings (Discovery & Matching)
   RangeValues _ageRange = const RangeValues(22, 30);
   double _distance = 50.0;
@@ -97,6 +101,10 @@ class _SettingsPageState extends State<SettingsPage>
             _selectedInterestsProfile.clear();
             _selectedInterestsProfile.addAll(currentUser.interests ?? []);
           });
+
+          // Update text controllers with current values
+          _firstNameController.text = currentUser.firstName ?? '';
+          _lastNameController.text = currentUser.lastName ?? '';
         }
       }
     } catch (e) {
@@ -107,6 +115,8 @@ class _SettingsPageState extends State<SettingsPage>
   @override
   void dispose() {
     _tabController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     super.dispose();
   }
 
@@ -720,22 +730,19 @@ class _SettingsPageState extends State<SettingsPage>
               ],
             ),
             const SizedBox(height: 16),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-              decoration: BoxDecoration(
-                border: Border.all(color: context.outline),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                _firstName ?? 'Chưa cập nhật',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: _firstName != null
-                      ? context.onSurface
-                      : context.onSurface.withValues(alpha: 0.5),
+            TextFormField(
+              controller: _firstNameController,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 16,
+                ),
+                hintText: 'Nhập tên của bạn',
               ),
+              onChanged: (value) => setState(() => _firstName = value),
             ),
           ],
         ),
@@ -761,22 +768,19 @@ class _SettingsPageState extends State<SettingsPage>
               ],
             ),
             const SizedBox(height: 16),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-              decoration: BoxDecoration(
-                border: Border.all(color: context.outline),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                _lastName ?? 'Chưa cập nhật',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: _lastName != null
-                      ? context.onSurface
-                      : context.onSurface.withValues(alpha: 0.5),
+            TextFormField(
+              controller: _lastNameController,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 16,
+                ),
+                hintText: 'Nhập họ của bạn',
               ),
+              onChanged: (value) => setState(() => _lastName = value),
             ),
           ],
         ),

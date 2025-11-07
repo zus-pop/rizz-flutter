@@ -44,79 +44,86 @@ class _CommunicationStepState extends State<CommunicationStep> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 20),
             Text(
               'Bạn thích',
               style: AppTheme.headline2.copyWith(color: context.onSurface),
             ),
             const SizedBox(height: 20),
 
-            // Communication Options
-            ...communicationPreferences.map((comm) {
-              final isSelected = _selectedCommunication == comm.name;
-              return Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                child: GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedCommunication = comm.name;
-                    });
-                  },
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? context.primary
-                          : context.colors.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected ? context.primary : context.outline,
-                        width: 1,
-                      ),
-                      boxShadow: [
-                        if (isSelected)
-                          BoxShadow(
-                            color: context.primary.withValues(alpha: .3),
-                            blurRadius: 8,
-                            spreadRadius: 0,
-                          ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          comm.name,
-                          style: AppTheme.body1.copyWith(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
+            // Communication Options - Made scrollable
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: communicationPreferences.map((comm) {
+                    final isSelected = _selectedCommunication == comm.name;
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedCommunication = comm.name;
+                          });
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
                             color: isSelected
-                                ? context.colors.onPrimary
-                                : context.onSurface,
+                                ? context.primary
+                                : context.colors.surface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isSelected
+                                  ? context.primary
+                                  : context.outline,
+                              width: 1,
+                            ),
+                            boxShadow: [
+                              if (isSelected)
+                                BoxShadow(
+                                  color: context.primary.withValues(alpha: .3),
+                                  blurRadius: 8,
+                                  spreadRadius: 0,
+                                ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                comm.name,
+                                style: AppTheme.body1.copyWith(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: isSelected
+                                      ? context.colors.onPrimary
+                                      : context.onSurface,
+                                ),
+                              ),
+                              if (comm.description != null) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  comm.description!,
+                                  style: AppTheme.caption.copyWith(
+                                    color: isSelected
+                                        ? context.colors.onPrimary.withValues(
+                                            alpha: .9,
+                                          )
+                                        : context.onSurface.withValues(
+                                            alpha: 0.7,
+                                          ),
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                         ),
-                        if (comm.description != null) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            comm.description!,
-                            style: AppTheme.caption.copyWith(
-                              color: isSelected
-                                  ? context.colors.onPrimary.withValues(
-                                      alpha: .9,
-                                    )
-                                  : context.onSurface.withValues(alpha: 0.7),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
+                      ),
+                    );
+                  }).toList(),
                 ),
-              );
-            }),
-
-            const Spacer(),
+              ),
+            ),
 
             // Progress Indicator
             Row(

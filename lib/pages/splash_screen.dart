@@ -1,16 +1,17 @@
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'dart:async'; // Để dùng Future.delayed
 import 'dart:math'; // MỚI: Để dùng Random cho màu chữ
-import 'package:rive/rive.dart' as rive_lib; // Để dùng Rive
 
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:rive/rive.dart';
+import 'package:rizz_mobile/pages/auth/login_page.dart';
+import 'package:rizz_mobile/pages/bottom_tab_page.dart';
 // Import các trang và services từ code logic của bạn
 import 'package:rizz_mobile/pages/onboarding_screen.dart';
-import 'package:rizz_mobile/pages/bottom_tab_page.dart';
-import 'package:rizz_mobile/pages/auth/login_page.dart';
 import 'package:rizz_mobile/pages/profile_setup_page.dart';
 import 'package:rizz_mobile/providers/authentication_provider.dart';
 import 'package:rizz_mobile/services/onboarding_service.dart';
+import 'package:rizz_mobile/theme/app_theme.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -24,42 +25,62 @@ class _SplashScreenState extends State<SplashScreen> {
   bool _logoVisible = false;
   bool _messageVisible = false;
 
+  // MỚI: Preload Rive animation
+  RiveWidgetController? _riveController;
+  bool _riveLoaded = false;
+
   @override
   void initState() {
     super.initState();
+    // MỚI: Preload Rive animation first
+    _preloadRiveAnimation();
     // Chạy cả animation và logic
     _checkStatusAndAnimate();
   }
 
-  Future<void> _checkStatusAndAnimate() async {
-    // 1. Chờ 2 giây (delay ban đầu)
-    await Future.delayed(const Duration(seconds: 2));
+  // MỚI: Preload Rive animation to avoid lag
+  Future<void> _preloadRiveAnimation() async {
+    try {
+      final file = await File.asset(
+        'assets/animations/confettis.riv',
+        riveFactory: Factory.rive,
+      );
 
-    // 2. Kích hoạt animation "pop" cho Logo + Rizz
-    if (mounted) {
-      setState(() {
-        _logoVisible = true;
-      });
+      // Create a simple controller for the animation
+      if (file != null) {
+        _riveController = RiveWidgetController(file);
+        _riveLoaded = true;
+        debugPrint('Rive animation preloaded successfully');
+      }
+    } catch (e) {
+      debugPrint('Failed to preload Rive animation: $e');
+      _riveLoaded = false;
     }
+  }
 
-    // 3. Chờ 2 giây để xem Logo
-    await Future.delayed(const Duration(seconds: 1));
-
-    // 4. Cross-fade: Mờ Logo đi VÀ "pop" Message lên
-    if (mounted) {
-      setState(() {
-        _logoVisible = false;
-        _messageVisible = true;
-      });
-    }
-
-    // 5. Chờ 3 giây để đọc Message
-    await Future.delayed(const Duration(seconds: 3));
-
-    if (!mounted) return;
-
-    // 6. Chạy logic kiểm tra auth (lấy từ code cũ)
-    _runAuthLogic();
+  Future<void> _checkStatusAndAnimate() {
+    return Future.delayed(const Duration(seconds: 3))
+        .then((_) {
+          // 2. Kích hoạt animation "pop" cho Logo + Rizz
+          setState(() {
+            _logoVisible = true;
+          });
+          // 3. Chờ 2 giây để xem Logo
+          return Future.delayed(const Duration(seconds: 3));
+        })
+        .then((_) {
+          // 4. Cross-fade: Mờ Logo đi VÀ "pop" Message lên
+          setState(() {
+            _logoVisible = false;
+            _messageVisible = true;
+          });
+          // 5. Chờ 3 giây để đọc Message
+          return Future.delayed(const Duration(seconds: 3));
+        })
+        .then((_) {
+          // 6. Chạy logic kiểm tra auth (lấy từ code cũ)
+          _runAuthLogic();
+        });
   }
 
   // MỚI: Tách logic auth ra riêng
@@ -95,7 +116,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
     // Check onboarding status for not logged in users
     final bool onboardingComplete =
-    await OnboardingService.isOnboardingComplete();
+        await OnboardingService.isOnboardingComplete();
 
     if (!mounted) return;
 
@@ -129,17 +150,27 @@ class _SplashScreenState extends State<SplashScreen> {
   TextSpan _buildColoredText(String text) {
     List<TextSpan> spans = [];
     const String targetWord = "Rizz";
-    Color rizzColor = Colors.pink.shade400; // Màu hồng đậm hơn cho chữ "Rizz"
+    Color rizzColor = context.primary; // Màu hồng đậm hơn cho chữ "Rizz"
 
     int i = 0;
     while (i < text.length) {
       if (text.length >= i + targetWord.length &&
           text.substring(i, i + targetWord.length) == targetWord) {
-        spans.add(TextSpan(text: targetWord, style: TextStyle(color: rizzColor)));
+        spans.add(
+          TextSpan(
+            text: targetWord,
+            style: TextStyle(color: rizzColor),
+          ),
+        );
         i += targetWord.length;
       } else {
         Color charColor = _pastelColors[_random.nextInt(_pastelColors.length)];
-        spans.add(TextSpan(text: text[i], style: TextStyle(color: charColor)));
+        spans.add(
+          TextSpan(
+            text: text[i],
+            style: TextStyle(color: charColor),
+          ),
+        );
         i++;
       }
     }
@@ -158,7 +189,9 @@ class _SplashScreenState extends State<SplashScreen> {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              Colors.pink.shade50.withOpacity(0.8), // Hồng nhạt (Pastel Pink)
+              Colors.pink.shade50.withValues(
+                alpha: 0.8,
+              ), // Hồng nhạt (Pastel Pink)
               Colors.white, // Màu trắng ngà
             ],
             begin: Alignment.topLeft,
@@ -169,14 +202,30 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // Widget 1: Animation Rive
-            Opacity(
-              opacity: 0.8,
-              child: rive_lib.RiveAnimation.asset(
-                'assets/animations/confettis.riv',
-                fit: BoxFit.cover,
+            // Widget 1: Animation Rive - Optimized for performance
+            if (_riveLoaded && _riveController != null)
+              Opacity(
+                opacity: 0.6, // Reduced opacity for better performance
+                child: RiveWidget(
+                  controller: _riveController!,
+                  fit: Fit.contain, // Changed from BoxFit to Fit
+                  alignment: Alignment.center,
+                ),
+              )
+            else
+              // Fallback: Simple gradient animation while Rive loads
+              Container(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    colors: [
+                      Colors.pink.shade100.withValues(alpha: 0.3),
+                      Colors.white,
+                    ],
+                    center: Alignment.center,
+                    radius: 0.8,
+                  ),
+                ),
               ),
-            ),
 
             // Widget 2: Logo + Rizz (Pop IN/OUT)
             AnimatedScale(
@@ -216,12 +265,12 @@ class _SplashScreenState extends State<SplashScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    const Text(
+                    Text(
                       'Rizz',
                       style: TextStyle(
                         fontSize: 40,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFFFA5EFF),
+                        color: context.primary,
                       ),
                     ),
                     // ĐÃ XOÁ: "Tìm nửa kia..."
@@ -242,18 +291,18 @@ class _SplashScreenState extends State<SplashScreen> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 40.0),
                   child: RichText(
-                    textAlign: TextAlign.center,
+                    textAlign: TextAlign.left,
                     text: TextSpan(
                       // Style gốc cho RichText
                       style: const TextStyle(
-                        fontSize: 24,
+                        fontSize: 40,
                         height: 1.5,
                         fontWeight: FontWeight.w900,
                         shadows: [
                           Shadow(
-                            blurRadius: 5.0,
-                            color: Colors.black45,
-                            offset: Offset(2.0, 2.0),
+                            blurRadius: 3.0,
+                            color: Colors.black38,
+                            offset: Offset(1.2, 1.2),
                           ),
                         ],
                       ),
@@ -270,5 +319,12 @@ class _SplashScreenState extends State<SplashScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    // MỚI: Clean up Rive resources
+    _riveController?.dispose();
+    super.dispose();
   }
 }

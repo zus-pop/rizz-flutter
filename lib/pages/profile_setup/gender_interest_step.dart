@@ -57,7 +57,7 @@ class _GenderInterestStepState extends State<GenderInterestStep> {
                 color: context.onSurface.withValues(alpha: 0.7),
               ),
             ),
-            const SizedBox(height: 120),
+            const SizedBox(height: 60),
 
             // Gender Options
             ...genderOptions.map((gender) {

@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:rizz_mobile/theme/app_theme.dart';
 import 'package:rizz_mobile/providers/profile_provider.dart';
 import 'package:rizz_mobile/providers/authentication_provider.dart';
+import 'package:rizz_mobile/constants/profile_options.dart';
 
 class FilterModal extends StatefulWidget {
   final RangeValues initialAgeRange;
@@ -1451,24 +1452,46 @@ class _FilterModalState extends State<FilterModal> {
                                       ),
                                     ),
                                   ),
-                                  child: TextField(
-                                    onChanged: (value) {
-                                      _selectedUniversity = value.isEmpty
-                                          ? null
-                                          : value;
-                                    },
-                                    decoration: InputDecoration(
-                                      hintText: 'Nhập tên trường đại học',
-                                      border: InputBorder.none,
-                                      hintStyle: AppTheme.body1.copyWith(
+                                  child: DropdownButton<String>(
+                                    value: _selectedUniversity,
+                                    isExpanded: true,
+                                    underline: const SizedBox(),
+                                    hint: Text(
+                                      'Chọn trường đại học',
+                                      style: AppTheme.body1.copyWith(
                                         color: context.onSurface.withValues(
                                           alpha: 0.6,
                                         ),
                                       ),
                                     ),
-                                    style: AppTheme.body1.copyWith(
-                                      color: context.onSurface,
-                                    ),
+                                    items: [
+                                      DropdownMenuItem<String>(
+                                        value: null,
+                                        child: Text(
+                                          'Bất kỳ trường nào',
+                                          style: AppTheme.body1.copyWith(
+                                            color: context.onSurface,
+                                          ),
+                                        ),
+                                      ),
+                                      ...universityOptions.map(
+                                        (university) =>
+                                            DropdownMenuItem<String>(
+                                              value: university.name,
+                                              child: Text(
+                                                university.name,
+                                                style: AppTheme.body1.copyWith(
+                                                  color: context.onSurface,
+                                                ),
+                                              ),
+                                            ),
+                                      ),
+                                    ],
+                                    onChanged: (value) {
+                                      setState(() {
+                                        _selectedUniversity = value;
+                                      });
+                                    },
                                   ),
                                 ),
 

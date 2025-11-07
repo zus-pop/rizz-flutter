@@ -44,12 +44,11 @@ class _LookingForStepState extends State<LookingForStep> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 20),
             Text(
               'Bạn đang tìm kiếm',
               style: AppTheme.headline2.copyWith(color: context.onSurface),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 10),
 
             // Looking For Options
             ...lookingForOptions.map((option) {

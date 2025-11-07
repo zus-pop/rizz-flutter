@@ -416,26 +416,6 @@ class _DiscoverState extends State<Discover>
         action = 'swiped';
     }
 
-    // Show feedback with bounds checking
-    if (mounted &&
-        previousIndex >= 0 &&
-        previousIndex < profileProvider.profiles.length) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'You $action ${profileProvider.profiles[previousIndex].getFullName()}!',
-            style: const TextStyle(color: Colors.white),
-          ),
-          backgroundColor: direction == CardSwiperDirection.right
-              ? context.primary
-              : context.outline,
-          duration: const Duration(milliseconds: 1000),
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.only(bottom: 100, left: 20, right: 20),
-        ),
-      );
-    }
-
     if (previousIndex >= 0 && previousIndex < profileProvider.profiles.length) {
       debugPrint(
         'Card ${profileProvider.profiles[previousIndex].getFullName()} was $action. Current index: $currentIndex',

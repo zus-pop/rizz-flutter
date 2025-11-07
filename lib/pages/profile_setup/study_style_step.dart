@@ -48,74 +48,82 @@ class _StudyStyleStepState extends State<StudyStyleStep> {
               'Phong cách học của bạn',
               style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 50),
+            const SizedBox(height: 10),
 
-            // Study Style Options
-            ...studyStyles.map((style) {
-              final isSelected = _selectedStudyStyle == style.name;
-              return Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                child: GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedStudyStyle = style.name;
-                    });
-                  },
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? context.primary
-                          : context.colors.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected ? context.primary : context.outline,
-                      ),
-                      boxShadow: [
-                        if (isSelected)
-                          BoxShadow(
-                            color: context.primary.withValues(alpha: .3),
-                            blurRadius: 8,
-                            spreadRadius: 0,
-                          ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          style.name,
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
+            // Study Style Options - Made scrollable
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: studyStyles.map((style) {
+                    final isSelected = _selectedStudyStyle == style.name;
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedStudyStyle = style.name;
+                          });
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
                             color: isSelected
-                                ? context.colors.onPrimary
-                                : context.onSurface,
+                                ? context.primary
+                                : context.colors.surface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isSelected
+                                  ? context.primary
+                                  : context.outline,
+                            ),
+                            boxShadow: [
+                              if (isSelected)
+                                BoxShadow(
+                                  color: context.primary.withValues(alpha: .3),
+                                  blurRadius: 8,
+                                  spreadRadius: 0,
+                                ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                style.name,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: isSelected
+                                      ? context.colors.onPrimary
+                                      : context.onSurface,
+                                ),
+                              ),
+                              if (style.description != null) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  style.description!,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: isSelected
+                                        ? context.colors.onPrimary.withValues(
+                                            alpha: .9,
+                                          )
+                                        : context.onSurface.withValues(
+                                            alpha: 0.7,
+                                          ),
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                         ),
-                        if (style.description != null) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            style.description!,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: isSelected
-                                  ? context.colors.onPrimary.withValues(
-                                      alpha: .9,
-                                    )
-                                  : context.onSurface.withValues(alpha: 0.7),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
+                      ),
+                    );
+                  }).toList(),
                 ),
-              );
-            }),
-
-            const Spacer(),
+              ),
+            ),
 
             // Progress Indicator
             Row(

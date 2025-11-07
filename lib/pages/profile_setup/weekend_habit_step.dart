@@ -48,7 +48,7 @@ class _WeekendHabitStepState extends State<WeekendHabitStep> {
               'Cuối tuần, bạn thường ...',
               style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 20),
 
             // Weekend Habit Options
             ...weekendHabits.map((habit) {

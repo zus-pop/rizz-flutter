@@ -8,11 +8,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:rive/rive.dart';
 import 'package:rizz_mobile/firebase_options.dart';
 import 'package:rizz_mobile/pages/bottom_tab_page.dart';
 import 'package:rizz_mobile/pages/details/match_chat_detail_page.dart';
 import 'package:rizz_mobile/pages/splash_screen.dart';
-import 'package:rizz_mobile/pages/welcome_screen.dart';
 import 'package:rizz_mobile/providers/app_setting_provider.dart';
 import 'package:rizz_mobile/providers/authentication_provider.dart';
 import 'package:rizz_mobile/providers/profile_provider.dart';
@@ -37,6 +37,9 @@ Future<void> main() async {
     );
   }
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Rive Native
+  await RiveNative.init();
 
   // Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -128,6 +131,9 @@ class MyAppContent extends StatefulWidget {
 class _MyAppContentState extends State<MyAppContent> {
   @override
   void initState() {
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.immersive,
+    ); // Hides the status bar, keeps navigation bar
     super.initState();
   }
 

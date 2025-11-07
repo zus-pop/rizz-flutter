@@ -57,58 +57,64 @@ class _CampusLifeStepState extends State<CampusLifeStep> {
             ),
             const SizedBox(height: 10),
 
-            // Campus Life Options
-            ...campusLife.map((life) {
-              final isSelected = _selectedCampusLife == life.name;
-              return Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                child: GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedCampusLife = life.name;
-                    });
-                  },
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 18,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? context.primary
-                          : context.colors.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected ? context.primary : context.outline,
-                        width: 1,
-                      ),
-                      boxShadow: [
-                        if (isSelected)
-                          BoxShadow(
-                            color: context.primary.withValues(alpha: .3),
-                            blurRadius: 8,
-                            spreadRadius: 0,
+            // Campus Life Options - Made scrollable
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: campusLife.map((life) {
+                    final isSelected = _selectedCampusLife == life.name;
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedCampusLife = life.name;
+                          });
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 18,
                           ),
-                      ],
-                    ),
-                    child: Text(
-                      life.name,
-                      style: AppTheme.body1.copyWith(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: isSelected
-                            ? context.colors.onPrimary
-                            : context.onSurface,
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? context.primary
+                                : context.colors.surface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isSelected
+                                  ? context.primary
+                                  : context.outline,
+                              width: 1,
+                            ),
+                            boxShadow: [
+                              if (isSelected)
+                                BoxShadow(
+                                  color: context.primary.withValues(alpha: .3),
+                                  blurRadius: 8,
+                                  spreadRadius: 0,
+                                ),
+                            ],
+                          ),
+                          child: Text(
+                            life.name,
+                            style: AppTheme.body1.copyWith(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: isSelected
+                                  ? context.colors.onPrimary
+                                  : context.onSurface,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
+                    );
+                  }).toList(),
                 ),
-              );
-            }),
-
-            const Spacer(),
+              ),
+            ),
 
             // Progress Indicator
             Row(
